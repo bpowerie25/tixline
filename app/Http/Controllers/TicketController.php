@@ -15,7 +15,7 @@ class TicketController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Ticket::with(['assignee', 'team', 'labels']);
+        $query = $request->user()->visibleTicketsQuery()->with(['assignee', 'team', 'labels']);
 
         if ($request->filled('status')) {
             $query->where('status', $request->status);
@@ -54,6 +54,8 @@ class TicketController extends Controller
 
     public function show(Ticket $ticket)
     {
+        $this->authorize('view', $ticket);
+
         $ticket->load(['assignee', 'team', 'labels', 'form.fields', 'attachments', 'comments' => function ($q) {
             $q->with(['user', 'attachments'])->oldest();
         }]);
@@ -114,6 +116,8 @@ class TicketController extends Controller
 
     public function update(Request $request, Ticket $ticket, WorkflowEngine $engine)
     {
+        $this->authorize('update', $ticket);
+
         $validated = $request->validate([
             'subject' => 'sometimes|string|max:255',
             'status' => 'sometimes|in:open,pending,resolved,closed',
@@ -144,6 +148,8 @@ class TicketController extends Controller
 
     public function destroy(Ticket $ticket)
     {
+        $this->authorize('delete', $ticket);
+
         $ticket->delete();
 
         return redirect()->route('tickets.index')

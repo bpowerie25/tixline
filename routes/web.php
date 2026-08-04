@@ -3,6 +3,7 @@
 use App\Http\Controllers\CannedResponseController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\CustomerPortalController;
+use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\FormController;
 use App\Http\Controllers\InboundEmailController;
 use App\Http\Controllers\KbController;
@@ -50,15 +51,18 @@ Route::prefix('kb')->name('kb.')->group(function () {
 
 // Dashboard
 Route::get('/dashboard', function () {
+    $user = auth()->user();
+    $baseQuery = fn () => $user->visibleTicketsQuery();
+
     return Inertia::render('Dashboard', [
         'stats' => [
-            'open' => Ticket::where('status', 'open')->count(),
-            'pending' => Ticket::where('status', 'pending')->count(),
-            'resolved_today' => Ticket::where('status', 'resolved')
+            'open' => $baseQuery()->where('status', 'open')->count(),
+            'pending' => $baseQuery()->where('status', 'pending')->count(),
+            'resolved_today' => $baseQuery()->where('status', 'resolved')
                 ->whereDate('resolved_at', today())->count(),
-            'total' => Ticket::count(),
+            'total' => $baseQuery()->count(),
         ],
-        'recentTickets' => Ticket::with(['assignee', 'team'])
+        'recentTickets' => $baseQuery()->with(['assignee', 'team'])
             ->latest()->take(10)->get(),
     ]);
 })->middleware(['auth', 'verified'])->name('dashboard');
@@ -69,39 +73,45 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    // Tickets
+    // Tickets — all agents can view (scoped) and create; policy handles update/delete
     Route::resource('tickets', TicketController::class);
     Route::post('/tickets/{ticket}/comments', [CommentController::class, 'store'])->name('tickets.comments.store');
 
-    // Teams
-    Route::resource('teams', TeamController::class)->except(['create', 'show', 'edit']);
-
-    // Labels
-    Route::resource('labels', LabelController::class)->except(['create', 'show', 'edit']);
-
-    // Workflows
-    Route::resource('workflows', WorkflowController::class)->except(['create', 'show', 'edit']);
-
-    // Forms
-    Route::get('/forms/create', [FormController::class, 'create'])->name('forms.create');
-    Route::resource('forms', FormController::class)->except(['create', 'edit']);
-
-    // Canned Responses
+    // Canned Responses — all agents can view and use
     Route::resource('canned-responses', CannedResponseController::class)->except(['create', 'show', 'edit']);
     Route::get('/api/canned-responses', [CannedResponseController::class, 'forTicket'])->name('canned-responses.list');
 
-    // SLA Policies
-    Route::resource('sla-policies', SlaPolicyController::class)->except(['create', 'show', 'edit']);
+    // Reports — team leads and above
+    Route::get('/reports', [ReportController::class, 'index'])->middleware('role:team_lead,group_manager')->name('reports.index');
 
-    // Reports
-    Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
+    // Admin-only routes
+    Route::middleware('role:admin')->group(function () {
+        // Teams
+        Route::resource('teams', TeamController::class)->except(['create', 'show', 'edit']);
 
-    // Tenants (Skinning)
-    Route::get('/tenants/create', [TenantController::class, 'create'])->name('tenants.create');
-    Route::resource('tenants', TenantController::class)->except(['create', 'edit']);
+        // Labels
+        Route::resource('labels', LabelController::class)->except(['create', 'show', 'edit']);
 
-    // Knowledge Base Admin
-    Route::prefix('admin/kb')->name('kb.admin.')->group(function () {
+        // Workflows
+        Route::resource('workflows', WorkflowController::class)->except(['create', 'show', 'edit']);
+
+        // Forms
+        Route::get('/forms/create', [FormController::class, 'create'])->name('forms.create');
+        Route::resource('forms', FormController::class)->except(['create', 'edit']);
+
+        // SLA Policies
+        Route::resource('sla-policies', SlaPolicyController::class)->except(['create', 'show', 'edit']);
+
+        // Tenants (Skinning)
+        Route::get('/tenants/create', [TenantController::class, 'create'])->name('tenants.create');
+        Route::resource('tenants', TenantController::class)->except(['create', 'edit']);
+
+        // Departments
+        Route::resource('departments', DepartmentController::class)->except(['create', 'show', 'edit']);
+    });
+
+    // Knowledge Base Admin — team leads and above
+    Route::middleware('role:team_lead,group_manager')->prefix('admin/kb')->name('kb.admin.')->group(function () {
         Route::get('/', [KbController::class, 'index'])->name('index');
         Route::get('/create', [KbController::class, 'create'])->name('create');
         Route::post('/', [KbController::class, 'store'])->name('store');

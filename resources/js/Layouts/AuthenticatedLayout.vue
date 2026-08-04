@@ -44,20 +44,20 @@ const tenant = computed(() => usePage().props.tenant);
                                 <NavLink :href="route('tickets.index')" :active="route().current('tickets.*')">
                                     Tickets
                                 </NavLink>
-                                <NavLink :href="route('reports.index')" :active="route().current('reports.*')">
+                                <NavLink v-if="$page.props.auth.can.manage_team" :href="route('reports.index')" :active="route().current('reports.*')">
                                     Reports
                                 </NavLink>
-                                <NavLink :href="route('kb.admin.index')" :active="route().current('kb.admin.*')">
+                                <NavLink v-if="$page.props.auth.can.manage_team" :href="route('kb.admin.index')" :active="route().current('kb.admin.*')">
                                     KB
                                 </NavLink>
 
-                                <!-- Settings Dropdown -->
-                                <div class="hidden sm:flex sm:items-center">
+                                <!-- Settings Dropdown (admin only) -->
+                                <div v-if="$page.props.auth.can.admin" class="hidden sm:flex sm:items-center">
                                     <Dropdown align="left" width="48">
                                         <template #trigger>
                                             <button class="inline-flex items-center border-b-2 px-1 pt-1 text-sm font-medium leading-5 transition duration-150 ease-in-out focus:outline-none"
                                                 :class="[
-                                                    route().current('teams.*') || route().current('labels.*') || route().current('workflows.*') || route().current('forms.*') || route().current('canned-responses.*') || route().current('sla-policies.*') || route().current('tenants.*')
+                                                    route().current('teams.*') || route().current('labels.*') || route().current('workflows.*') || route().current('forms.*') || route().current('canned-responses.*') || route().current('sla-policies.*') || route().current('tenants.*') || route().current('departments.*')
                                                         ? 'border-indigo-400 text-gray-900 focus:border-indigo-700'
                                                         : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
                                                 ]"
@@ -76,6 +76,7 @@ const tenant = computed(() => usePage().props.tenant);
                                             <DropdownLink :href="route('canned-responses.index')">Canned Responses</DropdownLink>
                                             <DropdownLink :href="route('sla-policies.index')">SLA Policies</DropdownLink>
                                             <DropdownLink :href="route('tenants.index')">Tenants</DropdownLink>
+                                            <DropdownLink :href="route('departments.index')">Departments</DropdownLink>
                                         </template>
                                     </Dropdown>
                                 </div>
@@ -182,10 +183,10 @@ const tenant = computed(() => usePage().props.tenant);
                     <div class="space-y-1 pb-3 pt-2">
                         <ResponsiveNavLink :href="route('dashboard')" :active="route().current('dashboard')">Dashboard</ResponsiveNavLink>
                         <ResponsiveNavLink :href="route('tickets.index')" :active="route().current('tickets.*')">Tickets</ResponsiveNavLink>
-                        <ResponsiveNavLink :href="route('reports.index')" :active="route().current('reports.*')">Reports</ResponsiveNavLink>
-                        <ResponsiveNavLink :href="route('kb.admin.index')" :active="route().current('kb.admin.*')">Knowledge Base</ResponsiveNavLink>
+                        <ResponsiveNavLink v-if="$page.props.auth.can.manage_team" :href="route('reports.index')" :active="route().current('reports.*')">Reports</ResponsiveNavLink>
+                        <ResponsiveNavLink v-if="$page.props.auth.can.manage_team" :href="route('kb.admin.index')" :active="route().current('kb.admin.*')">Knowledge Base</ResponsiveNavLink>
 
-                        <div class="border-t border-gray-200 mt-2 pt-2">
+                        <div v-if="$page.props.auth.can.admin" class="border-t border-gray-200 mt-2 pt-2">
                             <div class="px-4 py-1 text-xs font-semibold uppercase text-gray-400">Settings</div>
                             <ResponsiveNavLink :href="route('teams.index')" :active="route().current('teams.*')">Teams</ResponsiveNavLink>
                             <ResponsiveNavLink :href="route('labels.index')" :active="route().current('labels.*')">Labels</ResponsiveNavLink>
@@ -194,6 +195,7 @@ const tenant = computed(() => usePage().props.tenant);
                             <ResponsiveNavLink :href="route('canned-responses.index')" :active="route().current('canned-responses.*')">Canned Responses</ResponsiveNavLink>
                             <ResponsiveNavLink :href="route('sla-policies.index')" :active="route().current('sla-policies.*')">SLA Policies</ResponsiveNavLink>
                             <ResponsiveNavLink :href="route('tenants.index')" :active="route().current('tenants.*')">Tenants</ResponsiveNavLink>
+                            <ResponsiveNavLink :href="route('departments.index')" :active="route().current('departments.*')">Departments</ResponsiveNavLink>
                         </div>
                     </div>
 

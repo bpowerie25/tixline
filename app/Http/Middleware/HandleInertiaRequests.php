@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 use Tighten\Ziggy\Ziggy;
@@ -34,6 +35,11 @@ class HandleInertiaRequests extends Middleware
             ...parent::share($request),
             'auth' => [
                 'user' => $request->user(),
+                'can' => ($request->user() && $request->user() instanceof User) ? [
+                    'admin' => $request->user()->isAdmin(),
+                    'manage_team' => $request->user()->isAtLeast('team_lead'),
+                    'manage_group' => $request->user()->isAtLeast('group_manager'),
+                ] : [],
             ],
             'ziggy' => fn () => [
                 ...(new Ziggy)->toArray(),
