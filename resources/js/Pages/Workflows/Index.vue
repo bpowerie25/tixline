@@ -120,6 +120,11 @@ const eventActions = [
     { value: 'ticket_created', label: 'Created' },
     { value: 'ticket_updated', label: 'Updated' },
     { value: 'ticket_assigned', label: 'Assigned' },
+    { value: 'ticket_status_changed', label: 'Status Changed' },
+    { value: 'ticket_priority_changed', label: 'Priority Changed' },
+    { value: 'sla_response_breached', label: 'SLA Response Breached' },
+    { value: 'sla_resolution_breached', label: 'SLA Resolution Breached' },
+    { value: 'sla_warning', label: 'SLA At Risk (75%)' },
 ];
 
 const actionTypes = [

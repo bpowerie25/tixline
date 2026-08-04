@@ -135,13 +135,28 @@ class TicketController extends Controller
         $labels = $validated['labels'] ?? null;
         unset($validated['labels']);
 
+        // Track changes for field_changed events
+        $oldValues = $ticket->only(['status', 'priority', 'team_id', 'assigned_to']);
+
         $ticket->update($validated);
 
         if ($labels !== null) {
             $ticket->labels()->sync($labels);
         }
 
-        $engine->run($ticket->fresh(), 'ticket_updated');
+        $fresh = $ticket->fresh();
+        $engine->run($fresh, 'ticket_updated');
+
+        // Fire specific field change events
+        if (isset($validated['assigned_to']) && $oldValues['assigned_to'] != $fresh->assigned_to) {
+            $engine->run($fresh, 'ticket_assigned');
+        }
+        if (isset($validated['status']) && $oldValues['status'] != $fresh->status) {
+            $engine->run($fresh, 'ticket_status_changed');
+        }
+        if (isset($validated['priority']) && $oldValues['priority'] != $fresh->priority) {
+            $engine->run($fresh, 'ticket_priority_changed');
+        }
 
         return back()->with('success', 'Ticket updated.');
     }

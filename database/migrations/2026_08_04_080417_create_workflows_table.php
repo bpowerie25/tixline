@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->text('description')->nullable();
-            $table->enum('trigger_event', ['ticket_created', 'ticket_updated', 'ticket_assigned'])->default('ticket_created');
+            $table->string('trigger_event')->default('ticket_created');
             $table->json('conditions');
             $table->json('actions');
             $table->boolean('is_active')->default(true);

@@ -247,4 +247,17 @@ class WorkflowEngine
             Log::warning('Workflow webhook failed', ['url' => $url, 'error' => $e->getMessage()]);
         }
     }
+
+    /**
+     * Public wrappers for use by AutomationEngine.
+     */
+    public function evaluateConditionsPublic(Ticket $ticket, array $conditions): bool
+    {
+        return $this->evaluateConditions($ticket, $conditions);
+    }
+
+    public function executeActionsPublic(Ticket $ticket, array $actions): void
+    {
+        $this->executeActions($ticket, $actions);
+    }
 }
