@@ -20,7 +20,7 @@ function deleteForm(form) {
         <template #header>
             <div class="flex items-center justify-between">
                 <h2 class="text-xl font-semibold leading-tight text-gray-800">Forms</h2>
-                <Link :href="route('forms.show', 'new')" class="inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700">
+                <Link :href="route('forms.create')" class="inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700">
                     New Form
                 </Link>
             </div>

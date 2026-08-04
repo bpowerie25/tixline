@@ -54,8 +54,8 @@ class TicketController extends Controller
 
     public function show(Ticket $ticket)
     {
-        $ticket->load(['assignee', 'team', 'labels', 'form.fields', 'comments' => function ($q) {
-            $q->with('user')->oldest();
+        $ticket->load(['assignee', 'team', 'labels', 'form.fields', 'attachments', 'comments' => function ($q) {
+            $q->with(['user', 'attachments'])->oldest();
         }]);
 
         $cannedResponses = CannedResponse::where(function ($q) {

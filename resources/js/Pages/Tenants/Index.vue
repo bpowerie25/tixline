@@ -20,7 +20,7 @@ function deleteTenant(tenant) {
         <template #header>
             <div class="flex items-center justify-between">
                 <h2 class="text-xl font-semibold leading-tight text-gray-800">Tenants / Branding</h2>
-                <Link :href="route('tenants.show', 'new')" class="inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700">
+                <Link :href="route('tenants.create')" class="inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700">
                     New Tenant
                 </Link>
             </div>

@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class Ticket extends Model
 {
@@ -31,19 +32,21 @@ class Ticket extends Model
 
     public static function booted(): void
     {
-        static::creating(function (Ticket $ticket) {
-            if (empty($ticket->reference)) {
-                $ticket->reference = 'TKT-' . str_pad(static::max('id') + 1, 6, '0', STR_PAD_LEFT);
-            }
-        });
-
         static::created(function (Ticket $ticket) {
+            $updates = [];
+
+            if (empty($ticket->reference)) {
+                $updates['reference'] = 'TKT-' . str_pad($ticket->id, 6, '0', STR_PAD_LEFT);
+            }
+
             $sla = SlaPolicy::forPriority($ticket->priority);
             if ($sla) {
-                $ticket->updateQuietly([
-                    'sla_response_due_at' => $ticket->created_at->addHours($sla->first_response_hours),
-                    'sla_resolution_due_at' => $ticket->created_at->addHours($sla->resolution_hours),
-                ]);
+                $updates['sla_response_due_at'] = $ticket->created_at->addHours($sla->first_response_hours);
+                $updates['sla_resolution_due_at'] = $ticket->created_at->addHours($sla->resolution_hours);
+            }
+
+            if (!empty($updates)) {
+                $ticket->updateQuietly($updates);
             }
         });
     }
@@ -105,5 +108,10 @@ class Ticket extends Model
     public function labels(): BelongsToMany
     {
         return $this->belongsToMany(Label::class);
+    }
+
+    public function attachments(): MorphMany
+    {
+        return $this->morphMany(Attachment::class, 'attachable');
     }
 }

@@ -16,6 +16,13 @@ class TenantController extends Controller
         ]);
     }
 
+    public function create()
+    {
+        return Inertia::render('Tenants/Edit', [
+            'tenant' => null,
+        ]);
+    }
+
     public function show(Tenant $tenant)
     {
         return Inertia::render('Tenants/Edit', [

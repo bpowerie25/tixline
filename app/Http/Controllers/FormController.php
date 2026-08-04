@@ -16,6 +16,13 @@ class FormController extends Controller
         ]);
     }
 
+    public function create()
+    {
+        return Inertia::render('Forms/Show', [
+            'form' => null,
+        ]);
+    }
+
     public function show(Form $form)
     {
         $form->load('fields');

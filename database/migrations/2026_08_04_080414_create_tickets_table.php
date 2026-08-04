@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('tickets', function (Blueprint $table) {
             $table->id();
-            $table->string('reference')->unique();
+            $table->string('reference')->nullable()->unique();
             $table->string('subject');
             $table->text('body')->nullable();
             $table->string('requester_name');

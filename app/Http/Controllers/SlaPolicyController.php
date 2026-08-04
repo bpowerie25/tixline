@@ -11,7 +11,7 @@ class SlaPolicyController extends Controller
     public function index()
     {
         return Inertia::render('SLA/Index', [
-            'policies' => SlaPolicy::orderByRaw("FIELD(priority, 'urgent', 'high', 'normal', 'low')")->get(),
+            'policies' => SlaPolicy::orderByRaw("CASE priority WHEN 'urgent' THEN 1 WHEN 'high' THEN 2 WHEN 'normal' THEN 3 WHEN 'low' THEN 4 END")->get(),
         ]);
     }
 

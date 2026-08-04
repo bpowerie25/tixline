@@ -75,6 +75,7 @@ Route::middleware('auth')->group(function () {
     Route::resource('workflows', WorkflowController::class)->except(['create', 'show', 'edit']);
 
     // Forms
+    Route::get('/forms/create', [FormController::class, 'create'])->name('forms.create');
     Route::resource('forms', FormController::class)->except(['create', 'edit']);
 
     // Canned Responses
@@ -88,6 +89,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
 
     // Tenants (Skinning)
+    Route::get('/tenants/create', [TenantController::class, 'create'])->name('tenants.create');
     Route::resource('tenants', TenantController::class)->except(['create', 'edit']);
 
     // Knowledge Base Admin

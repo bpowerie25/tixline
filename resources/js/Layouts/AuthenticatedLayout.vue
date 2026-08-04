@@ -38,54 +38,47 @@ const tenant = computed(() => usePage().props.tenant);
                             <div
                                 class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex"
                             >
-                                <NavLink
-                                    :href="route('dashboard')"
-                                    :active="route().current('dashboard')"
-                                >
+                                <NavLink :href="route('dashboard')" :active="route().current('dashboard')">
                                     Dashboard
                                 </NavLink>
-                                <NavLink
-                                    :href="route('tickets.index')"
-                                    :active="route().current('tickets.*')"
-                                >
+                                <NavLink :href="route('tickets.index')" :active="route().current('tickets.*')">
                                     Tickets
                                 </NavLink>
-                                <NavLink
-                                    :href="route('teams.index')"
-                                    :active="route().current('teams.*')"
-                                >
-                                    Teams
+                                <NavLink :href="route('reports.index')" :active="route().current('reports.*')">
+                                    Reports
                                 </NavLink>
-                                <NavLink
-                                    :href="route('labels.index')"
-                                    :active="route().current('labels.*')"
-                                >
-                                    Labels
+                                <NavLink :href="route('kb.admin.index')" :active="route().current('kb.admin.*')">
+                                    KB
                                 </NavLink>
-                                <NavLink
-                                    :href="route('workflows.index')"
-                                    :active="route().current('workflows.*')"
-                                >
-                                    Workflows
-                                </NavLink>
-                                <NavLink
-                                    :href="route('forms.index')"
-                                    :active="route().current('forms.*')"
-                                >
-                                    Forms
-                                </NavLink>
-                                <NavLink
-                                    :href="route('canned-responses.index')"
-                                    :active="route().current('canned-responses.*')"
-                                >
-                                    Canned
-                                </NavLink>
-                                <NavLink
-                                    :href="route('sla-policies.index')"
-                                    :active="route().current('sla-policies.*')"
-                                >
-                                    SLA
-                                </NavLink>
+
+                                <!-- Settings Dropdown -->
+                                <div class="hidden sm:flex sm:items-center">
+                                    <Dropdown align="left" width="48">
+                                        <template #trigger>
+                                            <button class="inline-flex items-center border-b-2 px-1 pt-1 text-sm font-medium leading-5 transition duration-150 ease-in-out focus:outline-none"
+                                                :class="[
+                                                    route().current('teams.*') || route().current('labels.*') || route().current('workflows.*') || route().current('forms.*') || route().current('canned-responses.*') || route().current('sla-policies.*') || route().current('tenants.*')
+                                                        ? 'border-indigo-400 text-gray-900 focus:border-indigo-700'
+                                                        : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                                                ]"
+                                            >
+                                                Settings
+                                                <svg class="-me-0.5 ms-1 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                                    <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                                </svg>
+                                            </button>
+                                        </template>
+                                        <template #content>
+                                            <DropdownLink :href="route('teams.index')">Teams</DropdownLink>
+                                            <DropdownLink :href="route('labels.index')">Labels</DropdownLink>
+                                            <DropdownLink :href="route('workflows.index')">Workflows</DropdownLink>
+                                            <DropdownLink :href="route('forms.index')">Forms</DropdownLink>
+                                            <DropdownLink :href="route('canned-responses.index')">Canned Responses</DropdownLink>
+                                            <DropdownLink :href="route('sla-policies.index')">SLA Policies</DropdownLink>
+                                            <DropdownLink :href="route('tenants.index')">Tenants</DropdownLink>
+                                        </template>
+                                    </Dropdown>
+                                </div>
                             </div>
                         </div>
 
@@ -187,12 +180,21 @@ const tenant = computed(() => usePage().props.tenant);
                     class="sm:hidden"
                 >
                     <div class="space-y-1 pb-3 pt-2">
-                        <ResponsiveNavLink
-                            :href="route('dashboard')"
-                            :active="route().current('dashboard')"
-                        >
-                            Dashboard
-                        </ResponsiveNavLink>
+                        <ResponsiveNavLink :href="route('dashboard')" :active="route().current('dashboard')">Dashboard</ResponsiveNavLink>
+                        <ResponsiveNavLink :href="route('tickets.index')" :active="route().current('tickets.*')">Tickets</ResponsiveNavLink>
+                        <ResponsiveNavLink :href="route('reports.index')" :active="route().current('reports.*')">Reports</ResponsiveNavLink>
+                        <ResponsiveNavLink :href="route('kb.admin.index')" :active="route().current('kb.admin.*')">Knowledge Base</ResponsiveNavLink>
+
+                        <div class="border-t border-gray-200 mt-2 pt-2">
+                            <div class="px-4 py-1 text-xs font-semibold uppercase text-gray-400">Settings</div>
+                            <ResponsiveNavLink :href="route('teams.index')" :active="route().current('teams.*')">Teams</ResponsiveNavLink>
+                            <ResponsiveNavLink :href="route('labels.index')" :active="route().current('labels.*')">Labels</ResponsiveNavLink>
+                            <ResponsiveNavLink :href="route('workflows.index')" :active="route().current('workflows.*')">Workflows</ResponsiveNavLink>
+                            <ResponsiveNavLink :href="route('forms.index')" :active="route().current('forms.*')">Forms</ResponsiveNavLink>
+                            <ResponsiveNavLink :href="route('canned-responses.index')" :active="route().current('canned-responses.*')">Canned Responses</ResponsiveNavLink>
+                            <ResponsiveNavLink :href="route('sla-policies.index')" :active="route().current('sla-policies.*')">SLA Policies</ResponsiveNavLink>
+                            <ResponsiveNavLink :href="route('tenants.index')" :active="route().current('tenants.*')">Tenants</ResponsiveNavLink>
+                        </div>
                     </div>
 
                     <!-- Responsive Settings Options -->

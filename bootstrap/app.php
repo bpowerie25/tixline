@@ -19,7 +19,13 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\ResolveTenant::class,
         ]);
 
-        //
+        $middleware->redirectGuestsTo(function (Request $request) {
+            if ($request->is('portal/*')) {
+                return route('portal.login');
+            }
+
+            return route('login');
+        });
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

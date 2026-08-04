@@ -1,7 +1,7 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import SlaBadge from '@/Components/SlaBadge.vue';
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { Head, Link, useForm, router } from '@inertiajs/vue3';
 import { ref } from 'vue';
 
 const props = defineProps({
@@ -28,7 +28,19 @@ function insertCannedResponse(response) {
 const commentForm = useForm({
     body: '',
     is_internal: false,
+    attachments: [],
 });
+
+const fileInput = ref(null);
+
+function handleFiles(e) {
+    commentForm.attachments = Array.from(e.target.files);
+}
+
+function removeFile(index) {
+    commentForm.attachments.splice(index, 1);
+    if (fileInput.value) fileInput.value.value = '';
+}
 
 const updateForm = useForm({
     status: props.ticket.status,
@@ -41,8 +53,10 @@ const updateForm = useForm({
 function submitComment() {
     commentForm.post(route('tickets.comments.store', props.ticket.id), {
         preserveScroll: true,
+        forceFormData: true,
         onSuccess: () => {
             commentForm.reset();
+            if (fileInput.value) fileInput.value.value = '';
         },
     });
 }
@@ -125,6 +139,18 @@ const statusColors = {
                                 </div>
                             </div>
                             <div class="p-6 prose prose-sm max-w-none" v-html="comment.body" />
+                            <div v-if="comment.attachments?.length" class="px-6 pb-4 flex flex-wrap gap-2">
+                                <a
+                                    v-for="att in comment.attachments"
+                                    :key="att.id"
+                                    :href="'/storage/' + att.path"
+                                    target="_blank"
+                                    class="inline-flex items-center gap-1.5 rounded border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs text-gray-700 hover:bg-gray-100"
+                                >
+                                    <svg class="h-3.5 w-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
+                                    {{ att.original_filename }}
+                                </a>
+                            </div>
                         </div>
 
                         <!-- Reply Form -->
@@ -167,6 +193,17 @@ const statusColors = {
                                         <div v-if="!cannedResponses.length" class="px-3 py-4 text-center text-sm text-gray-500">No canned responses yet.</div>
                                     </div>
                                 </div>
+                                <!-- File attachments -->
+                                <div class="mt-3">
+                                    <input ref="fileInput" type="file" multiple @change="handleFiles" class="text-sm text-gray-500 file:mr-3 file:rounded file:border-0 file:bg-gray-100 file:px-3 file:py-1.5 file:text-sm file:text-gray-700 hover:file:bg-gray-200" />
+                                    <div v-if="commentForm.attachments.length" class="mt-2 flex flex-wrap gap-2">
+                                        <span v-for="(file, i) in commentForm.attachments" :key="i" class="inline-flex items-center gap-1 rounded bg-gray-100 px-2 py-1 text-xs text-gray-700">
+                                            {{ file.name }}
+                                            <button type="button" @click="removeFile(i)" class="text-gray-400 hover:text-red-500">&times;</button>
+                                        </span>
+                                    </div>
+                                </div>
+
                                 <div class="mt-3 flex items-center justify-between">
                                     <button
                                         type="button"
