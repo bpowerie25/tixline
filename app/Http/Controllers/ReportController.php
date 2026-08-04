@@ -46,13 +46,17 @@ class ReportController extends Controller
             ])
             ->get(['id', 'name', 'email'])
             ->map(function ($agent) use ($since) {
-                $avgResponse = Ticket::where('assigned_to', $agent->id)
+                $tickets = Ticket::where('assigned_to', $agent->id)
                     ->where('created_at', '>=', $since)
                     ->whereNotNull('first_responded_at')
-                    ->selectRaw('AVG(CAST((JULIANDAY(first_responded_at) - JULIANDAY(created_at)) * 24 AS REAL)) as avg_hours')
-                    ->value('avg_hours');
+                    ->get(['created_at', 'first_responded_at']);
 
-                $agent->avg_response_hours = $avgResponse ? round($avgResponse, 1) : null;
+                if ($tickets->isNotEmpty()) {
+                    $totalHours = $tickets->sum(fn ($t) => $t->created_at->diffInMinutes($t->first_responded_at) / 60);
+                    $agent->avg_response_hours = round($totalHours / $tickets->count(), 1);
+                } else {
+                    $agent->avg_response_hours = null;
+                }
 
                 return $agent;
             });
@@ -64,10 +68,13 @@ class ReportController extends Controller
             ->pluck('count', 'source');
 
         // Average resolution time
-        $avgResolutionHours = Ticket::where('resolved_at', '>=', $since)
+        $resolvedTickets = Ticket::where('resolved_at', '>=', $since)
             ->whereNotNull('resolved_at')
-            ->selectRaw('AVG(CAST((JULIANDAY(resolved_at) - JULIANDAY(created_at)) * 24 AS REAL)) as avg_hours')
-            ->value('avg_hours');
+            ->get(['created_at', 'resolved_at']);
+
+        $avgResolutionHours = $resolvedTickets->isNotEmpty()
+            ? $resolvedTickets->sum(fn ($t) => $t->created_at->diffInMinutes($t->resolved_at) / 60) / $resolvedTickets->count()
+            : null;
 
         return Inertia::render('Reports/Index', [
             'days' => $days,
