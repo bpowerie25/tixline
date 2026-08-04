@@ -4,6 +4,10 @@ return [
 
     'base_domain' => env('TENANT_BASE_DOMAIN'),
 
+    'inbound' => [
+        'webhook_secret' => env('INBOUND_WEBHOOK_SECRET'),
+    ],
+
     'spam' => [
 
         /*

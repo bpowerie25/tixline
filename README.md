@@ -36,10 +36,14 @@ An open-source helpdesk and customer support platform built with Laravel, Inerti
 - Ticket submission, tracking, and reply
 - Ticket history view
 
-### Email Ingestion
-- IMAP polling (scheduled every 2 minutes)
+### Inbound Email
+- **No stored credentials** — no IMAP passwords, no third-party access tokens
+- Two ingestion methods:
+  - **Postfix pipe**: `| /path/to/artisan support:process-email` — Postfix delivers directly to the app
+  - **HTTP webhook**: `POST /inbound/email` — HMAC-SHA256 authenticated endpoint for forwarding services
 - Automatic ticket creation from inbound emails
-- Thread detection (replies added to existing tickets)
+- Thread detection via ticket reference in subject line (e.g. `Re: [TKT-000001] ...`)
+- Fallback thread matching by requester email + subject
 - Spam filtering:
   - Domain/email allowlist and blocklist
   - SpamAssassin header detection (X-Spam-Status, X-Spam-Score)
@@ -73,7 +77,7 @@ An open-source helpdesk and customer support platform built with Laravel, Inerti
 - **Styling:** Tailwind CSS
 - **Auth:** Laravel Breeze (agents), custom guard (customers), Sanctum (API)
 - **Database:** SQLite (default), MySQL/PostgreSQL supported
-- **Email:** IMAP via php-imap
+- **Inbound Email:** Postfix pipe or HTTP webhook (no stored credentials)
 
 ## Requirements
 
@@ -121,22 +125,31 @@ php artisan serve
 
 ## Configuration
 
-### Email Ingestion
+### Inbound Email
 
-Add to `.env`:
+Generate a webhook secret and add to `.env`:
 
 ```env
-IMAP_HOST=imap.example.com
-IMAP_PORT=993
-IMAP_USERNAME=support@example.com
-IMAP_PASSWORD=your-password
-IMAP_ENCRYPTION=ssl
+INBOUND_WEBHOOK_SECRET=your-random-secret-here
 ```
 
-Run the scheduler for automatic polling:
+**Option A: Postfix pipe transport** (recommended for self-hosted)
+
+Add to your Postfix `transport` or `aliases`:
+
+```
+support: |"/path/to/your/app/artisan support:process-email"
+```
+
+**Option B: HTTP webhook** (for forwarding services or custom setups)
+
+Forward parsed emails to your app:
 
 ```bash
-php artisan schedule:work
+curl -X POST https://your-app.com/inbound/email \
+  -H "Content-Type: application/json" \
+  -H "X-Webhook-Signature: $(echo -n '$PAYLOAD' | openssl dgst -sha256 -hmac 'your-secret')" \
+  -d '{"from_email":"customer@example.com","from_name":"Customer","subject":"Help!","body":"<p>...</p>"}'
 ```
 
 ### Spam Filter

@@ -18,7 +18,7 @@ class SlaPolicy extends Model
         ];
     }
 
-    public static function forPriority(string $priority): ?self
+    public static function forPriority(?string $priority): ?self
     {
         return static::where('priority', $priority)
             ->where('is_active', true)

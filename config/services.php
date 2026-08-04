@@ -28,14 +28,6 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
-    'imap' => [
-        'host' => env('IMAP_HOST'),
-        'port' => env('IMAP_PORT', 993),
-        'username' => env('IMAP_USERNAME'),
-        'password' => env('IMAP_PASSWORD'),
-        'encryption' => env('IMAP_ENCRYPTION', 'ssl'),
-    ],
-
     'slack' => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),

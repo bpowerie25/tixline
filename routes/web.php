@@ -32,6 +32,11 @@ Route::get('/', function () {
 Route::get('/submit', [PublicTicketController::class, 'create'])->name('submit.create');
 Route::post('/submit', [PublicTicketController::class, 'store'])->name('submit.store');
 
+// Inbound email webhook
+Route::post('/inbound/email', [\App\Http\Controllers\InboundEmailController::class, 'webhook'])
+    ->name('inbound.email')
+    ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
+
 // Public Knowledge Base
 Route::prefix('kb')->name('kb.')->group(function () {
     Route::get('/', [KbController::class, 'portal'])->name('portal');
