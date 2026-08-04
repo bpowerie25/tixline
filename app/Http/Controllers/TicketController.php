@@ -37,8 +37,8 @@ class TicketController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('subject', 'like', "%{$search}%")
-                  ->orWhere('reference', 'like', "%{$search}%")
-                  ->orWhere('requester_email', 'like', "%{$search}%");
+                    ->orWhere('reference', 'like', "%{$search}%")
+                    ->orWhere('requester_email', 'like', "%{$search}%");
             });
         }
 
@@ -60,7 +60,7 @@ class TicketController extends Controller
 
         $cannedResponses = CannedResponse::where(function ($q) {
             $q->where('is_shared', true)
-              ->orWhere('user_id', auth()->id());
+                ->orWhere('user_id', auth()->id());
         })->orderBy('name')->get(['id', 'name', 'shortcode', 'body']);
 
         return Inertia::render('Tickets/Show', [
@@ -102,7 +102,7 @@ class TicketController extends Controller
         $validated['source'] = 'web';
         $ticket = Ticket::create($validated);
 
-        if (!empty($labels)) {
+        if (! empty($labels)) {
             $ticket->labels()->sync($labels);
         }
 
@@ -124,7 +124,7 @@ class TicketController extends Controller
             'labels.*' => 'exists:labels,id',
         ]);
 
-        if (isset($validated['status']) && $validated['status'] === 'resolved' && !$ticket->resolved_at) {
+        if (isset($validated['status']) && $validated['status'] === 'resolved' && ! $ticket->resolved_at) {
             $validated['resolved_at'] = now();
         }
 

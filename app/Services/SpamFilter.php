@@ -2,31 +2,92 @@
 
 namespace App\Services;
 
-use App\Models\Ticket;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 
 class SpamFilter
 {
-    public function isSpam(string $fromEmail, string $subject, string $body, array $headers = []): bool|string
+    public function isSpam(string $fromEmail, string $subject, string $body, array $headers = [], ?int $tenantId = null): bool|string
     {
-        // 1. Blocklist check
-        if ($this->isBlocklisted($fromEmail)) {
-            return 'blocklisted';
+        $logOnly = config('support.spam.log_only', false);
+
+        $checks = [
+            fn () => $this->checkAutoSubmitted($headers),
+            fn () => $this->checkBounceOrNdr($fromEmail, $headers),
+            fn () => $this->isBlocklisted($fromEmail) ? 'blocklisted' : false,
+            fn () => ($this->hasAllowlist() && ! $this->isAllowlisted($fromEmail)) ? 'not_allowlisted' : false,
+            fn () => $this->isMarkedAsSpam($headers) ? 'spam_header' : false,
+            fn () => $this->isRateLimited($fromEmail, $tenantId) ? 'rate_limited' : false,
+        ];
+
+        foreach ($checks as $check) {
+            $result = $check();
+            if ($result !== false) {
+                if ($logOnly) {
+                    Log::info('SpamFilter (log-only): would reject', [
+                        'reason' => $result,
+                        'from' => $fromEmail,
+                        'subject' => $subject,
+                    ]);
+
+                    return false;
+                }
+
+                return $result;
+            }
         }
 
-        // 2. Allowlist check — if allowlist is configured, only allow those domains
-        if ($this->hasAllowlist() && !$this->isAllowlisted($fromEmail)) {
-            return 'not_allowlisted';
+        return false;
+    }
+
+    protected function checkAutoSubmitted(array $headers): bool|string
+    {
+        $autoSubmitted = strtolower($headers['auto-submitted'] ?? '');
+
+        // RFC 3834: "auto-replied", "auto-generated", "auto-notified" — never "no"
+        if ($autoSubmitted && $autoSubmitted !== 'no') {
+            return 'auto_submitted';
         }
 
-        // 3. SpamAssassin / X-Spam header check
-        if ($this->isMarkedAsSpam($headers)) {
-            return 'spam_header';
+        // Precedence: bulk or junk (mailing lists, auto-responders)
+        $precedence = strtolower($headers['precedence'] ?? '');
+        if (in_array($precedence, ['bulk', 'junk', 'list'])) {
+            return 'auto_submitted';
         }
 
-        // 4. Rate limiting — max tickets per sender per hour
-        if ($this->isRateLimited($fromEmail)) {
-            return 'rate_limited';
+        // X-Auto-Response-Suppress (Microsoft)
+        if (! empty($headers['x-auto-response-suppress'])) {
+            return 'auto_submitted';
+        }
+
+        return false;
+    }
+
+    protected function checkBounceOrNdr(string $fromEmail, array $headers): bool|string
+    {
+        // Null sender (MAILER-DAEMON, empty return-path) = bounce
+        $returnPath = $headers['return-path'] ?? '';
+        if ($returnPath === '<>' || $returnPath === '') {
+            // Only if other headers also indicate a bounce
+            $from = strtolower($fromEmail);
+            if (str_contains($from, 'mailer-daemon') || str_contains($from, 'postmaster')) {
+                return 'bounce';
+            }
+        }
+
+        // Content-Type: multipart/report = DSN/NDR
+        $contentType = strtolower($headers['content-type'] ?? '');
+        if (str_contains($contentType, 'multipart/report')) {
+            return 'bounce';
+        }
+
+        // Common bounce sender patterns
+        $from = strtolower($fromEmail);
+        $bouncePatterns = ['mailer-daemon@', 'postmaster@', 'noreply@', 'no-reply@'];
+        foreach ($bouncePatterns as $pattern) {
+            if (str_starts_with($from, $pattern)) {
+                return 'bounce';
+            }
         }
 
         return false;
@@ -50,9 +111,7 @@ class SpamFilter
 
     protected function hasAllowlist(): bool
     {
-        $allowlist = config('support.spam.allowlist', []);
-
-        return !empty($allowlist);
+        return ! empty(config('support.spam.allowlist', []));
     }
 
     protected function isAllowlisted(string $email): bool
@@ -73,10 +132,7 @@ class SpamFilter
 
     protected function isMarkedAsSpam(array $headers): bool
     {
-        $spamHeaders = [
-            'x-spam-status',
-            'x-spam-flag',
-        ];
+        $spamHeaders = ['x-spam-status', 'x-spam-flag'];
 
         foreach ($spamHeaders as $header) {
             $value = $headers[$header] ?? '';
@@ -85,7 +141,6 @@ class SpamFilter
             }
         }
 
-        // Check X-Spam-Score threshold
         $score = $headers['x-spam-score'] ?? null;
         $threshold = config('support.spam.score_threshold', 5.0);
         if ($score !== null && (float) $score >= $threshold) {
@@ -95,10 +150,12 @@ class SpamFilter
         return false;
     }
 
-    protected function isRateLimited(string $email): bool
+    protected function isRateLimited(string $email, ?int $tenantId = null): bool
     {
         $maxPerHour = config('support.spam.max_tickets_per_hour', 10);
-        $cacheKey = 'spam_rate:' . strtolower($email);
+        // Tenant-scoped rate limit key
+        $scope = $tenantId ? "t{$tenantId}" : 'global';
+        $cacheKey = "spam_rate:{$scope}:".strtolower($email);
 
         $count = Cache::get($cacheKey, 0);
 

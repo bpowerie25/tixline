@@ -1,21 +1,23 @@
 <?php
 
 use App\Http\Controllers\CannedResponseController;
-use App\Http\Controllers\TenantController;
-use App\Http\Controllers\ReportController;
-use App\Http\Controllers\CustomerPortalController;
-use App\Http\Controllers\KbController;
-use App\Http\Controllers\SlaPolicyController;
 use App\Http\Controllers\CommentController;
+use App\Http\Controllers\CustomerPortalController;
 use App\Http\Controllers\FormController;
+use App\Http\Controllers\InboundEmailController;
+use App\Http\Controllers\KbController;
 use App\Http\Controllers\LabelController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PublicTicketController;
+use App\Http\Controllers\ReportController;
+use App\Http\Controllers\SlaPolicyController;
 use App\Http\Controllers\TeamController;
+use App\Http\Controllers\TenantController;
 use App\Http\Controllers\TicketController;
 use App\Http\Controllers\WorkflowController;
 use App\Models\Ticket;
 use Illuminate\Foundation\Application;
+use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -30,12 +32,13 @@ Route::get('/', function () {
 
 // Public ticket submission
 Route::get('/submit', [PublicTicketController::class, 'create'])->name('submit.create');
-Route::post('/submit', [PublicTicketController::class, 'store'])->name('submit.store');
+Route::post('/submit', [PublicTicketController::class, 'store'])->middleware('throttle:10,1')->name('submit.store');
 
 // Inbound email webhook
-Route::post('/inbound/email', [\App\Http\Controllers\InboundEmailController::class, 'webhook'])
+Route::post('/inbound/email', [InboundEmailController::class, 'webhook'])
     ->name('inbound.email')
-    ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
+    ->middleware('throttle:120,1')
+    ->withoutMiddleware([VerifyCsrfToken::class]);
 
 // Public Knowledge Base
 Route::prefix('kb')->name('kb.')->group(function () {
@@ -114,9 +117,9 @@ Route::middleware('auth')->group(function () {
 // Customer Portal
 Route::prefix('portal')->name('portal.')->group(function () {
     Route::get('/login', [CustomerPortalController::class, 'showLogin'])->name('login');
-    Route::post('/login', [CustomerPortalController::class, 'login'])->name('login.submit');
+    Route::post('/login', [CustomerPortalController::class, 'login'])->middleware('throttle:5,1')->name('login.submit');
     Route::get('/register', [CustomerPortalController::class, 'showRegister'])->name('register');
-    Route::post('/register', [CustomerPortalController::class, 'register'])->name('register.submit');
+    Route::post('/register', [CustomerPortalController::class, 'register'])->middleware('throttle:5,1')->name('register.submit');
     Route::post('/logout', [CustomerPortalController::class, 'logout'])->name('logout');
 
     Route::middleware('auth:customer')->group(function () {

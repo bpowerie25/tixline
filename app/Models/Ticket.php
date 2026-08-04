@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -10,9 +11,11 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class Ticket extends Model
 {
+    use BelongsToTenant;
+
     protected $fillable = [
         'reference', 'subject', 'body', 'requester_name', 'requester_email',
-        'status', 'priority', 'source', 'assigned_to', 'team_id', 'form_id',
+        'status', 'priority', 'source', 'assigned_to', 'team_id', 'form_id', 'tenant_id',
         'custom_fields', 'first_responded_at', 'resolved_at',
         'sla_response_due_at', 'sla_resolution_due_at',
     ];
@@ -36,7 +39,7 @@ class Ticket extends Model
             $updates = [];
 
             if (empty($ticket->reference)) {
-                $updates['reference'] = 'TKT-' . str_pad($ticket->id, 6, '0', STR_PAD_LEFT);
+                $updates['reference'] = 'TKT-'.str_pad($ticket->id, 6, '0', STR_PAD_LEFT);
             }
 
             $sla = SlaPolicy::forPriority($ticket->priority);
@@ -45,7 +48,7 @@ class Ticket extends Model
                 $updates['sla_resolution_due_at'] = $ticket->created_at->addHours($sla->resolution_hours);
             }
 
-            if (!empty($updates)) {
+            if (! empty($updates)) {
                 $ticket->updateQuietly($updates);
             }
         });
@@ -65,7 +68,7 @@ class Ticket extends Model
         }
 
         // Check response SLA
-        if (!$this->first_responded_at && $this->sla_response_due_at && $now->gt($this->sla_response_due_at)) {
+        if (! $this->first_responded_at && $this->sla_response_due_at && $now->gt($this->sla_response_due_at)) {
             return 'breached';
         }
 

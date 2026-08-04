@@ -2,34 +2,57 @@
 
 namespace App\Http\Controllers;
 
-use App\Services\InboundEmailProcessor;
+use App\Jobs\ProcessInboundEmailJob;
+use App\Models\InboundEmail;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 
 class InboundEmailController extends Controller
 {
-    public function webhook(Request $request, InboundEmailProcessor $processor)
+    public function webhook(Request $request)
     {
-        if (!$this->verifySignature($request)) {
+        // 1. Verify signature
+        if (! $this->verifySignature($request)) {
             return response()->json(['error' => 'Invalid signature'], 401);
         }
 
-        $validated = $request->validate([
-            'from_email' => 'required|email',
-            'from_name' => 'nullable|string',
-            'subject' => 'required|string',
-            'body' => 'required|string',
-            'headers' => 'nullable|array',
-        ]);
+        // 2. Check timestamp — reject replays older than 5 minutes
+        $timestamp = $request->input('timestamp');
+        if ($timestamp && abs(time() - (int) $timestamp) > 300) {
+            return response()->json(['error' => 'Request expired'], 401);
+        }
 
-        $result = $processor->process(
-            fromEmail: $validated['from_email'],
-            fromName: $validated['from_name'] ?? $validated['from_email'],
-            subject: $validated['subject'],
-            body: $validated['body'],
-            headers: $validated['headers'] ?? [],
-        );
+        // 3. Extract message ID for idempotency
+        $messageId = $request->input('message_id', '');
+        if (empty($messageId)) {
+            $messageId = uniqid('webhook-', true);
+        }
 
-        return response()->json($result, $result['status'] === 'rejected' ? 422 : 200);
+        // 4. Idempotency check — duplicate delivery is a no-op 200
+        $existing = InboundEmail::where('message_id', $messageId)->first();
+        if ($existing) {
+            return response()->json(['status' => 'duplicate', 'id' => $existing->id]);
+        }
+
+        // 5. Persist raw payload
+        try {
+            $record = InboundEmail::create([
+                'message_id' => $messageId,
+                'payload' => $request->all(),
+                'status' => 'pending',
+            ]);
+        } catch (QueryException $e) {
+            // Race condition — another request inserted between our check and insert
+            if (str_contains($e->getMessage(), 'UNIQUE constraint') || str_contains($e->getMessage(), 'Duplicate entry')) {
+                return response()->json(['status' => 'duplicate']);
+            }
+            throw $e;
+        }
+
+        // 6. Dispatch job for async processing
+        ProcessInboundEmailJob::dispatch($record->id);
+
+        return response()->json(['status' => 'queued', 'id' => $record->id]);
     }
 
     protected function verifySignature(Request $request): bool

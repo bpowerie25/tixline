@@ -63,7 +63,7 @@ class TenantController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'domain' => 'nullable|string|max:255|unique:tenants,domain,' . $tenant->id,
+            'domain' => 'nullable|string|max:255|unique:tenants,domain,'.$tenant->id,
             'logo_url' => 'nullable|string|max:500',
             'favicon_url' => 'nullable|string|max:500',
             'primary_color' => 'nullable|string|max:7',

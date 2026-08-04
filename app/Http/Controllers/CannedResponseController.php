@@ -13,7 +13,7 @@ class CannedResponseController extends Controller
         $responses = CannedResponse::with('user:id,name')
             ->where(function ($q) use ($request) {
                 $q->where('is_shared', true)
-                  ->orWhere('user_id', $request->user()->id);
+                    ->orWhere('user_id', $request->user()->id);
             })
             ->orderBy('name')
             ->get();
@@ -43,7 +43,7 @@ class CannedResponseController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'shortcode' => 'required|string|max:50|unique:canned_responses,shortcode,' . $cannedResponse->id,
+            'shortcode' => 'required|string|max:50|unique:canned_responses,shortcode,'.$cannedResponse->id,
             'body' => 'required|string',
             'is_shared' => 'boolean',
         ]);
@@ -64,7 +64,7 @@ class CannedResponseController extends Controller
     {
         return CannedResponse::where(function ($q) use ($request) {
             $q->where('is_shared', true)
-              ->orWhere('user_id', $request->user()->id);
+                ->orWhere('user_id', $request->user()->id);
         })->orderBy('name')->get(['id', 'name', 'shortcode', 'body']);
     }
 }

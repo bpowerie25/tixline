@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Mail\TicketReply;
 use App\Models\Ticket;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -15,6 +16,7 @@ class CommentControllerTest extends TestCase
     use RefreshDatabase;
 
     protected User $agent;
+
     protected Ticket $ticket;
 
     protected function setUp(): void
@@ -46,7 +48,7 @@ class CommentControllerTest extends TestCase
             'is_internal' => false,
         ]);
 
-        Mail::assertQueued(\App\Mail\TicketReply::class);
+        Mail::assertQueued(TicketReply::class);
     }
 
     public function test_add_internal_note_does_not_email(): void
@@ -64,7 +66,7 @@ class CommentControllerTest extends TestCase
             'is_internal' => true,
         ]);
 
-        Mail::assertNotQueued(\App\Mail\TicketReply::class);
+        Mail::assertNotQueued(TicketReply::class);
     }
 
     public function test_first_reply_sets_first_responded_at(): void
@@ -95,14 +97,14 @@ class CommentControllerTest extends TestCase
     public function test_comment_with_attachment(): void
     {
         Mail::fake();
-        Storage::fake('public');
+        Storage::fake('local');
 
         $this->actingAs($this->agent)
             ->post(route('tickets.comments.store', $this->ticket), [
                 'body' => 'See attached',
                 'is_internal' => false,
                 'attachments' => [
-                    UploadedFile::fake()->create('document.pdf', 100),
+                    UploadedFile::fake()->create('document.pdf', 100, 'application/pdf'),
                 ],
             ]);
 
@@ -111,7 +113,7 @@ class CommentControllerTest extends TestCase
 
         $attachment = $comment->attachments()->first();
         $this->assertEquals('document.pdf', $attachment->original_filename);
-        Storage::disk('public')->assertExists($attachment->path);
+        Storage::disk('local')->assertExists($attachment->path);
     }
 
     public function test_requires_body(): void

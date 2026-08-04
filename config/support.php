@@ -8,6 +8,22 @@ return [
         'webhook_secret' => env('INBOUND_WEBHOOK_SECRET'),
     ],
 
+    'attachments' => [
+        'disk' => env('ATTACHMENT_DISK', 'local'),
+        'max_size_bytes' => (int) env('ATTACHMENT_MAX_SIZE', 10 * 1024 * 1024), // 10MB
+        'allowed_mimes' => [
+            'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+            'application/pdf',
+            'text/plain', 'text/csv',
+            'application/msword',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'application/vnd.ms-excel',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'application/zip',
+            'message/rfc822',
+        ],
+    ],
+
     'spam' => [
 
         /*
@@ -54,6 +70,8 @@ return [
         |
         */
         'max_tickets_per_hour' => (int) env('SPAM_MAX_PER_HOUR', 10),
+
+        'log_only' => (bool) env('SPAM_LOG_ONLY', false),
 
     ],
 

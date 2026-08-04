@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Ticket;
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 class ReportController extends Controller
@@ -17,19 +16,19 @@ class ReportController extends Controller
 
         // Volume by day
         $volumeByDay = Ticket::where('created_at', '>=', $since)
-            ->selectRaw("DATE(created_at) as date, COUNT(*) as count")
+            ->selectRaw('DATE(created_at) as date, COUNT(*) as count')
             ->groupBy('date')
             ->orderBy('date')
             ->pluck('count', 'date');
 
         // Status breakdown
-        $statusBreakdown = Ticket::selectRaw("status, COUNT(*) as count")
+        $statusBreakdown = Ticket::selectRaw('status, COUNT(*) as count')
             ->groupBy('status')
             ->pluck('count', 'status');
 
         // Priority breakdown
         $priorityBreakdown = Ticket::where('created_at', '>=', $since)
-            ->selectRaw("priority, COUNT(*) as count")
+            ->selectRaw('priority, COUNT(*) as count')
             ->groupBy('priority')
             ->pluck('count', 'priority');
 
@@ -63,7 +62,7 @@ class ReportController extends Controller
 
         // Source breakdown
         $sourceBreakdown = Ticket::where('created_at', '>=', $since)
-            ->selectRaw("source, COUNT(*) as count")
+            ->selectRaw('source, COUNT(*) as count')
             ->groupBy('source')
             ->pluck('count', 'source');
 

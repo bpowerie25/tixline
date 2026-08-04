@@ -46,7 +46,7 @@ class ApiTest extends TestCase
             'requester_email' => 'api@example.com',
             'priority' => 'high',
         ])->assertCreated()
-          ->assertJsonFragment(['subject' => 'API ticket', 'source' => 'api']);
+            ->assertJsonFragment(['subject' => 'API ticket', 'source' => 'api']);
     }
 
     public function test_show_ticket_via_api(): void
@@ -67,7 +67,7 @@ class ApiTest extends TestCase
         $this->putJson("/api/v1/tickets/{$ticket->id}", [
             'status' => 'resolved',
         ])->assertOk()
-          ->assertJsonFragment(['status' => 'resolved']);
+            ->assertJsonFragment(['status' => 'resolved']);
 
         $this->assertNotNull($ticket->fresh()->resolved_at);
     }
@@ -81,7 +81,7 @@ class ApiTest extends TestCase
             'body' => 'API comment',
             'is_internal' => true,
         ])->assertCreated()
-          ->assertJsonFragment(['body' => 'API comment', 'type' => 'note']);
+            ->assertJsonFragment(['body' => 'API comment', 'type' => 'note']);
     }
 
     public function test_filter_tickets_by_status(): void

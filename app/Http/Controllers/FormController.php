@@ -90,7 +90,7 @@ class FormController extends Controller
         $form->fields()->whereNotIn('id', $existingIds)->delete();
 
         foreach ($fields as $fieldData) {
-            if (!empty($fieldData['id'])) {
+            if (! empty($fieldData['id'])) {
                 $form->fields()->where('id', $fieldData['id'])->update($fieldData);
             } else {
                 unset($fieldData['id']);

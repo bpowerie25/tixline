@@ -129,7 +129,7 @@ class CustomerPortalTest extends TestCase
 
         $this->actingAs($customer, 'customer')
             ->get(route('portal.ticket', $ticket))
-            ->assertForbidden();
+            ->assertNotFound();
     }
 
     public function test_customer_can_reply_to_own_ticket(): void

@@ -57,6 +57,7 @@ class ResolveTenant
         $baseDomain = config('support.base_domain');
         if ($baseDomain && str_ends_with($host, ".{$baseDomain}")) {
             $slug = str_replace(".{$baseDomain}", '', $host);
+
             return Tenant::where('slug', $slug)
                 ->where('is_active', true)
                 ->first();

@@ -81,13 +81,12 @@ class CustomerPortalController extends Controller
         ]);
     }
 
-    public function showTicket(Ticket $ticket)
+    public function showTicket(int $ticket)
     {
         $customer = Auth::guard('customer')->user();
 
-        if ($ticket->requester_email !== $customer->email) {
-            abort(403);
-        }
+        $ticket = Ticket::where('requester_email', $customer->email)
+            ->findOrFail($ticket);
 
         $ticket->load(['team:id,name', 'comments' => function ($q) {
             $q->where('is_internal', false)->with('user:id,name')->oldest();
@@ -99,13 +98,12 @@ class CustomerPortalController extends Controller
         ]);
     }
 
-    public function replyToTicket(Request $request, Ticket $ticket)
+    public function replyToTicket(Request $request, int $ticket)
     {
         $customer = Auth::guard('customer')->user();
 
-        if ($ticket->requester_email !== $customer->email) {
-            abort(403);
-        }
+        $ticket = Ticket::where('requester_email', $customer->email)
+            ->findOrFail($ticket);
 
         $validated = $request->validate([
             'body' => 'required|string',

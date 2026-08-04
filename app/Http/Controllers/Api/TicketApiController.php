@@ -35,7 +35,7 @@ class TicketApiController extends Controller
             'assignee:id,name',
             'team:id,name',
             'labels:id,name,color',
-            'comments' => fn($q) => $q->with('user:id,name')->oldest(),
+            'comments' => fn ($q) => $q->with('user:id,name')->oldest(),
         ]);
     }
 
@@ -60,7 +60,7 @@ class TicketApiController extends Controller
 
         $ticket = Ticket::create($validated);
 
-        if (!empty($labels)) {
+        if (! empty($labels)) {
             $ticket->labels()->sync($labels);
         }
 
@@ -81,7 +81,7 @@ class TicketApiController extends Controller
             'labels.*' => 'exists:labels,id',
         ]);
 
-        if (isset($validated['status']) && $validated['status'] === 'resolved' && !$ticket->resolved_at) {
+        if (isset($validated['status']) && $validated['status'] === 'resolved' && ! $ticket->resolved_at) {
             $validated['resolved_at'] = now();
         }
 
@@ -109,7 +109,7 @@ class TicketApiController extends Controller
 
         $comment = $ticket->comments()->create($validated);
 
-        if (!$ticket->first_responded_at && !($validated['is_internal'] ?? false)) {
+        if (! $ticket->first_responded_at && ! ($validated['is_internal'] ?? false)) {
             $ticket->update(['first_responded_at' => now()]);
         }
 

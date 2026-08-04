@@ -34,7 +34,7 @@ class PublicSubmitTest extends TestCase
             'requester_name' => 'Visitor',
             'requester_email' => 'visitor@example.com',
         ])->assertOk()
-          ->assertInertia(fn ($page) => $page->component('Public/TicketConfirmation'));
+            ->assertInertia(fn ($page) => $page->component('Public/TicketConfirmation'));
 
         $this->assertDatabaseHas('tickets', [
             'subject' => 'Public ticket',

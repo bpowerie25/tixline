@@ -20,7 +20,7 @@ class WorkflowEngineTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->engine = new WorkflowEngine();
+        $this->engine = new WorkflowEngine;
     }
 
     public function test_workflow_assigns_to_team(): void

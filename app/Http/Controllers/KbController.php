@@ -72,7 +72,7 @@ class KbController extends Controller
 
         $validated['slug'] = Str::slug($validated['title']);
 
-        if ($validated['status'] === 'published' && !$kbArticle->published_at) {
+        if ($validated['status'] === 'published' && ! $kbArticle->published_at) {
             $validated['published_at'] = now();
         }
 
@@ -160,7 +160,7 @@ class KbController extends Controller
         $articles = KbArticle::where('status', 'published')
             ->where(function ($q) use ($query) {
                 $q->where('title', 'like', "%{$query}%")
-                  ->orWhere('body', 'like', "%{$query}%");
+                    ->orWhere('body', 'like', "%{$query}%");
             })
             ->with('category:id,name,slug')
             ->take(20)

@@ -4,12 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Mail\TicketReply;
 use App\Models\Ticket;
+use App\Services\AttachmentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 
 class CommentController extends Controller
 {
-    public function store(Request $request, Ticket $ticket)
+    public function store(Request $request, Ticket $ticket, AttachmentService $attachmentService)
     {
         $validated = $request->validate([
             'body' => 'required|string',
@@ -26,19 +27,12 @@ class CommentController extends Controller
 
         if ($request->hasFile('attachments')) {
             foreach ($request->file('attachments') as $file) {
-                $path = $file->store('attachments/' . $ticket->id, 'public');
-                $comment->attachments()->create([
-                    'filename' => $file->hashName(),
-                    'original_filename' => $file->getClientOriginalName(),
-                    'mime_type' => $file->getMimeType(),
-                    'size' => $file->getSize(),
-                    'path' => $path,
-                ]);
+                $attachmentService->storeUploadedFile($file, $comment);
             }
         }
 
-        if (!($validated['is_internal'] ?? false)) {
-            if (!$ticket->first_responded_at) {
+        if (! ($validated['is_internal'] ?? false)) {
+            if (! $ticket->first_responded_at) {
                 $ticket->update(['first_responded_at' => now()]);
             }
 

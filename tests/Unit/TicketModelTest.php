@@ -30,7 +30,7 @@ class TicketModelTest extends TestCase
             'requester_email' => 'test@example.com',
         ]);
 
-        $expected = 'TKT-' . str_pad($ticket->id, 6, '0', STR_PAD_LEFT);
+        $expected = 'TKT-'.str_pad($ticket->id, 6, '0', STR_PAD_LEFT);
         $this->assertEquals($expected, $ticket->fresh()->reference);
     }
 

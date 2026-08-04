@@ -72,7 +72,7 @@ An open-source helpdesk and customer support platform built with Laravel, Inerti
 
 ## Tech Stack
 
-- **Backend:** Laravel (PHP 8.2+)
+- **Backend:** Laravel (PHP 8.3+)
 - **Frontend:** Vue 3 + Inertia.js
 - **Styling:** Tailwind CSS
 - **Auth:** Laravel Breeze (agents), custom guard (customers), Sanctum (API)
@@ -81,7 +81,7 @@ An open-source helpdesk and customer support platform built with Laravel, Inerti
 
 ## Requirements
 
-- PHP 8.2+
+- PHP 8.3+
 - Composer
 - Node.js 18+
 - npm

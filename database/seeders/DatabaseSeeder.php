@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use App\Models\Comment;
 use App\Models\Form;
 use App\Models\Label;
 use App\Models\Team;
@@ -15,6 +14,12 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
+        if (app()->isProduction()) {
+            $this->command->error('Seeder cannot run in production.');
+
+            return;
+        }
+
         // Teams
         $support = Team::create(['name' => 'General Support', 'slug' => 'general-support', 'color' => '#6366f1']);
         $billing = Team::create(['name' => 'Billing', 'slug' => 'billing', 'color' => '#f59e0b']);

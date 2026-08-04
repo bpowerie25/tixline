@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\DTOs\InboundMessage;
 use App\Models\Ticket;
 
 class InboundEmailProcessor
@@ -9,33 +10,31 @@ class InboundEmailProcessor
     public function __construct(
         protected SpamFilter $spamFilter,
         protected WorkflowEngine $workflowEngine,
+        protected AttachmentService $attachmentService,
     ) {}
 
-    public function process(
-        string $fromEmail,
-        string $fromName,
-        string $subject,
-        string $body,
-        array $headers = [],
-    ): array {
-        $subject = $subject ?: '(No Subject)';
-        $fromName = $fromName ?: $fromEmail;
+    public function process(InboundMessage $message): array
+    {
+        $subject = $message->subject ?: '(No Subject)';
+        $fromName = $message->fromName ?: $message->fromEmail;
 
         // Spam check
-        $spamReason = $this->spamFilter->isSpam($fromEmail, $subject, $body, $headers);
+        $spamReason = $this->spamFilter->isSpam($message->fromEmail, $subject, $message->body, $message->headers);
         if ($spamReason) {
             return ['status' => 'rejected', 'reason' => $spamReason];
         }
 
-        // Thread detection — check for ticket reference in subject
-        $existingTicket = $this->findExistingTicket($fromEmail, $subject);
+        // Thread detection
+        $existingTicket = $this->findExistingTicket($message->fromEmail, $subject);
 
         if ($existingTicket) {
-            $existingTicket->comments()->create([
-                'body' => $body,
+            $comment = $existingTicket->comments()->create([
+                'body' => $message->body,
                 'type' => 'reply',
                 'is_internal' => false,
             ]);
+
+            $this->processAttachments($message, $comment);
 
             if ($existingTicket->status === 'resolved') {
                 $existingTicket->update(['status' => 'open']);
@@ -51,11 +50,13 @@ class InboundEmailProcessor
         // New ticket
         $ticket = Ticket::create([
             'subject' => $subject,
-            'body' => $body,
+            'body' => $message->body,
             'requester_name' => $fromName,
-            'requester_email' => $fromEmail,
+            'requester_email' => $message->fromEmail,
             'source' => 'email',
         ]);
+
+        $this->processAttachments($message, $ticket);
 
         $this->workflowEngine->run($ticket->fresh(), 'ticket_created');
 
@@ -66,11 +67,17 @@ class InboundEmailProcessor
         ];
     }
 
+    protected function processAttachments(InboundMessage $message, $attachable): void
+    {
+        foreach ($message->attachments as $attachmentData) {
+            $this->attachmentService->storeFromWebhook($attachmentData, $attachable);
+        }
+    }
+
     protected function findExistingTicket(string $fromEmail, string $subject): ?Ticket
     {
-        // First try to extract ticket reference from subject (e.g. "Re: [TKT-000001] ...")
         if (preg_match('/\[TKT-(\d+)\]/', $subject, $matches)) {
-            $ticket = Ticket::where('reference', 'TKT-' . $matches[1])
+            $ticket = Ticket::where('reference', 'TKT-'.$matches[1])
                 ->whereIn('status', ['open', 'pending', 'resolved'])
                 ->first();
 
@@ -79,7 +86,6 @@ class InboundEmailProcessor
             }
         }
 
-        // Fall back to matching by requester + subject
         $cleanSubject = preg_replace('/^(Re|Fwd|Fw):\s*/i', '', $subject);
 
         return Ticket::where('requester_email', $fromEmail)

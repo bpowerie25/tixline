@@ -41,7 +41,7 @@ class WorkflowEngine
             if ($match === 'any' && $result) {
                 return true;
             }
-            if ($match === 'all' && !$result) {
+            if ($match === 'all' && ! $result) {
                 return false;
             }
         }
@@ -69,11 +69,11 @@ class WorkflowEngine
             'equals' => strtolower($ticketValue) === strtolower($value),
             'not_equals' => strtolower($ticketValue) !== strtolower($value),
             'contains' => str_contains(strtolower($ticketValue), strtolower($value)),
-            'not_contains' => !str_contains(strtolower($ticketValue), strtolower($value)),
+            'not_contains' => ! str_contains(strtolower($ticketValue), strtolower($value)),
             'starts_with' => str_starts_with(strtolower($ticketValue), strtolower($value)),
             'ends_with' => str_ends_with(strtolower($ticketValue), strtolower($value)),
             'is_empty' => empty($ticketValue),
-            'is_not_empty' => !empty($ticketValue),
+            'is_not_empty' => ! empty($ticketValue),
             default => false,
         };
     }
@@ -107,7 +107,7 @@ class WorkflowEngine
     {
         $teamId = $action['value'] ?? $ticket->team_id;
 
-        if (!$teamId) {
+        if (! $teamId) {
             return;
         }
 

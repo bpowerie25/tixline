@@ -7,6 +7,7 @@ use App\Models\Ticket;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailables\Address;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
@@ -26,7 +27,7 @@ class TicketReply extends Mailable implements ShouldQueue
         $fromName = $tenant?->name ?? config('mail.from.name');
 
         return new Envelope(
-            from: new \Illuminate\Mail\Mailables\Address($fromEmail, $fromName),
+            from: new Address($fromEmail, $fromName),
             subject: "Re: [{$this->ticket->reference}] {$this->ticket->subject}",
         );
     }

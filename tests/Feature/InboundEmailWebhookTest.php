@@ -2,8 +2,13 @@
 
 namespace Tests\Feature;
 
+use App\Jobs\ProcessInboundEmailJob;
+use App\Models\InboundEmail;
 use App\Models\Ticket;
+use App\Services\InboundEmailProcessor;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Queue;
+use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
 
 class InboundEmailWebhookTest extends TestCase
@@ -18,57 +23,76 @@ class InboundEmailWebhookTest extends TestCase
         config(['support.inbound.webhook_secret' => $this->secret]);
     }
 
-    protected function signPayload(string $payload): string
+    protected function signedPost(array $data, ?string $secret = null): TestResponse
     {
-        return hash_hmac('sha256', $payload, $this->secret);
+        $payload = json_encode($data);
+        $sig = hash_hmac('sha256', $payload, $secret ?? $this->secret);
+
+        return $this->call('POST', route('inbound.email'), [], [], [], [
+            'HTTP_X_WEBHOOK_SIGNATURE' => $sig,
+            'CONTENT_TYPE' => 'application/json',
+        ], $payload);
     }
 
-    public function test_creates_ticket_from_webhook(): void
+    public function test_stores_payload_and_dispatches_job(): void
     {
-        $payload = json_encode([
+        Queue::fake();
+
+        $this->signedPost([
+            'message_id' => 'msg-001@example.com',
             'from_email' => 'customer@example.com',
             'from_name' => 'Customer',
             'subject' => 'Help needed',
             'body' => '<p>Please help</p>',
-        ]);
-
-        $this->postJson(route('inbound.email'), json_decode($payload, true), [
-            'X-Webhook-Signature' => $this->signPayload($payload),
+            'timestamp' => time(),
         ])->assertOk()
-          ->assertJson(['status' => 'created']);
+            ->assertJson(['status' => 'queued']);
 
-        $this->assertDatabaseHas('tickets', [
-            'subject' => 'Help needed',
-            'requester_email' => 'customer@example.com',
-            'source' => 'email',
+        $this->assertDatabaseHas('inbound_emails', [
+            'message_id' => 'msg-001@example.com',
+            'status' => 'pending',
         ]);
+
+        Queue::assertPushed(ProcessInboundEmailJob::class);
     }
 
-    public function test_threads_reply_via_webhook(): void
+    public function test_duplicate_delivery_returns_200_without_reprocessing(): void
     {
-        $ticket = Ticket::create([
-            'subject' => 'Original',
-            'requester_name' => 'Customer',
-            'requester_email' => 'customer@example.com',
-        ]);
-        $ticket->updateQuietly(['reference' => 'TKT-000001']);
+        Queue::fake();
 
-        $payload = json_encode([
+        $data = [
+            'message_id' => 'msg-dup@example.com',
             'from_email' => 'customer@example.com',
-            'from_name' => 'Customer',
-            'subject' => 'Re: [TKT-000001] Original',
-            'body' => 'Follow up',
-        ]);
+            'subject' => 'Test',
+            'body' => 'Body',
+            'timestamp' => time(),
+        ];
 
-        $this->postJson(route('inbound.email'), json_decode($payload, true), [
-            'X-Webhook-Signature' => $this->signPayload($payload),
-        ])->assertOk()
-          ->assertJson(['status' => 'reply', 'ticket_id' => $ticket->id]);
+        $this->signedPost($data)->assertOk()->assertJson(['status' => 'queued']);
+        $this->signedPost($data)->assertOk()->assertJson(['status' => 'duplicate']);
+
+        $this->assertEquals(1, InboundEmail::where('message_id', 'msg-dup@example.com')->count());
+        Queue::assertPushed(ProcessInboundEmailJob::class, 1);
+    }
+
+    public function test_rejects_replayed_timestamp(): void
+    {
+        $this->signedPost([
+            'message_id' => 'msg-old@example.com',
+            'from_email' => 'customer@example.com',
+            'subject' => 'Old',
+            'body' => 'Body',
+            'timestamp' => time() - 600, // 10 minutes ago
+        ])->assertUnauthorized()
+            ->assertJson(['error' => 'Request expired']);
+
+        $this->assertEquals(0, InboundEmail::count());
     }
 
     public function test_rejects_without_signature(): void
     {
         $this->postJson(route('inbound.email'), [
+            'message_id' => 'msg-nosig@example.com',
             'from_email' => 'test@example.com',
             'subject' => 'Test',
             'body' => 'Body',
@@ -77,15 +101,13 @@ class InboundEmailWebhookTest extends TestCase
 
     public function test_rejects_invalid_signature(): void
     {
-        $payload = json_encode([
+        $this->signedPost([
+            'message_id' => 'msg-badsig@example.com',
             'from_email' => 'test@example.com',
             'subject' => 'Test',
             'body' => 'Body',
-        ]);
-
-        $this->postJson(route('inbound.email'), json_decode($payload, true), [
-            'X-Webhook-Signature' => 'invalid-signature',
-        ])->assertUnauthorized();
+            'timestamp' => time(),
+        ], 'wrong-secret')->assertUnauthorized();
     }
 
     public function test_rejects_when_no_secret_configured(): void
@@ -101,30 +123,105 @@ class InboundEmailWebhookTest extends TestCase
         ])->assertUnauthorized();
     }
 
-    public function test_rejects_spam_via_webhook(): void
+    public function test_job_creates_ticket_when_processed(): void
+    {
+        // Store a pending inbound email
+        $record = InboundEmail::create([
+            'message_id' => 'msg-job@example.com',
+            'payload' => [
+                'message_id' => 'msg-job@example.com',
+                'from_email' => 'customer@example.com',
+                'from_name' => 'Customer',
+                'subject' => 'New issue',
+                'body' => '<p>Help</p>',
+            ],
+            'status' => 'pending',
+        ]);
+
+        // Run the job synchronously
+        (new ProcessInboundEmailJob($record->id))->handle(app(InboundEmailProcessor::class));
+
+        $record->refresh();
+        $this->assertEquals('processed', $record->status);
+        $this->assertNotNull($record->processed_at);
+
+        $this->assertDatabaseHas('tickets', [
+            'subject' => 'New issue',
+            'requester_email' => 'customer@example.com',
+            'source' => 'email',
+        ]);
+    }
+
+    public function test_job_threads_reply(): void
+    {
+        $ticket = Ticket::create([
+            'subject' => 'Existing',
+            'requester_name' => 'Customer',
+            'requester_email' => 'customer@example.com',
+        ]);
+        $ticket->updateQuietly(['reference' => 'TKT-000001']);
+
+        $record = InboundEmail::create([
+            'message_id' => 'msg-reply@example.com',
+            'payload' => [
+                'message_id' => 'msg-reply@example.com',
+                'from_email' => 'customer@example.com',
+                'subject' => 'Re: [TKT-000001] Existing',
+                'body' => 'Follow up',
+            ],
+            'status' => 'pending',
+        ]);
+
+        (new ProcessInboundEmailJob($record->id))->handle(app(InboundEmailProcessor::class));
+
+        $this->assertEquals('processed', $record->fresh()->status);
+        $this->assertEquals(1, $ticket->comments()->count());
+        $this->assertEquals(1, Ticket::count()); // No new ticket
+    }
+
+    public function test_job_rejects_spam(): void
     {
         config(['support.spam.blocklist' => ['spam.com']]);
 
-        $payload = json_encode([
-            'from_email' => 'user@spam.com',
-            'subject' => 'Buy now',
-            'body' => 'Spam',
+        $record = InboundEmail::create([
+            'message_id' => 'msg-spam@spam.com',
+            'payload' => [
+                'message_id' => 'msg-spam@spam.com',
+                'from_email' => 'user@spam.com',
+                'subject' => 'Buy now',
+                'body' => 'Spam',
+            ],
+            'status' => 'pending',
         ]);
 
-        $this->postJson(route('inbound.email'), json_decode($payload, true), [
-            'X-Webhook-Signature' => $this->signPayload($payload),
-        ])->assertStatus(422)
-          ->assertJson(['status' => 'rejected']);
+        (new ProcessInboundEmailJob($record->id))->handle(app(InboundEmailProcessor::class));
+
+        $this->assertEquals('rejected', $record->fresh()->status);
+        $this->assertEquals(0, Ticket::count());
     }
 
-    public function test_requires_from_email_subject_body(): void
+    public function test_concurrent_duplicate_handled_by_unique_constraint(): void
     {
-        // Verify a valid request works (from test_creates_ticket_from_webhook)
-        // and that the controller validates these fields are present.
-        // Signature mismatch between postJson encoding and manual signing
-        // makes it impractical to test validation in isolation here,
-        // but missing fields are covered by the controller's validate() call
-        // and the API test suite covers the same validation pattern.
-        $this->assertTrue(true);
+        Queue::fake();
+
+        // Simulate race condition — insert directly first
+        InboundEmail::create([
+            'message_id' => 'msg-race@example.com',
+            'payload' => ['from_email' => 'a@test.com', 'subject' => 'Race', 'body' => 'B'],
+            'status' => 'pending',
+        ]);
+
+        // Second request with same message_id should return duplicate
+        $this->signedPost([
+            'message_id' => 'msg-race@example.com',
+            'from_email' => 'a@test.com',
+            'subject' => 'Race',
+            'body' => 'B',
+            'timestamp' => time(),
+        ])->assertOk()
+            ->assertJson(['status' => 'duplicate']);
+
+        // Only one record
+        $this->assertEquals(1, InboundEmail::where('message_id', 'msg-race@example.com')->count());
     }
 }
