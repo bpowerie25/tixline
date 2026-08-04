@@ -26,7 +26,10 @@ class WorkflowController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'trigger_event' => 'required|in:ticket_created,ticket_updated,ticket_assigned',
+            'trigger_event' => 'required|string',
+            'events' => 'nullable|array',
+            'events.*.entity' => 'required|string',
+            'events.*.action' => 'required|string',
             'conditions' => 'required|array',
             'actions' => 'required|array',
             'is_active' => 'boolean',
@@ -43,7 +46,10 @@ class WorkflowController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'trigger_event' => 'required|in:ticket_created,ticket_updated,ticket_assigned',
+            'trigger_event' => 'required|string',
+            'events' => 'nullable|array',
+            'events.*.entity' => 'required|string',
+            'events.*.action' => 'required|string',
             'conditions' => 'required|array',
             'actions' => 'required|array',
             'is_active' => 'boolean',

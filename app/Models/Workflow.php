@@ -7,13 +7,14 @@ use Illuminate\Database\Eloquent\Model;
 class Workflow extends Model
 {
     protected $fillable = [
-        'name', 'description', 'trigger_event', 'conditions', 'actions',
+        'name', 'description', 'trigger_event', 'events', 'conditions', 'actions',
         'is_active', 'priority',
     ];
 
     protected function casts(): array
     {
         return [
+            'events' => 'array',
             'conditions' => 'array',
             'actions' => 'array',
             'is_active' => 'boolean',

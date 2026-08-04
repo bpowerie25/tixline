@@ -5,23 +5,73 @@ namespace App\Services;
 use App\Models\Ticket;
 use App\Models\User;
 use App\Models\Workflow;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 class WorkflowEngine
 {
     public function run(Ticket $ticket, string $event): void
     {
         $workflows = Workflow::where('is_active', true)
-            ->where('trigger_event', $event)
             ->orderBy('priority', 'desc')
             ->get();
 
         foreach ($workflows as $workflow) {
+            // Check if any of the workflow's events match
+            if (! $this->eventMatches($workflow, $event)) {
+                continue;
+            }
+
             if ($this->evaluateConditions($ticket, $workflow->conditions)) {
                 $this->executeActions($ticket, $workflow->actions);
             }
         }
     }
 
+    protected function eventMatches(Workflow $workflow, string $event): bool
+    {
+        // Support both legacy single trigger_event and new events array
+        $events = $workflow->events ?? [];
+
+        if (! empty($events)) {
+            foreach ($events as $e) {
+                $entity = $e['entity'] ?? 'ticket';
+                $action = $e['action'] ?? '';
+                if ($entity === 'ticket' && $action === $event) {
+                    return true;
+                }
+                // Also match the combined format
+                if ($action === $event || "{$entity}_{$action}" === $event) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        // Legacy: single trigger_event field
+        return $workflow->trigger_event === $event;
+    }
+
+    /**
+     * Evaluate conditions with support for nested AND/OR groups.
+     *
+     * Structure:
+     * {
+     *   "match": "all",        // "all" = AND, "any" = OR
+     *   "rules": [
+     *     {"field": "subject", "operator": "contains", "value": "billing"},
+     *     {
+     *       "match": "any",    // nested group
+     *       "rules": [
+     *         {"field": "priority", "operator": "equals", "value": "high"},
+     *         {"field": "priority", "operator": "equals", "value": "urgent"}
+     *       ]
+     *     }
+     *   ]
+     * }
+     */
     protected function evaluateConditions(Ticket $ticket, array $conditions): bool
     {
         if (empty($conditions)) {
@@ -36,7 +86,12 @@ class WorkflowEngine
         }
 
         foreach ($rules as $rule) {
-            $result = $this->evaluateRule($ticket, $rule);
+            // If the rule has a 'match' key, it's a nested group — recurse
+            if (isset($rule['match'])) {
+                $result = $this->evaluateConditions($ticket, $rule);
+            } else {
+                $result = $this->evaluateRule($ticket, $rule);
+            }
 
             if ($match === 'any' && $result) {
                 return true;
@@ -59,21 +114,27 @@ class WorkflowEngine
             'subject' => $ticket->subject,
             'body' => $ticket->body,
             'requester_email' => $ticket->requester_email,
+            'requester_name' => $ticket->requester_name,
             'priority' => $ticket->priority,
             'status' => $ticket->status,
             'source' => $ticket->source,
+            'team_id' => (string) $ticket->team_id,
+            'assigned_to' => (string) $ticket->assigned_to,
             default => $ticket->custom_fields[$field] ?? '',
         };
 
         return match ($operator) {
-            'equals' => strtolower($ticketValue) === strtolower($value),
-            'not_equals' => strtolower($ticketValue) !== strtolower($value),
-            'contains' => str_contains(strtolower($ticketValue), strtolower($value)),
-            'not_contains' => ! str_contains(strtolower($ticketValue), strtolower($value)),
-            'starts_with' => str_starts_with(strtolower($ticketValue), strtolower($value)),
-            'ends_with' => str_ends_with(strtolower($ticketValue), strtolower($value)),
+            'equals' => strtolower((string) $ticketValue) === strtolower((string) $value),
+            'not_equals' => strtolower((string) $ticketValue) !== strtolower((string) $value),
+            'contains' => str_contains(strtolower((string) $ticketValue), strtolower((string) $value)),
+            'not_contains' => ! str_contains(strtolower((string) $ticketValue), strtolower((string) $value)),
+            'starts_with' => str_starts_with(strtolower((string) $ticketValue), strtolower((string) $value)),
+            'ends_with' => str_ends_with(strtolower((string) $ticketValue), strtolower((string) $value)),
             'is_empty' => empty($ticketValue),
             'is_not_empty' => ! empty($ticketValue),
+            'in' => in_array(strtolower((string) $ticketValue), array_map('strtolower', (array) $value)),
+            'not_in' => ! in_array(strtolower((string) $ticketValue), array_map('strtolower', (array) $value)),
+            'matches_regex' => (bool) preg_match('/'.$value.'/i', (string) $ticketValue),
             default => false,
         };
     }
@@ -82,25 +143,20 @@ class WorkflowEngine
     {
         foreach ($actions as $action) {
             match ($action['type'] ?? '') {
-                'assign_to_agent' => $this->assignToAgent($ticket, $action),
-                'assign_to_team' => $this->assignToTeam($ticket, $action),
+                'assign_to_agent' => $ticket->update(['assigned_to' => $action['value']]),
+                'assign_to_team' => $ticket->update(['team_id' => $action['value']]),
                 'set_priority' => $ticket->update(['priority' => $action['value']]),
                 'set_status' => $ticket->update(['status' => $action['value']]),
                 'add_label' => $ticket->labels()->syncWithoutDetaching([$action['value']]),
+                'remove_label' => $ticket->labels()->detach([$action['value']]),
                 'round_robin' => $this->roundRobinAssign($ticket, $action),
+                'mail_agent' => $this->mailAgent($ticket, $action),
+                'mail_requester' => $this->mailRequester($ticket, $action),
+                'add_note' => $this->addNote($ticket, $action),
+                'send_webhook' => $this->sendWebhook($ticket, $action),
                 default => null,
             };
         }
-    }
-
-    protected function assignToAgent(Ticket $ticket, array $action): void
-    {
-        $ticket->update(['assigned_to' => $action['value']]);
-    }
-
-    protected function assignToTeam(Ticket $ticket, array $action): void
-    {
-        $ticket->update(['team_id' => $action['value']]);
     }
 
     protected function roundRobinAssign(Ticket $ticket, array $action): void
@@ -117,7 +173,8 @@ class WorkflowEngine
             return;
         }
 
-        $lastAssigned = Ticket::where('team_id', $teamId)
+        $lastAssigned = Ticket::withoutGlobalScopes()
+            ->where('team_id', $teamId)
             ->whereNotNull('assigned_to')
             ->latest()
             ->value('assigned_to');
@@ -126,5 +183,68 @@ class WorkflowEngine
         $nextIndex = ($currentIndex + 1) % $agents->count();
 
         $ticket->update(['assigned_to' => $agents[$nextIndex]]);
+    }
+
+    protected function mailAgent(Ticket $ticket, array $action): void
+    {
+        $agentId = $action['value'] ?? $ticket->assigned_to;
+        $agent = $agentId ? User::find($agentId) : null;
+
+        if (! $agent) {
+            return;
+        }
+
+        $template = $action['template'] ?? "You have been assigned ticket [{$ticket->reference}] {$ticket->subject}";
+
+        Mail::raw($template, function ($message) use ($agent, $ticket) {
+            $message->to($agent->email)
+                ->subject("[{$ticket->reference}] {$ticket->subject}");
+        });
+    }
+
+    protected function mailRequester(Ticket $ticket, array $action): void
+    {
+        $template = $action['template'] ?? "Your ticket [{$ticket->reference}] has been received. We'll get back to you shortly.";
+
+        Mail::raw($template, function ($message) use ($ticket) {
+            $message->to($ticket->requester_email)
+                ->subject("[{$ticket->reference}] {$ticket->subject}");
+        });
+    }
+
+    protected function addNote(Ticket $ticket, array $action): void
+    {
+        $ticket->comments()->create([
+            'body' => $action['value'] ?? 'Automated workflow note',
+            'type' => 'note',
+            'is_internal' => true,
+        ]);
+    }
+
+    protected function sendWebhook(Ticket $ticket, array $action): void
+    {
+        $url = $action['value'] ?? '';
+
+        if (empty($url)) {
+            return;
+        }
+
+        try {
+            Http::timeout(10)->post($url, [
+                'event' => 'workflow_triggered',
+                'ticket' => [
+                    'id' => $ticket->id,
+                    'reference' => $ticket->reference,
+                    'subject' => $ticket->subject,
+                    'status' => $ticket->status,
+                    'priority' => $ticket->priority,
+                    'requester_email' => $ticket->requester_email,
+                    'assigned_to' => $ticket->assigned_to,
+                    'team_id' => $ticket->team_id,
+                ],
+            ]);
+        } catch (\Exception $e) {
+            Log::warning('Workflow webhook failed', ['url' => $url, 'error' => $e->getMessage()]);
+        }
     }
 }
