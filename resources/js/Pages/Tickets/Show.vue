@@ -1,0 +1,295 @@
+<script setup>
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import SlaBadge from '@/Components/SlaBadge.vue';
+import { Head, Link, useForm } from '@inertiajs/vue3';
+import { ref } from 'vue';
+
+const props = defineProps({
+    ticket: Object,
+    teams: Array,
+    agents: Array,
+    labels: Array,
+    cannedResponses: Array,
+});
+
+const showCannedPicker = ref(false);
+
+function insertCannedResponse(response) {
+    const interpolated = response.body
+        .replace(/\{\{requester_name\}\}/g, props.ticket.requester_name)
+        .replace(/\{\{requester_email\}\}/g, props.ticket.requester_email)
+        .replace(/\{\{ticket_reference\}\}/g, props.ticket.reference)
+        .replace(/\{\{ticket_subject\}\}/g, props.ticket.subject)
+        .replace(/\{\{agent_name\}\}/g, props.ticket.assignee?.name || '');
+    commentForm.body = interpolated;
+    showCannedPicker.value = false;
+}
+
+const commentForm = useForm({
+    body: '',
+    is_internal: false,
+});
+
+const updateForm = useForm({
+    status: props.ticket.status,
+    priority: props.ticket.priority,
+    team_id: props.ticket.team_id,
+    assigned_to: props.ticket.assigned_to,
+    labels: props.ticket.labels.map(l => l.id),
+});
+
+function submitComment() {
+    commentForm.post(route('tickets.comments.store', props.ticket.id), {
+        preserveScroll: true,
+        onSuccess: () => {
+            commentForm.reset();
+        },
+    });
+}
+
+function updateTicket() {
+    updateForm.put(route('tickets.update', props.ticket.id), {
+        preserveScroll: true,
+    });
+}
+
+const priorityColors = {
+    low: 'bg-gray-100 text-gray-700',
+    normal: 'bg-blue-100 text-blue-700',
+    high: 'bg-orange-100 text-orange-700',
+    urgent: 'bg-red-100 text-red-700',
+};
+
+const statusColors = {
+    open: 'bg-green-100 text-green-700',
+    pending: 'bg-yellow-100 text-yellow-700',
+    resolved: 'bg-blue-100 text-blue-700',
+    closed: 'bg-gray-100 text-gray-700',
+};
+</script>
+
+<template>
+    <Head :title="ticket.reference + ' - ' + ticket.subject" />
+
+    <AuthenticatedLayout>
+        <template #header>
+            <div class="flex items-center gap-3">
+                <Link :href="route('tickets.index')" class="text-gray-400 hover:text-gray-600">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+                </Link>
+                <span class="font-mono text-gray-500">{{ ticket.reference }}</span>
+                <h2 class="text-xl font-semibold leading-tight text-gray-800">{{ ticket.subject }}</h2>
+            </div>
+        </template>
+
+        <div class="py-12">
+            <div class="mx-auto max-w-7xl sm:px-6 lg:px-8">
+                <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+                    <!-- Main Content -->
+                    <div class="lg:col-span-2 space-y-6">
+                        <!-- Original Message -->
+                        <div class="overflow-hidden bg-white shadow-sm sm:rounded-lg">
+                            <div class="border-b border-gray-200 px-6 py-4">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <span class="font-medium text-gray-900">{{ ticket.requester_name }}</span>
+                                        <span class="text-sm text-gray-500 ml-2">&lt;{{ ticket.requester_email }}&gt;</span>
+                                    </div>
+                                    <span class="text-sm text-gray-500">{{ new Date(ticket.created_at).toLocaleString() }}</span>
+                                </div>
+                            </div>
+                            <div class="p-6 prose prose-sm max-w-none" v-html="ticket.body || '<em>No description</em>'" />
+
+                            <!-- Custom Fields -->
+                            <div v-if="ticket.custom_fields && Object.keys(ticket.custom_fields).length" class="border-t border-gray-200 px-6 py-4">
+                                <h4 class="text-sm font-medium text-gray-500 mb-2">Custom Fields</h4>
+                                <dl class="grid grid-cols-2 gap-2">
+                                    <template v-for="(value, key) in ticket.custom_fields" :key="key">
+                                        <dt class="text-sm text-gray-500">{{ key }}</dt>
+                                        <dd class="text-sm text-gray-900">{{ value }}</dd>
+                                    </template>
+                                </dl>
+                            </div>
+                        </div>
+
+                        <!-- Comments -->
+                        <div v-for="comment in ticket.comments" :key="comment.id" class="overflow-hidden shadow-sm sm:rounded-lg" :class="comment.is_internal ? 'bg-yellow-50 border border-yellow-200' : 'bg-white'">
+                            <div class="border-b px-6 py-3" :class="comment.is_internal ? 'border-yellow-200' : 'border-gray-200'">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center gap-2">
+                                        <span class="font-medium text-gray-900">{{ comment.user?.name || 'System' }}</span>
+                                        <span v-if="comment.is_internal" class="inline-flex rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-800">Internal Note</span>
+                                        <span v-if="comment.type === 'system'" class="inline-flex rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">System</span>
+                                    </div>
+                                    <span class="text-sm text-gray-500">{{ new Date(comment.created_at).toLocaleString() }}</span>
+                                </div>
+                            </div>
+                            <div class="p-6 prose prose-sm max-w-none" v-html="comment.body" />
+                        </div>
+
+                        <!-- Reply Form -->
+                        <div class="overflow-hidden bg-white shadow-sm sm:rounded-lg p-6">
+                            <form @submit.prevent="submitComment">
+                                <div class="mb-3 flex items-center gap-4">
+                                    <label class="flex items-center gap-2">
+                                        <input type="radio" :value="false" v-model="commentForm.is_internal" class="text-indigo-600" />
+                                        <span class="text-sm">Reply</span>
+                                    </label>
+                                    <label class="flex items-center gap-2">
+                                        <input type="radio" :value="true" v-model="commentForm.is_internal" class="text-yellow-600" />
+                                        <span class="text-sm">Internal Note</span>
+                                    </label>
+                                </div>
+                                <div class="relative">
+                                    <textarea
+                                        v-model="commentForm.body"
+                                        rows="4"
+                                        :placeholder="commentForm.is_internal ? 'Write an internal note...' : 'Write a reply...'"
+                                        class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                        :class="commentForm.is_internal ? 'bg-yellow-50' : ''"
+                                    />
+                                    <!-- Canned Response Picker -->
+                                    <div v-if="showCannedPicker" class="absolute bottom-full left-0 mb-1 w-80 max-h-64 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg z-10">
+                                        <div class="p-2 border-b border-gray-100 text-xs font-medium text-gray-500">Canned Responses</div>
+                                        <button
+                                            v-for="cr in cannedResponses"
+                                            :key="cr.id"
+                                            type="button"
+                                            @click="insertCannedResponse(cr)"
+                                            class="w-full px-3 py-2 text-left hover:bg-gray-50 border-b border-gray-50 last:border-0"
+                                        >
+                                            <div class="flex items-center gap-2">
+                                                <span class="text-sm font-medium text-gray-900">{{ cr.name }}</span>
+                                                <code class="text-xs text-gray-400">#{{ cr.shortcode }}</code>
+                                            </div>
+                                            <p class="text-xs text-gray-500 truncate mt-0.5">{{ cr.body }}</p>
+                                        </button>
+                                        <div v-if="!cannedResponses.length" class="px-3 py-4 text-center text-sm text-gray-500">No canned responses yet.</div>
+                                    </div>
+                                </div>
+                                <div class="mt-3 flex items-center justify-between">
+                                    <button
+                                        type="button"
+                                        @click="showCannedPicker = !showCannedPicker"
+                                        class="text-sm text-gray-500 hover:text-gray-700"
+                                    >
+                                        <span class="inline-flex items-center gap-1">
+                                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7" /></svg>
+                                            Canned Response
+                                        </span>
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        :disabled="commentForm.processing || !commentForm.body"
+                                        class="inline-flex items-center rounded-md px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+                                        :class="commentForm.is_internal ? 'bg-yellow-600 hover:bg-yellow-700' : 'bg-indigo-600 hover:bg-indigo-700'"
+                                    >
+                                        {{ commentForm.is_internal ? 'Add Note' : 'Send Reply' }}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Sidebar -->
+                    <div class="space-y-6">
+                        <div class="overflow-hidden bg-white shadow-sm sm:rounded-lg p-6">
+                            <h3 class="text-sm font-medium text-gray-500 mb-4">Ticket Details</h3>
+                            <form @submit.prevent="updateTicket" class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Status</label>
+                                    <select v-model="updateForm.status" class="mt-1 w-full rounded-md border-gray-300 text-sm shadow-sm">
+                                        <option value="open">Open</option>
+                                        <option value="pending">Pending</option>
+                                        <option value="resolved">Resolved</option>
+                                        <option value="closed">Closed</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Priority</label>
+                                    <select v-model="updateForm.priority" class="mt-1 w-full rounded-md border-gray-300 text-sm shadow-sm">
+                                        <option value="low">Low</option>
+                                        <option value="normal">Normal</option>
+                                        <option value="high">High</option>
+                                        <option value="urgent">Urgent</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Team</label>
+                                    <select v-model="updateForm.team_id" class="mt-1 w-full rounded-md border-gray-300 text-sm shadow-sm">
+                                        <option :value="null">Unassigned</option>
+                                        <option v-for="team in teams" :key="team.id" :value="team.id">{{ team.name }}</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Assigned To</label>
+                                    <select v-model="updateForm.assigned_to" class="mt-1 w-full rounded-md border-gray-300 text-sm shadow-sm">
+                                        <option :value="null">Unassigned</option>
+                                        <option v-for="agent in agents" :key="agent.id" :value="agent.id">{{ agent.name }}</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Labels</label>
+                                    <div class="space-y-1 max-h-32 overflow-y-auto">
+                                        <label v-for="label in labels" :key="label.id" class="flex items-center gap-2">
+                                            <input type="checkbox" :value="label.id" v-model="updateForm.labels" class="rounded text-indigo-600" />
+                                            <span class="inline-flex items-center gap-1 text-sm">
+                                                <span class="h-2 w-2 rounded-full" :style="{ backgroundColor: label.color }" />
+                                                {{ label.name }}
+                                            </span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <button
+                                    type="submit"
+                                    :disabled="updateForm.processing"
+                                    class="w-full rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+                                >
+                                    Update
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- SLA Status -->
+                        <div v-if="ticket.sla_status" class="overflow-hidden bg-white shadow-sm sm:rounded-lg p-6">
+                            <h3 class="text-sm font-medium text-gray-500 mb-3">SLA</h3>
+                            <SlaBadge :ticket="ticket" />
+                            <dl class="mt-3 space-y-2 text-sm">
+                                <div v-if="ticket.sla_response_due_at" class="flex justify-between">
+                                    <dt class="text-gray-500">Response Due</dt>
+                                    <dd class="text-gray-900">{{ new Date(ticket.sla_response_due_at).toLocaleString() }}</dd>
+                                </div>
+                                <div v-if="ticket.sla_resolution_due_at" class="flex justify-between">
+                                    <dt class="text-gray-500">Resolution Due</dt>
+                                    <dd class="text-gray-900">{{ new Date(ticket.sla_resolution_due_at).toLocaleString() }}</dd>
+                                </div>
+                            </dl>
+                        </div>
+
+                        <div class="overflow-hidden bg-white shadow-sm sm:rounded-lg p-6">
+                            <h3 class="text-sm font-medium text-gray-500 mb-3">Info</h3>
+                            <dl class="space-y-2 text-sm">
+                                <div class="flex justify-between">
+                                    <dt class="text-gray-500">Source</dt>
+                                    <dd class="text-gray-900">{{ ticket.source }}</dd>
+                                </div>
+                                <div class="flex justify-between">
+                                    <dt class="text-gray-500">Created</dt>
+                                    <dd class="text-gray-900">{{ new Date(ticket.created_at).toLocaleDateString() }}</dd>
+                                </div>
+                                <div v-if="ticket.first_responded_at" class="flex justify-between">
+                                    <dt class="text-gray-500">First Response</dt>
+                                    <dd class="text-gray-900">{{ new Date(ticket.first_responded_at).toLocaleDateString() }}</dd>
+                                </div>
+                                <div v-if="ticket.resolved_at" class="flex justify-between">
+                                    <dt class="text-gray-500">Resolved</dt>
+                                    <dd class="text-gray-900">{{ new Date(ticket.resolved_at).toLocaleDateString() }}</dd>
+                                </div>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </AuthenticatedLayout>
+</template>

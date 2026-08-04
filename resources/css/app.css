@@ -1,0 +1,39 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+    --color-primary: #6366f1;
+    --color-secondary: #4f46e5;
+    --color-accent: #818cf8;
+    --header-bg: #ffffff;
+    --header-text: #111827;
+    --sidebar-bg: #f9fafb;
+    --font-family: inherit;
+}
+
+/* Tenant-aware overrides */
+.btn-primary {
+    background-color: var(--color-primary);
+    color: #ffffff;
+}
+
+.btn-primary:hover {
+    background-color: var(--color-secondary);
+}
+
+.text-primary {
+    color: var(--color-primary);
+}
+
+.bg-primary {
+    background-color: var(--color-primary);
+}
+
+.ring-primary {
+    --tw-ring-color: var(--color-primary);
+}
+
+.border-primary {
+    border-color: var(--color-primary);
+}
