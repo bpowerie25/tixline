@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\BelongsToTenant;
+use App\Services\HtmlSanitizer;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -20,7 +21,7 @@ class Ticket extends Model
         'sla_response_due_at', 'sla_resolution_due_at',
     ];
 
-    protected $appends = ['sla_status'];
+    protected $appends = ['sla_status', 'sanitized_body'];
 
     protected function casts(): array
     {
@@ -52,6 +53,11 @@ class Ticket extends Model
                 $ticket->updateQuietly($updates);
             }
         });
+    }
+
+    public function getSanitizedBodyAttribute(): string
+    {
+        return HtmlSanitizer::sanitize($this->body);
     }
 
     public function getSlaStatusAttribute(): ?string

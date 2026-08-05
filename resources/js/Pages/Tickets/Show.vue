@@ -1,5 +1,6 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import SandboxedHtml from '@/Components/SandboxedHtml.vue';
 import SlaBadge from '@/Components/SlaBadge.vue';
 import { Head, Link, useForm, router } from '@inertiajs/vue3';
 import { ref } from 'vue';
@@ -112,7 +113,9 @@ const statusColors = {
                                     <span class="text-sm text-gray-500">{{ new Date(ticket.created_at).toLocaleString() }}</span>
                                 </div>
                             </div>
-                            <div class="p-6 prose prose-sm max-w-none" v-html="ticket.body || '<em>No description</em>'" />
+                            <div class="p-6">
+                                <SandboxedHtml :html="ticket.sanitized_body" />
+                            </div>
 
                             <!-- Custom Fields -->
                             <div v-if="ticket.custom_fields && Object.keys(ticket.custom_fields).length" class="border-t border-gray-200 px-6 py-4">
@@ -138,7 +141,9 @@ const statusColors = {
                                     <span class="text-sm text-gray-500">{{ new Date(comment.created_at).toLocaleString() }}</span>
                                 </div>
                             </div>
-                            <div class="p-6 prose prose-sm max-w-none" v-html="comment.body" />
+                            <div class="p-6">
+                                <SandboxedHtml :html="comment.sanitized_body" />
+                            </div>
                             <div v-if="comment.attachments?.length" class="px-6 pb-4 flex flex-wrap gap-2">
                                 <a
                                     v-for="att in comment.attachments"

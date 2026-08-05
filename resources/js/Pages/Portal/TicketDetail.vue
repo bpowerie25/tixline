@@ -1,5 +1,6 @@
 <script setup>
 import { Head, Link, useForm } from '@inertiajs/vue3';
+import SandboxedHtml from '@/Components/SandboxedHtml.vue';
 
 const props = defineProps({
     ticket: Object,
@@ -55,7 +56,9 @@ const statusColors = {
                         </div>
                     </div>
                 </div>
-                <div class="mt-4 prose prose-sm max-w-none" v-html="ticket.body || '<em>No description</em>'" />
+                <div class="mt-4">
+                    <SandboxedHtml :html="ticket.sanitized_body" />
+                </div>
             </div>
 
             <!-- Comments -->
@@ -66,7 +69,9 @@ const statusColors = {
                         <span class="text-sm text-gray-500">{{ new Date(comment.created_at).toLocaleString() }}</span>
                     </div>
                 </div>
-                <div class="p-6 prose prose-sm max-w-none" v-html="comment.body" />
+                <div class="p-6">
+                    <SandboxedHtml :html="comment.sanitized_body" />
+                </div>
             </div>
 
             <!-- Reply form -->

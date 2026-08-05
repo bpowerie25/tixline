@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\HtmlSanitizer;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
@@ -9,6 +10,13 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 class Comment extends Model
 {
     protected $fillable = ['ticket_id', 'user_id', 'body', 'is_internal', 'type'];
+
+    protected $appends = ['sanitized_body'];
+
+    public function getSanitizedBodyAttribute(): string
+    {
+        return HtmlSanitizer::sanitize($this->body);
+    }
 
     protected function casts(): array
     {

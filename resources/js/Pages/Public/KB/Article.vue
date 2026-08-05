@@ -1,5 +1,6 @@
 <script setup>
 import { Head, Link } from '@inertiajs/vue3';
+import SandboxedHtml from '@/Components/SandboxedHtml.vue';
 
 const props = defineProps({
     category: Object,
@@ -27,7 +28,9 @@ const props = defineProps({
 
         <div class="mx-auto max-w-3xl px-4 py-8">
             <div class="overflow-hidden bg-white shadow-sm sm:rounded-lg p-8">
-                <div class="prose prose-indigo max-w-none" v-html="article.body" />
+                <div class="prose prose-indigo max-w-none">
+                    <SandboxedHtml :html="article.body" />
+                </div>
             </div>
         </div>
     </div>
