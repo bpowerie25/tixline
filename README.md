@@ -123,6 +123,38 @@ php artisan serve
 | Agent | marcus@example.com | password |
 | Agent | emily@example.com | password |
 
+## Queue Worker (Required for Inbound Email)
+
+Inbound email processing is asynchronous via Laravel's database queue. The job (`ProcessInboundEmailJob`) retries 3 times with backoff [30s, 120s, 300s] on failure.
+
+**You must run a queue worker** for inbound emails to be processed:
+
+```bash
+# Development
+php artisan queue:work --tries=3
+
+# Production (use Supervisor or systemd)
+# See https://laravel.com/docs/queues#supervisor-configuration
+```
+
+Example Supervisor config:
+
+```ini
+[program:tixline-worker]
+process_name=%(program_name)s_%(process_num)02d
+command=php /path/to/artisan queue:work database --sleep=3 --tries=3 --max-time=3600
+autostart=true
+autorestart=true
+stopasgroup=true
+killasgroup=true
+numprocs=2
+user=www-data
+redirect_stderr=true
+stdout_logfile=/var/log/tixline-worker.log
+```
+
+Without a queue worker, inbound emails will be stored in `inbound_emails` but never processed into tickets.
+
 ## Configuration
 
 ### Inbound Email
@@ -143,14 +175,25 @@ support: |"/path/to/your/app/artisan support:process-email"
 
 **Option B: HTTP webhook** (for forwarding services or custom setups)
 
-Forward parsed emails to your app:
+The webhook uses HMAC-SHA256 signature verification. The signature covers both the timestamp and the request body to prevent replay attacks:
+
+```
+Signature = HMAC-SHA256(timestamp + "." + body, secret)
+```
 
 ```bash
+TIMESTAMP=$(date +%s)
+PAYLOAD='{"from_email":"customer@example.com","from_name":"Customer","subject":"Help!","body":"<p>...</p>"}'
+SIGNATURE=$(echo -n "${TIMESTAMP}.${PAYLOAD}" | openssl dgst -sha256 -hmac 'your-secret' | awk '{print $2}')
+
 curl -X POST https://your-app.com/inbound/email \
   -H "Content-Type: application/json" \
-  -H "X-Webhook-Signature: $(echo -n '$PAYLOAD' | openssl dgst -sha256 -hmac 'your-secret')" \
-  -d '{"from_email":"customer@example.com","from_name":"Customer","subject":"Help!","body":"<p>...</p>"}'
+  -H "X-Webhook-Signature: ${SIGNATURE}" \
+  -H "X-Webhook-Timestamp: ${TIMESTAMP}" \
+  -d "${PAYLOAD}"
 ```
+
+The timestamp must be within 5 minutes of the server's clock.
 
 ### Spam Filter
 
