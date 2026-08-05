@@ -6,6 +6,7 @@ return [
 
     'inbound' => [
         'webhook_secret' => env('INBOUND_WEBHOOK_SECRET'),
+        'payload_retention_days' => (int) env('INBOUND_PAYLOAD_RETENTION_DAYS', 30),
     ],
 
     'attachments' => [
