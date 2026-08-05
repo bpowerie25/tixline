@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\DTOs\InboundMessage;
 use App\Models\Ticket;
+use Illuminate\Support\Facades\Log;
 
 class InboundEmailProcessor
 {
@@ -81,8 +82,17 @@ class InboundEmailProcessor
                 ->whereIn('status', ['open', 'pending', 'resolved'])
                 ->first();
 
-            if ($ticket) {
+            if ($ticket && $this->senderEntitledToTicket($fromEmail, $ticket)) {
                 return $ticket;
+            }
+
+            if ($ticket) {
+                Log::warning('Inbound email reference match rejected: sender not entitled', [
+                    'reference' => $ticket->reference,
+                    'sender' => $fromEmail,
+                    'requester' => $ticket->requester_email,
+                ]);
+                // Fall through — do NOT append to this ticket
             }
         }
 
@@ -92,5 +102,39 @@ class InboundEmailProcessor
             ->where('subject', $cleanSubject)
             ->whereIn('status', ['open', 'pending'])
             ->first();
+    }
+
+    /**
+     * Check whether the sender is entitled to post to a ticket:
+     * - Matches the original requester email, OR
+     * - Has previously commented on this ticket (known participant), OR
+     * - Is a registered agent/admin in the system.
+     */
+    protected function senderEntitledToTicket(string $fromEmail, Ticket $ticket): bool
+    {
+        $email = strtolower($fromEmail);
+
+        // Original requester
+        if (strtolower($ticket->requester_email) === $email) {
+            return true;
+        }
+
+        // Known participant — has an existing comment on this ticket
+        $isParticipant = $ticket->comments()
+            ->whereHas('user', fn ($q) => $q->where('email', $email))
+            ->exists();
+
+        if ($isParticipant) {
+            return true;
+        }
+
+        // Registered agent or admin
+        $isAgent = \App\Models\User::where('email', $email)->exists();
+
+        if ($isAgent) {
+            return true;
+        }
+
+        return false;
     }
 }
