@@ -23,13 +23,20 @@ class InboundEmailWebhookTest extends TestCase
         config(['support.inbound.webhook_secret' => $this->secret]);
     }
 
-    protected function signedPost(array $data, ?string $secret = null): TestResponse
+    /**
+     * Sign and post with the timestamp-inclusive HMAC scheme.
+     * Signature = HMAC-SHA256(timestamp.body, secret)
+     */
+    protected function signedPost(array $data, ?string $secret = null, ?int $timestamp = null): TestResponse
     {
         $payload = json_encode($data);
-        $sig = hash_hmac('sha256', $payload, $secret ?? $this->secret);
+        $ts = (string) ($timestamp ?? time());
+        $signedPayload = $ts.'.'.$payload;
+        $sig = hash_hmac('sha256', $signedPayload, $secret ?? $this->secret);
 
         return $this->call('POST', route('inbound.email'), [], [], [], [
             'HTTP_X_WEBHOOK_SIGNATURE' => $sig,
+            'HTTP_X_WEBHOOK_TIMESTAMP' => $ts,
             'CONTENT_TYPE' => 'application/json',
         ], $payload);
     }
@@ -44,7 +51,6 @@ class InboundEmailWebhookTest extends TestCase
             'from_name' => 'Customer',
             'subject' => 'Help needed',
             'body' => '<p>Please help</p>',
-            'timestamp' => time(),
         ])->assertOk()
             ->assertJson(['status' => 'queued']);
 
@@ -65,7 +71,6 @@ class InboundEmailWebhookTest extends TestCase
             'from_email' => 'customer@example.com',
             'subject' => 'Test',
             'body' => 'Body',
-            'timestamp' => time(),
         ];
 
         $this->signedPost($data)->assertOk()->assertJson(['status' => 'queued']);
@@ -82,8 +87,8 @@ class InboundEmailWebhookTest extends TestCase
             'from_email' => 'customer@example.com',
             'subject' => 'Old',
             'body' => 'Body',
-            'timestamp' => time() - 600, // 10 minutes ago
-        ])->assertUnauthorized()
+        ], timestamp: time() - 600) // 10 minutes ago
+            ->assertUnauthorized()
             ->assertJson(['error' => 'Request expired']);
 
         $this->assertEquals(0, InboundEmail::count());
@@ -106,7 +111,6 @@ class InboundEmailWebhookTest extends TestCase
             'from_email' => 'test@example.com',
             'subject' => 'Test',
             'body' => 'Body',
-            'timestamp' => time(),
         ], 'wrong-secret')->assertUnauthorized();
     }
 
@@ -120,12 +124,12 @@ class InboundEmailWebhookTest extends TestCase
             'body' => 'Body',
         ], [
             'X-Webhook-Signature' => 'anything',
+            'X-Webhook-Timestamp' => (string) time(),
         ])->assertUnauthorized();
     }
 
     public function test_job_creates_ticket_when_processed(): void
     {
-        // Store a pending inbound email
         $record = InboundEmail::create([
             'message_id' => 'msg-job@example.com',
             'payload' => [
@@ -138,7 +142,6 @@ class InboundEmailWebhookTest extends TestCase
             'status' => 'pending',
         ]);
 
-        // Run the job synchronously
         (new ProcessInboundEmailJob($record->id))->handle(app(InboundEmailProcessor::class));
 
         $record->refresh();
@@ -176,7 +179,7 @@ class InboundEmailWebhookTest extends TestCase
 
         $this->assertEquals('processed', $record->fresh()->status);
         $this->assertEquals(1, $ticket->comments()->count());
-        $this->assertEquals(1, Ticket::count()); // No new ticket
+        $this->assertEquals(1, Ticket::count());
     }
 
     public function test_job_rejects_spam(): void
@@ -204,24 +207,83 @@ class InboundEmailWebhookTest extends TestCase
     {
         Queue::fake();
 
-        // Simulate race condition — insert directly first
         InboundEmail::create([
             'message_id' => 'msg-race@example.com',
             'payload' => ['from_email' => 'a@test.com', 'subject' => 'Race', 'body' => 'B'],
             'status' => 'pending',
         ]);
 
-        // Second request with same message_id should return duplicate
         $this->signedPost([
             'message_id' => 'msg-race@example.com',
             'from_email' => 'a@test.com',
             'subject' => 'Race',
             'body' => 'B',
-            'timestamp' => time(),
         ])->assertOk()
             ->assertJson(['status' => 'duplicate']);
 
-        // Only one record
         $this->assertEquals(1, InboundEmail::where('message_id', 'msg-race@example.com')->count());
+    }
+
+    // Item 4: Timestamp-inclusive signature tests
+
+    public function test_rejects_when_timestamp_altered_after_signing(): void
+    {
+        $data = [
+            'message_id' => 'msg-tamper@example.com',
+            'from_email' => 'test@example.com',
+            'subject' => 'Test',
+            'body' => 'Body',
+        ];
+
+        $originalTs = time();
+        $payload = json_encode($data);
+        // Sign with original timestamp
+        $sig = hash_hmac('sha256', $originalTs.'.'.$payload, $this->secret);
+
+        // Submit with a different (fresh) timestamp — signature should not match
+        $freshTs = $originalTs + 1;
+
+        $this->call('POST', route('inbound.email'), [], [], [], [
+            'HTTP_X_WEBHOOK_SIGNATURE' => $sig,
+            'HTTP_X_WEBHOOK_TIMESTAMP' => (string) $freshTs,
+            'CONTENT_TYPE' => 'application/json',
+        ], $payload)->assertUnauthorized();
+    }
+
+    public function test_rejects_missing_timestamp_header(): void
+    {
+        $payload = json_encode(['from_email' => 'a@b.com', 'subject' => 'X', 'body' => 'Y']);
+        $sig = hash_hmac('sha256', $payload, $this->secret);
+
+        $this->call('POST', route('inbound.email'), [], [], [], [
+            'HTTP_X_WEBHOOK_SIGNATURE' => $sig,
+            'CONTENT_TYPE' => 'application/json',
+        ], $payload)->assertUnauthorized()
+            ->assertJson(['error' => 'Missing or invalid timestamp']);
+    }
+
+    public function test_rejects_non_numeric_timestamp(): void
+    {
+        $payload = json_encode(['from_email' => 'a@b.com', 'subject' => 'X', 'body' => 'Y']);
+
+        $this->call('POST', route('inbound.email'), [], [], [], [
+            'HTTP_X_WEBHOOK_SIGNATURE' => 'anything',
+            'HTTP_X_WEBHOOK_TIMESTAMP' => 'not-a-number',
+            'CONTENT_TYPE' => 'application/json',
+        ], $payload)->assertUnauthorized()
+            ->assertJson(['error' => 'Missing or invalid timestamp']);
+    }
+
+    public function test_correctly_signed_request_inside_window_accepted(): void
+    {
+        Queue::fake();
+
+        $this->signedPost([
+            'message_id' => 'msg-valid@example.com',
+            'from_email' => 'customer@example.com',
+            'subject' => 'Valid',
+            'body' => 'Body',
+        ], timestamp: time())->assertOk()
+            ->assertJson(['status' => 'queued']);
     }
 }

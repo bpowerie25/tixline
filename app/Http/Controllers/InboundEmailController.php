@@ -11,30 +11,35 @@ class InboundEmailController extends Controller
 {
     public function webhook(Request $request)
     {
-        // 1. Verify signature
-        if (! $this->verifySignature($request)) {
-            return response()->json(['error' => 'Invalid signature'], 401);
+        // 1. Require and validate timestamp header
+        $timestamp = $request->header('X-Webhook-Timestamp');
+        if (empty($timestamp) || ! ctype_digit($timestamp)) {
+            return response()->json(['error' => 'Missing or invalid timestamp'], 401);
         }
 
-        // 2. Check timestamp — reject replays older than 5 minutes
-        $timestamp = $request->input('timestamp');
-        if ($timestamp && abs(time() - (int) $timestamp) > 300) {
+        // 2. Reject replays older than 5 minutes
+        if (abs(time() - (int) $timestamp) > 300) {
             return response()->json(['error' => 'Request expired'], 401);
         }
 
-        // 3. Extract message ID for idempotency
+        // 3. Verify signature — HMAC covers timestamp.body
+        if (! $this->verifySignature($request, $timestamp)) {
+            return response()->json(['error' => 'Invalid signature'], 401);
+        }
+
+        // 4. Extract message ID for idempotency
         $messageId = $request->input('message_id', '');
         if (empty($messageId)) {
             $messageId = uniqid('webhook-', true);
         }
 
-        // 4. Idempotency check — duplicate delivery is a no-op 200
+        // 5. Idempotency check — duplicate delivery is a no-op 200
         $existing = InboundEmail::where('message_id', $messageId)->first();
         if ($existing) {
             return response()->json(['status' => 'duplicate', 'id' => $existing->id]);
         }
 
-        // 5. Persist raw payload
+        // 6. Persist raw payload
         try {
             $record = InboundEmail::create([
                 'message_id' => $messageId,
@@ -49,13 +54,20 @@ class InboundEmailController extends Controller
             throw $e;
         }
 
-        // 6. Dispatch job for async processing
+        // 7. Dispatch job for async processing
         ProcessInboundEmailJob::dispatch($record->id);
 
         return response()->json(['status' => 'queued', 'id' => $record->id]);
     }
 
-    protected function verifySignature(Request $request): bool
+    /**
+     * Verify HMAC-SHA256 signature over "timestamp.body".
+     *
+     * The signed payload is the timestamp header value concatenated with
+     * a dot and the raw request body: hash_hmac('sha256', "$timestamp.$body", $secret).
+     * This prevents replay attacks where the timestamp is altered after signing.
+     */
+    protected function verifySignature(Request $request, string $timestamp): bool
     {
         $secret = config('support.inbound.webhook_secret');
 
@@ -69,7 +81,8 @@ class InboundEmailController extends Controller
             return false;
         }
 
-        $expected = hash_hmac('sha256', $request->getContent(), $secret);
+        $signedPayload = $timestamp.'.'.$request->getContent();
+        $expected = hash_hmac('sha256', $signedPayload, $secret);
 
         return hash_equals($expected, $signature);
     }
