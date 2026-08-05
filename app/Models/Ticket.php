@@ -21,6 +21,8 @@ class Ticket extends Model
         'sla_response_due_at', 'sla_resolution_due_at',
     ];
 
+    protected $hidden = ['body'];
+
     protected $appends = ['sla_status', 'sanitized_body'];
 
     protected function casts(): array

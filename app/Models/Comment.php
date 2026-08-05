@@ -11,6 +11,8 @@ class Comment extends Model
 {
     protected $fillable = ['ticket_id', 'user_id', 'body', 'is_internal', 'type'];
 
+    protected $hidden = ['body'];
+
     protected $appends = ['sanitized_body'];
 
     public function getSanitizedBodyAttribute(): string

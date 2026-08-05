@@ -31,12 +31,18 @@ class TicketApiController extends Controller
 
     public function show(Ticket $ticket)
     {
-        return $ticket->load([
+        $ticket->load([
             'assignee:id,name',
             'team:id,name',
             'labels:id,name,color',
             'comments' => fn ($q) => $q->with('user:id,name')->oldest(),
         ]);
+
+        // API consumers get the raw body deliberately
+        $ticket->makeVisible('body');
+        $ticket->comments->each->makeVisible('body');
+
+        return $ticket;
     }
 
     public function store(Request $request, WorkflowEngine $engine)
@@ -112,6 +118,9 @@ class TicketApiController extends Controller
         if (! $ticket->first_responded_at && ! ($validated['is_internal'] ?? false)) {
             $ticket->update(['first_responded_at' => now()]);
         }
+
+        // API consumers get the raw body deliberately
+        $comment->makeVisible('body');
 
         return response()->json($comment->load('user:id,name'), 201);
     }
