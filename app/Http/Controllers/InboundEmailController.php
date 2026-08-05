@@ -39,11 +39,13 @@ class InboundEmailController extends Controller
             return response()->json(['status' => 'duplicate', 'id' => $existing->id]);
         }
 
-        // 6. Persist raw payload
+        // 6. Persist raw payload with auth results
+        $message = \App\DTOs\InboundMessage::fromWebhookPayload($request->all());
         try {
             $record = InboundEmail::create([
                 'message_id' => $messageId,
                 'payload' => $request->all(),
+                'auth_results' => $message->authResults,
                 'status' => 'pending',
             ]);
         } catch (QueryException $e) {

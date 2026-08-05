@@ -7,6 +7,27 @@ return [
     'inbound' => [
         'webhook_secret' => env('INBOUND_WEBHOOK_SECRET'),
         'payload_retention_days' => (int) env('INBOUND_PAYLOAD_RETENTION_DAYS', 30),
+
+        /*
+        |----------------------------------------------------------------------
+        | Require email authentication (DKIM/SPF/DMARC) for reference matching
+        |----------------------------------------------------------------------
+        |
+        | When true, a [TKT-n] reference match is only honoured when the
+        | inbound message has passing DKIM, SPF, or DMARC results. Messages
+        | with failing or absent auth results fall through to create a new
+        | ticket. This prevents From-header spoofing attacks.
+        |
+        | The pipe path (Postfix → artisan) has no provider auth results.
+        | When this is true, pipe-delivered messages with a [TKT-n] reference
+        | are only matched if the sender is the original requester — the
+        | agent-address branch is never granted without authentication.
+        |
+        | Set to false only if your MTA performs its own authentication
+        | and you trust the pipe path unconditionally.
+        |
+        */
+        'require_auth_results' => (bool) env('INBOUND_REQUIRE_AUTH_RESULTS', true),
     ],
 
     'attachments' => [

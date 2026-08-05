@@ -13,19 +13,23 @@ class InboundMessage
         public readonly array $headers = [],
         public readonly array $attachments = [],
         public readonly ?int $timestamp = null,
+        public readonly ?array $authResults = null,
     ) {}
 
     public static function fromWebhookPayload(array $payload): self
     {
+        $headers = $payload['headers'] ?? [];
+
         return new self(
             messageId: $payload['message_id'] ?? '',
             fromEmail: $payload['from_email'] ?? '',
             fromName: $payload['from_name'] ?? $payload['from_email'] ?? '',
             subject: $payload['subject'] ?? '',
             body: $payload['body'] ?? '',
-            headers: $payload['headers'] ?? [],
+            headers: $headers,
             attachments: $payload['attachments'] ?? [],
             timestamp: $payload['timestamp'] ?? null,
+            authResults: self::extractAuthResults($payload, $headers),
         );
     }
 
@@ -63,6 +67,7 @@ class InboundMessage
             subject: $subject,
             body: $body,
             headers: $headers,
+            authResults: self::extractAuthResults([], $headers),
         );
     }
 
@@ -110,5 +115,60 @@ class InboundMessage
         }
 
         return nl2br(htmlspecialchars(trim($rawBody)));
+    }
+
+    /**
+     * Extract email authentication verdicts from provider payload or headers.
+     *
+     * Providers may supply explicit fields (spf, dkim, dmarc) or an
+     * Authentication-Results header. Returns normalised verdicts.
+     */
+    protected static function extractAuthResults(array $payload, array $headers): array
+    {
+        $results = [
+            'spf' => null,
+            'dkim' => null,
+            'dmarc' => null,
+        ];
+
+        // 1. Check explicit provider fields (e.g. Mailgun, SendGrid, Postmark)
+        foreach (['spf', 'dkim', 'dmarc'] as $check) {
+            $value = $payload[$check] ?? $payload[strtoupper($check)] ?? null;
+            if ($value !== null) {
+                $results[$check] = strtolower((string) $value);
+            }
+        }
+
+        // 2. Fallback: parse Authentication-Results header
+        $authHeader = $headers['authentication-results'] ?? '';
+        if ($authHeader && $results['spf'] === null && $results['dkim'] === null && $results['dmarc'] === null) {
+            if (preg_match('/\bspf=(\w+)/i', $authHeader, $m)) {
+                $results['spf'] = strtolower($m[1]);
+            }
+            if (preg_match('/\bdkim=(\w+)/i', $authHeader, $m)) {
+                $results['dkim'] = strtolower($m[1]);
+            }
+            if (preg_match('/\bdmarc=(\w+)/i', $authHeader, $m)) {
+                $results['dmarc'] = strtolower($m[1]);
+            }
+        }
+
+        return $results;
+    }
+
+    /**
+     * Whether at least one email authentication mechanism passed.
+     */
+    public function authPassed(): bool
+    {
+        if ($this->authResults === null) {
+            return false;
+        }
+
+        $passing = ['pass'];
+
+        return in_array($this->authResults['dkim'] ?? null, $passing, true)
+            || in_array($this->authResults['spf'] ?? null, $passing, true)
+            || in_array($this->authResults['dmarc'] ?? null, $passing, true);
     }
 }

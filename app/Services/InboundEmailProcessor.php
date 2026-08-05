@@ -26,7 +26,7 @@ class InboundEmailProcessor
         }
 
         // Thread detection
-        $existingTicket = $this->findExistingTicket($message->fromEmail, $subject);
+        $existingTicket = $this->findExistingTicket($message->fromEmail, $subject, $message);
 
         if ($existingTicket) {
             $comment = $existingTicket->comments()->create([
@@ -75,14 +75,14 @@ class InboundEmailProcessor
         }
     }
 
-    protected function findExistingTicket(string $fromEmail, string $subject): ?Ticket
+    protected function findExistingTicket(string $fromEmail, string $subject, InboundMessage $message): ?Ticket
     {
         if (preg_match('/\[TKT-(\d+)\]/', $subject, $matches)) {
             $ticket = Ticket::where('reference', 'TKT-'.$matches[1])
                 ->whereIn('status', ['open', 'pending', 'resolved'])
                 ->first();
 
-            if ($ticket && $this->senderEntitledToTicket($fromEmail, $ticket)) {
+            if ($ticket && $this->senderEntitledToTicket($fromEmail, $ticket, $message)) {
                 return $ticket;
             }
 
@@ -91,6 +91,7 @@ class InboundEmailProcessor
                     'reference' => $ticket->reference,
                     'sender' => $fromEmail,
                     'requester' => $ticket->requester_email,
+                    'auth_results' => $message->authResults,
                 ]);
                 // Fall through — do NOT append to this ticket
             }
@@ -105,18 +106,30 @@ class InboundEmailProcessor
     }
 
     /**
-     * Check whether the sender is entitled to post to a ticket:
-     * - Matches the original requester email, OR
-     * - Has previously commented on this ticket (known participant), OR
-     * - Is a registered agent/admin in the system.
+     * Check whether the sender is entitled to post to a ticket.
+     *
+     * When INBOUND_REQUIRE_AUTH_RESULTS is true (default), entitlement
+     * via the agent-address branch requires passing email authentication
+     * (DKIM/SPF/DMARC). The original requester is allowed without auth
+     * only if the reference was already in the subject (they know it).
+     * The agent branch is NEVER allowed without authentication.
      */
-    protected function senderEntitledToTicket(string $fromEmail, Ticket $ticket): bool
+    protected function senderEntitledToTicket(string $fromEmail, Ticket $ticket, InboundMessage $message): bool
     {
         $email = strtolower($fromEmail);
+        $requireAuth = config('support.inbound.require_auth_results', true);
+        $authPassed = $message->authPassed();
 
-        // Original requester
+        // Original requester — allowed even without auth results (they
+        // already know the reference because we sent it to them)
         if (strtolower($ticket->requester_email) === $email) {
             return true;
+        }
+
+        // From here on, all branches require authentication when the
+        // policy is enabled.
+        if ($requireAuth && ! $authPassed) {
+            return false;
         }
 
         // Known participant — has an existing comment on this ticket
@@ -128,10 +141,21 @@ class InboundEmailProcessor
             return true;
         }
 
-        // Registered agent or admin
+        // Registered agent or admin — strictest: always requires auth
         $isAgent = \App\Models\User::where('email', $email)->exists();
 
         if ($isAgent) {
+            // Even when require_auth_results is false, agent address
+            // spoofing is too dangerous to allow without auth.
+            if (! $authPassed) {
+                Log::warning('Agent address claimed without passing email auth', [
+                    'claimed' => $email,
+                    'auth_results' => $message->authResults,
+                ]);
+
+                return false;
+            }
+
             return true;
         }
 

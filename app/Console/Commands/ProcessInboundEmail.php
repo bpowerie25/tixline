@@ -42,6 +42,7 @@ class ProcessInboundEmail extends Command
                 'body' => $message->body,
                 'headers' => $message->headers,
             ],
+            'auth_results' => $message->authResults,
             'status' => 'pending',
         ]);
 

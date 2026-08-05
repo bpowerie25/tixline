@@ -31,7 +31,18 @@ class InboundEmailProcessorTest extends TestCase
             subject: $overrides['subject'] ?? 'Help needed',
             body: $overrides['body'] ?? '<p>Please help</p>',
             headers: $overrides['headers'] ?? [],
+            authResults: $overrides['authResults'] ?? null,
         );
+    }
+
+    protected function passingAuth(): array
+    {
+        return ['spf' => 'pass', 'dkim' => 'pass', 'dmarc' => 'pass'];
+    }
+
+    protected function failingAuth(): array
+    {
+        return ['spf' => 'fail', 'dkim' => 'fail', 'dmarc' => 'fail'];
     }
 
     public function test_creates_new_ticket(): void
@@ -158,7 +169,7 @@ class InboundEmailProcessorTest extends TestCase
         $this->assertEquals($ticket->id, $result['ticket_id']);
     }
 
-    public function test_known_agent_can_thread_by_reference(): void
+    public function test_known_agent_can_thread_by_reference_with_auth(): void
     {
         $agent = \App\Models\User::factory()->create(['role' => 'agent']);
 
@@ -172,6 +183,7 @@ class InboundEmailProcessorTest extends TestCase
         $result = $this->processor->process($this->makeMessage([
             'fromEmail' => $agent->email,
             'subject' => 'Re: [TKT-000097] Issue',
+            'authResults' => $this->passingAuth(),
         ]));
 
         $this->assertEquals('reply', $result['status']);
@@ -212,5 +224,191 @@ class InboundEmailProcessorTest extends TestCase
 
         $this->assertEquals('created', $result['status']);
         $this->assertEquals(2, Ticket::count());
+    }
+
+    // --- Email authentication gating tests ---
+
+    public function test_spoofed_from_with_failing_auth_creates_new_ticket(): void
+    {
+        $ticket = Ticket::create([
+            'subject' => 'Secret issue',
+            'requester_name' => 'Real',
+            'requester_email' => 'real@example.com',
+        ]);
+        $ticket->updateQuietly(['reference' => 'TKT-000050']);
+
+        // Register a participant so the sender "looks" entitled by email
+        $participant = \App\Models\User::factory()->create(['email' => 'participant@example.com']);
+        $ticket->comments()->create([
+            'body' => 'Earlier reply',
+            'type' => 'reply',
+            'user_id' => $participant->id,
+        ]);
+
+        // Spoofed message claiming participant address, but auth fails
+        $result = $this->processor->process($this->makeMessage([
+            'fromEmail' => 'participant@example.com',
+            'subject' => 'Re: [TKT-000050] Secret issue',
+            'authResults' => $this->failingAuth(),
+        ]));
+
+        // Must create a new ticket, not append
+        $this->assertEquals('created', $result['status']);
+        $this->assertNotEquals($ticket->id, $result['ticket_id']);
+        // Original ticket should still have only the one comment
+        $this->assertEquals(1, $ticket->comments()->count());
+    }
+
+    public function test_authenticated_participant_can_thread(): void
+    {
+        $ticket = Ticket::create([
+            'subject' => 'Issue',
+            'requester_name' => 'Real',
+            'requester_email' => 'real@example.com',
+        ]);
+        $ticket->updateQuietly(['reference' => 'TKT-000051']);
+
+        $participant = \App\Models\User::factory()->create(['email' => 'participant@example.com']);
+        $ticket->comments()->create([
+            'body' => 'Earlier reply',
+            'type' => 'reply',
+            'user_id' => $participant->id,
+        ]);
+
+        $result = $this->processor->process($this->makeMessage([
+            'fromEmail' => 'participant@example.com',
+            'subject' => 'Re: [TKT-000051] Issue',
+            'authResults' => $this->passingAuth(),
+        ]));
+
+        $this->assertEquals('reply', $result['status']);
+        $this->assertEquals($ticket->id, $result['ticket_id']);
+    }
+
+    public function test_agent_address_with_failing_auth_never_gains_entitlement(): void
+    {
+        $agent = \App\Models\User::factory()->create(['role' => 'agent']);
+
+        $ticket = Ticket::create([
+            'subject' => 'Sensitive ticket',
+            'requester_name' => 'Customer',
+            'requester_email' => 'customer@example.com',
+        ]);
+        $ticket->updateQuietly(['reference' => 'TKT-000052']);
+
+        // Attacker spoofs the agent's address but fails auth
+        $result = $this->processor->process($this->makeMessage([
+            'fromEmail' => $agent->email,
+            'subject' => 'Re: [TKT-000052] Sensitive ticket',
+            'authResults' => $this->failingAuth(),
+        ]));
+
+        $this->assertEquals('created', $result['status']);
+        $this->assertNotEquals($ticket->id, $result['ticket_id']);
+        $this->assertEquals(0, $ticket->comments()->count());
+    }
+
+    public function test_agent_address_with_no_auth_results_never_gains_entitlement(): void
+    {
+        $agent = \App\Models\User::factory()->create(['role' => 'agent']);
+
+        $ticket = Ticket::create([
+            'subject' => 'Ticket',
+            'requester_name' => 'Customer',
+            'requester_email' => 'customer@example.com',
+        ]);
+        $ticket->updateQuietly(['reference' => 'TKT-000053']);
+
+        // No auth results at all (e.g. pipe path)
+        $result = $this->processor->process($this->makeMessage([
+            'fromEmail' => $agent->email,
+            'subject' => 'Re: [TKT-000053] Ticket',
+            'authResults' => null,
+        ]));
+
+        $this->assertEquals('created', $result['status']);
+        $this->assertNotEquals($ticket->id, $result['ticket_id']);
+    }
+
+    public function test_original_requester_threads_without_auth_results(): void
+    {
+        // The requester already knows the reference — auth not required
+        $ticket = Ticket::create([
+            'subject' => 'My issue',
+            'requester_name' => 'Customer',
+            'requester_email' => 'customer@example.com',
+        ]);
+        $ticket->updateQuietly(['reference' => 'TKT-000054']);
+
+        $result = $this->processor->process($this->makeMessage([
+            'fromEmail' => 'customer@example.com',
+            'subject' => 'Re: [TKT-000054] My issue',
+            'authResults' => null,  // pipe path, no auth
+        ]));
+
+        $this->assertEquals('reply', $result['status']);
+        $this->assertEquals($ticket->id, $result['ticket_id']);
+    }
+
+    public function test_auth_results_extracted_from_explicit_payload_fields(): void
+    {
+        $message = InboundMessage::fromWebhookPayload([
+            'from_email' => 'test@example.com',
+            'subject' => 'Test',
+            'body' => 'Body',
+            'spf' => 'pass',
+            'dkim' => 'pass',
+            'dmarc' => 'fail',
+        ]);
+
+        $this->assertEquals('pass', $message->authResults['spf']);
+        $this->assertEquals('pass', $message->authResults['dkim']);
+        $this->assertEquals('fail', $message->authResults['dmarc']);
+        $this->assertTrue($message->authPassed()); // spf+dkim pass
+    }
+
+    public function test_auth_results_extracted_from_authentication_results_header(): void
+    {
+        $message = InboundMessage::fromWebhookPayload([
+            'from_email' => 'test@example.com',
+            'subject' => 'Test',
+            'body' => 'Body',
+            'headers' => [
+                'authentication-results' => 'mx.google.com; dkim=pass; spf=pass; dmarc=pass',
+            ],
+        ]);
+
+        $this->assertEquals('pass', $message->authResults['spf']);
+        $this->assertEquals('pass', $message->authResults['dkim']);
+        $this->assertEquals('pass', $message->authResults['dmarc']);
+        $this->assertTrue($message->authPassed());
+    }
+
+    public function test_auth_passed_returns_false_when_all_fail(): void
+    {
+        $message = new InboundMessage(
+            messageId: 'test',
+            fromEmail: 'test@example.com',
+            fromName: 'Test',
+            subject: 'Test',
+            body: 'Test',
+            authResults: ['spf' => 'fail', 'dkim' => 'fail', 'dmarc' => 'fail'],
+        );
+
+        $this->assertFalse($message->authPassed());
+    }
+
+    public function test_auth_passed_returns_false_when_null(): void
+    {
+        $message = new InboundMessage(
+            messageId: 'test',
+            fromEmail: 'test@example.com',
+            fromName: 'Test',
+            subject: 'Test',
+            body: 'Test',
+            authResults: null,
+        );
+
+        $this->assertFalse($message->authPassed());
     }
 }
