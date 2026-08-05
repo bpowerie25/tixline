@@ -148,7 +148,7 @@ const statusColors = {
                                 <a
                                     v-for="att in comment.attachments"
                                     :key="att.id"
-                                    :href="'/storage/' + att.path"
+                                    :href="route('attachments.download', att.id)"
                                     target="_blank"
                                     class="inline-flex items-center gap-1.5 rounded border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs text-gray-700 hover:bg-gray-100"
                                 >

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\CannedResponseController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\CustomerPortalController;
@@ -66,6 +67,10 @@ Route::get('/dashboard', function () {
             ->latest()->take(10)->get(),
     ]);
 })->middleware(['auth', 'verified'])->name('dashboard');
+
+// Attachment download — requires auth (agent, customer, or sanctum)
+Route::get('/attachments/{attachment}/download', [AttachmentController::class, 'download'])
+    ->name('attachments.download');
 
 // Authenticated routes
 Route::middleware('auth')->group(function () {
