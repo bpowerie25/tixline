@@ -6,6 +6,7 @@ use App\Models\Label;
 use App\Models\Team;
 use App\Models\User;
 use App\Models\Workflow;
+use App\Rules\ValidWorkflowRegex;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -30,7 +31,7 @@ class WorkflowController extends Controller
             'events' => 'nullable|array',
             'events.*.entity' => 'required|string',
             'events.*.action' => 'required|string',
-            'conditions' => 'required|array',
+            'conditions' => ['required', 'array', new ValidWorkflowRegex],
             'actions' => 'required|array',
             'is_active' => 'boolean',
             'priority' => 'integer',
@@ -50,7 +51,7 @@ class WorkflowController extends Controller
             'events' => 'nullable|array',
             'events.*.entity' => 'required|string',
             'events.*.action' => 'required|string',
-            'conditions' => 'required|array',
+            'conditions' => ['required', 'array', new ValidWorkflowRegex],
             'actions' => 'required|array',
             'is_active' => 'boolean',
             'priority' => 'integer',

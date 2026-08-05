@@ -134,7 +134,7 @@ class WorkflowEngine
             'is_not_empty' => ! empty($ticketValue),
             'in' => in_array(strtolower((string) $ticketValue), array_map('strtolower', (array) $value)),
             'not_in' => ! in_array(strtolower((string) $ticketValue), array_map('strtolower', (array) $value)),
-            'matches_regex' => (bool) preg_match('/'.$value.'/i', (string) $ticketValue),
+            'matches_regex' => $this->safeRegexMatch($value, (string) $ticketValue),
             default => false,
         };
     }
@@ -246,6 +246,46 @@ class WorkflowEngine
         } catch (\Exception $e) {
             Log::warning('Workflow webhook failed', ['url' => $url, 'error' => $e->getMessage()]);
         }
+    }
+
+    /**
+     * Safely execute a regex match, escaping the delimiter and suppressing errors.
+     */
+    protected function safeRegexMatch(string $pattern, string $subject): bool
+    {
+        if ($pattern === '') {
+            return false;
+        }
+
+        // Escape the delimiter in the user-supplied pattern
+        $escaped = str_replace('~', '\~', $pattern);
+        $result = @preg_match('~'.$escaped.'~i', $subject);
+
+        if ($result === false) {
+            Log::warning('Workflow regex failed', [
+                'pattern' => $pattern,
+                'error' => preg_last_error_msg(),
+            ]);
+
+            return false;
+        }
+
+        return (bool) $result;
+    }
+
+    /**
+     * Validate that a regex pattern is syntactically valid.
+     * Returns true if valid, false otherwise.
+     */
+    public static function isValidRegex(string $pattern): bool
+    {
+        if ($pattern === '') {
+            return false;
+        }
+
+        $escaped = str_replace('~', '\~', $pattern);
+
+        return @preg_match('~'.$escaped.'~i', '') !== false;
     }
 
     /**
