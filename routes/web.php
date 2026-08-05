@@ -132,7 +132,7 @@ Route::middleware('auth')->group(function () {
 // Customer Portal
 Route::prefix('portal')->name('portal.')->group(function () {
     Route::get('/login', [CustomerPortalController::class, 'showLogin'])->name('login');
-    Route::post('/login', [CustomerPortalController::class, 'login'])->middleware('throttle:5,1')->name('login.submit');
+    Route::post('/login', [CustomerPortalController::class, 'login'])->name('login.submit');
     Route::get('/register', [CustomerPortalController::class, 'showRegister'])->name('register');
     Route::post('/register', [CustomerPortalController::class, 'register'])->middleware('throttle:5,1')->name('register.submit');
     Route::post('/logout', [CustomerPortalController::class, 'logout'])->name('logout');

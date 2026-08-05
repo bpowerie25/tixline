@@ -5,9 +5,13 @@ namespace App\Http\Controllers;
 use App\Models\Customer;
 use App\Models\Ticket;
 use App\Services\WorkflowEngine;
+use Illuminate\Auth\Events\Lockout;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 
 class CustomerPortalController extends Controller
@@ -24,14 +28,42 @@ class CustomerPortalController extends Controller
             'password' => 'required',
         ]);
 
+        $this->ensureCustomerLoginNotRateLimited($request);
+
         if (Auth::guard('customer')->attempt($credentials, $request->boolean('remember'))) {
+            RateLimiter::clear($this->customerThrottleKey($request));
             $request->session()->regenerate();
 
             return redirect()->route('portal.tickets');
         }
 
+        RateLimiter::hit($this->customerThrottleKey($request));
+
         return back()->withErrors([
             'email' => 'Invalid credentials.',
+        ]);
+    }
+
+    protected function customerThrottleKey(Request $request): string
+    {
+        return Str::transliterate(Str::lower($request->string('email')).'|'.$request->ip());
+    }
+
+    protected function ensureCustomerLoginNotRateLimited(Request $request): void
+    {
+        if (! RateLimiter::tooManyAttempts($this->customerThrottleKey($request), 5)) {
+            return;
+        }
+
+        event(new Lockout($request));
+
+        $seconds = RateLimiter::availableIn($this->customerThrottleKey($request));
+
+        throw ValidationException::withMessages([
+            'email' => trans('auth.throttle', [
+                'seconds' => $seconds,
+                'minutes' => ceil($seconds / 60),
+            ]),
         ]);
     }
 
