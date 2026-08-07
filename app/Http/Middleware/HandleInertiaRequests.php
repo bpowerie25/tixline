@@ -41,6 +41,10 @@ class HandleInertiaRequests extends Middleware
                     'manage_group' => $request->user()->isAtLeast('group_manager'),
                 ] : [],
             ],
+            'flash' => [
+                'success' => fn () => $request->session()->get('success'),
+                'error' => fn () => $request->session()->get('error'),
+            ],
             'ziggy' => fn () => [
                 ...(new Ziggy)->toArray(),
                 'location' => $request->url(),
