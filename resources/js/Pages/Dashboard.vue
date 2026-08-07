@@ -36,22 +36,22 @@ const statusColors = {
             <div class="mx-auto max-w-7xl sm:px-6 lg:px-8">
                 <!-- Stats -->
                 <div class="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                    <div class="overflow-hidden rounded-lg bg-white p-6 shadow">
+                    <Link :href="route('tickets.index', { status: 'open' })" class="overflow-hidden rounded-lg bg-white p-6 shadow transition hover:shadow-md hover:ring-1 hover:ring-green-200 cursor-pointer">
                         <div class="text-sm font-medium text-gray-500">Open Tickets</div>
                         <div class="mt-2 text-3xl font-bold text-green-600">{{ stats.open }}</div>
-                    </div>
-                    <div class="overflow-hidden rounded-lg bg-white p-6 shadow">
+                    </Link>
+                    <Link :href="route('tickets.index', { status: 'pending' })" class="overflow-hidden rounded-lg bg-white p-6 shadow transition hover:shadow-md hover:ring-1 hover:ring-yellow-200 cursor-pointer">
                         <div class="text-sm font-medium text-gray-500">Pending</div>
                         <div class="mt-2 text-3xl font-bold text-yellow-600">{{ stats.pending }}</div>
-                    </div>
-                    <div class="overflow-hidden rounded-lg bg-white p-6 shadow">
+                    </Link>
+                    <Link :href="route('tickets.index', { status: 'resolved' })" class="overflow-hidden rounded-lg bg-white p-6 shadow transition hover:shadow-md hover:ring-1 hover:ring-blue-200 cursor-pointer">
                         <div class="text-sm font-medium text-gray-500">Resolved Today</div>
                         <div class="mt-2 text-3xl font-bold text-blue-600">{{ stats.resolved_today }}</div>
-                    </div>
-                    <div class="overflow-hidden rounded-lg bg-white p-6 shadow">
+                    </Link>
+                    <Link :href="route('tickets.index')" class="overflow-hidden rounded-lg bg-white p-6 shadow transition hover:shadow-md hover:ring-1 hover:ring-gray-200 cursor-pointer">
                         <div class="text-sm font-medium text-gray-500">Total Tickets</div>
                         <div class="mt-2 text-3xl font-bold text-gray-700">{{ stats.total }}</div>
-                    </div>
+                    </Link>
                 </div>
 
                 <!-- Recent Tickets -->
