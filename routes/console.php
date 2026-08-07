@@ -11,3 +11,4 @@ Artisan::command('inspire', function () {
 Schedule::command('support:run-automations')->everyFiveMinutes();
 Schedule::command('support:check-sla')->everyFiveMinutes();
 Schedule::command('support:purge-payloads')->daily();
+Schedule::command('support:poll-imap')->everyFiveMinutes();

@@ -122,6 +122,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/settings/mail', [MailConfigController::class, 'index'])->name('mail-config.index');
         Route::post('/settings/mail', [MailConfigController::class, 'store'])->name('mail-config.store');
         Route::post('/settings/mail/test', [MailConfigController::class, 'test'])->name('mail-config.test');
+        Route::post('/settings/mail/test-imap', [MailConfigController::class, 'testImap'])->name('mail-config.test-imap');
 
         // Departments
         Route::resource('departments', DepartmentController::class)->except(['create', 'show', 'edit']);

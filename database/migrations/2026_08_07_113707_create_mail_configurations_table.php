@@ -22,6 +22,18 @@ return new class extends Migration
             $table->string('from_address')->nullable();
             $table->string('from_name')->nullable();
             $table->boolean('is_active')->default(false);
+
+            // Inbound email settings
+            $table->string('inbound_method')->default('none'); // none, imap, webhook, postfix
+            $table->string('imap_host')->nullable();
+            $table->unsignedSmallInteger('imap_port')->nullable();
+            $table->string('imap_encryption')->nullable();
+            $table->string('imap_username')->nullable();
+            $table->text('imap_password')->nullable();
+            $table->string('imap_folder')->default('INBOX');
+            $table->unsignedSmallInteger('imap_poll_interval')->default(5); // minutes
+            $table->boolean('imap_delete_after_process')->default(false);
+
             $table->timestamps();
         });
     }
