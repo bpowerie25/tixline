@@ -37,6 +37,11 @@ function isGroup(rule) {
     return rule.match !== undefined;
 }
 
+function fieldOptions(fieldValue) {
+    const field = props.fields.find(f => f.value === fieldValue);
+    return field?.options || null;
+}
+
 const borderColors = ['border-indigo-300', 'border-amber-300', 'border-emerald-300', 'border-rose-300'];
 const bgColors = ['bg-indigo-50/50', 'bg-amber-50/50', 'bg-emerald-50/50', 'bg-rose-50/50'];
 </script>
@@ -113,14 +118,25 @@ const bgColors = ['bg-indigo-50/50', 'bg-amber-50/50', 'bg-emerald-50/50', 'bg-r
                     >
                         <option v-for="op in operators" :key="op.value" :value="op.value">{{ op.label }}</option>
                     </select>
-                    <input
-                        v-if="!['is_empty', 'is_not_empty'].includes(rule.operator)"
-                        :value="rule.value"
-                        @input="updateRule(i, { ...rule, value: $event.target.value })"
-                        type="text"
-                        placeholder="Value"
-                        class="flex-1 rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                    />
+                    <template v-if="!['is_empty', 'is_not_empty'].includes(rule.operator)">
+                        <select
+                            v-if="fieldOptions(rule.field) && ['equals', 'not_equals'].includes(rule.operator)"
+                            :value="rule.value"
+                            @change="updateRule(i, { ...rule, value: $event.target.value })"
+                            class="flex-1 rounded-md border-gray-300 text-sm shadow-sm"
+                        >
+                            <option value="">Select...</option>
+                            <option v-for="opt in fieldOptions(rule.field)" :key="opt" :value="opt">{{ opt }}</option>
+                        </select>
+                        <input
+                            v-else
+                            :value="rule.value"
+                            @input="updateRule(i, { ...rule, value: $event.target.value })"
+                            type="text"
+                            placeholder="Value"
+                            class="flex-1 rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        />
+                    </template>
                     <button type="button" @click="removeRule(i)" class="text-red-400 hover:text-red-600">
                         <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
                     </button>

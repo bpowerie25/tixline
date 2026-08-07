@@ -98,9 +98,9 @@ const standardFields = [
     { value: 'body', label: 'Body' },
     { value: 'requester_email', label: 'Requester Email' },
     { value: 'requester_name', label: 'Requester Name' },
-    { value: 'priority', label: 'Priority' },
-    { value: 'status', label: 'Status' },
-    { value: 'source', label: 'Source' },
+    { value: 'priority', label: 'Priority', options: ['low', 'normal', 'high', 'urgent'] },
+    { value: 'status', label: 'Status', options: ['open', 'pending', 'resolved', 'closed'] },
+    { value: 'source', label: 'Source', options: ['web', 'email', 'api'] },
     { value: 'team_id', label: 'Team' },
     { value: 'assigned_to', label: 'Assigned Agent' },
 ];
@@ -309,6 +309,7 @@ function countRules(conditions) {
                                     <button @click="toggleActive(workflow)" :class="workflow.is_active ? 'bg-green-500' : 'bg-gray-300'" class="relative inline-flex h-5 w-9 shrink-0 rounded-full transition-colors">
                                         <span :class="workflow.is_active ? 'translate-x-4' : 'translate-x-0'" class="inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition" />
                                     </button>
+                                    <span class="inline-flex items-center justify-center rounded bg-gray-100 px-2 py-0.5 text-xs font-mono font-medium text-gray-600 w-8 text-center">{{ workflow.priority }}</span>
                                     <div>
                                         <div class="font-medium text-gray-900">{{ workflow.name }}</div>
                                         <div class="text-sm text-gray-500">
