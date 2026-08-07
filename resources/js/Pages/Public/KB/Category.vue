@@ -1,22 +1,28 @@
 <script setup>
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, usePage } from '@inertiajs/vue3';
+import PublicLayout from '@/Layouts/PublicLayout.vue';
+import { computed } from 'vue';
 
 const props = defineProps({
     category: Object,
 });
+
+const tenant = computed(() => usePage().props.tenant);
+const primaryColor = computed(() => tenant.value?.primary_color || '#be123c');
+const primaryColorLight = computed(() => (tenant.value?.primary_color || '#be123c') + '15');
 </script>
 
 <template>
     <Head :title="category.name + ' - Knowledge Base'" />
 
-    <div class="min-h-screen bg-gray-100">
-        <div class="bg-indigo-600 py-8">
-            <div class="mx-auto max-w-3xl px-4">
-                <Link :href="route('kb.portal')" class="text-indigo-200 hover:text-white text-sm">&larr; Back to Knowledge Base</Link>
-                <h1 class="mt-2 text-2xl font-bold text-white">{{ category.name }}</h1>
-                <p v-if="category.description" class="mt-1 text-indigo-200">{{ category.description }}</p>
+    <PublicLayout>
+        <section :style="{ backgroundColor: primaryColorLight }" class="py-8 px-4">
+            <div class="mx-auto max-w-3xl">
+                <Link :href="route('kb.portal')" :style="{ color: primaryColor }" class="text-sm opacity-80 hover:opacity-100">&larr; Back to Knowledge Base</Link>
+                <h1 :style="{ color: primaryColor }" class="mt-2 text-2xl font-bold">{{ category.name }}</h1>
+                <p v-if="category.description" class="mt-1 text-gray-600">{{ category.description }}</p>
             </div>
-        </div>
+        </section>
 
         <div class="mx-auto max-w-3xl px-4 py-8">
             <div class="space-y-3">
@@ -35,5 +41,5 @@ const props = defineProps({
                 No articles in this category yet.
             </div>
         </div>
-    </div>
+    </PublicLayout>
 </template>

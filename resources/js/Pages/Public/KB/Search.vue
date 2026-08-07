@@ -1,11 +1,16 @@
 <script setup>
-import { Head, Link, router } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
+import PublicLayout from '@/Layouts/PublicLayout.vue';
+import { ref, computed } from 'vue';
 
 const props = defineProps({
     query: String,
     articles: Array,
 });
+
+const tenant = computed(() => usePage().props.tenant);
+const primaryColor = computed(() => tenant.value?.primary_color || '#be123c');
+const primaryColorLight = computed(() => (tenant.value?.primary_color || '#be123c') + '15');
 
 const searchQuery = ref(props.query);
 
@@ -17,20 +22,15 @@ function search() {
 <template>
     <Head :title="'Search: ' + query + ' - Knowledge Base'" />
 
-    <div class="min-h-screen bg-gray-100">
-        <div class="bg-indigo-600 py-8">
-            <div class="mx-auto max-w-3xl px-4">
-                <Link :href="route('kb.portal')" class="text-indigo-200 hover:text-white text-sm">&larr; Back to Knowledge Base</Link>
+    <PublicLayout>
+        <section :style="{ backgroundColor: primaryColorLight }" class="py-8 px-4">
+            <div class="mx-auto max-w-3xl">
+                <Link :href="route('kb.portal')" :style="{ color: primaryColor }" class="text-sm opacity-80 hover:opacity-100">&larr; Back to Knowledge Base</Link>
                 <form @submit.prevent="search" class="mt-4">
-                    <input
-                        v-model="searchQuery"
-                        type="text"
-                        placeholder="Search articles..."
-                        class="w-full rounded-lg border-0 px-6 py-3 text-lg shadow-lg focus:ring-2 focus:ring-indigo-300"
-                    />
+                    <input v-model="searchQuery" type="text" placeholder="Search articles..." class="w-full rounded-lg border border-gray-300 bg-white px-6 py-3 text-lg shadow-sm focus:ring-2 focus:ring-gray-300 focus:border-gray-400" />
                 </form>
             </div>
-        </div>
+        </section>
 
         <div class="mx-auto max-w-3xl px-4 py-8">
             <p class="mb-4 text-sm text-gray-500">{{ articles.length }} results for "{{ query }}"</p>
@@ -41,7 +41,7 @@ function search() {
                     :href="route('kb.article', [article.category.slug, article.slug])"
                     class="block rounded-lg bg-white p-5 shadow-sm hover:shadow-md transition-shadow"
                 >
-                    <div class="text-xs text-indigo-600 mb-1">{{ article.category.name }}</div>
+                    <div :style="{ color: primaryColor }" class="text-xs mb-1">{{ article.category.name }}</div>
                     <h3 class="font-medium text-gray-900">{{ article.title }}</h3>
                     <p v-if="article.excerpt" class="mt-1 text-sm text-gray-500">{{ article.excerpt }}</p>
                 </Link>
@@ -51,5 +51,5 @@ function search() {
                 No articles found matching your search.
             </div>
         </div>
-    </div>
+    </PublicLayout>
 </template>

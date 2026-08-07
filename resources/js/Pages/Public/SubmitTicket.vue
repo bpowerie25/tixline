@@ -1,9 +1,11 @@
 <script setup>
 import { Head, useForm, usePage } from '@inertiajs/vue3';
+import PublicLayout from '@/Layouts/PublicLayout.vue';
 import { computed } from 'vue';
 
 const tenant = computed(() => usePage().props.tenant);
-const primaryColor = computed(() => tenant.value?.primary_color || '#4f46e5');
+const primaryColor = computed(() => tenant.value?.primary_color || '#be123c');
+const primaryColorLight = computed(() => (tenant.value?.primary_color || '#be123c') + '15');
 
 const props = defineProps({
     form: Object,
@@ -57,12 +59,11 @@ function submit() {
 <template>
     <Head title="Submit a Request" />
 
-    <div class="min-h-screen bg-gray-100">
-        <div :style="{ backgroundColor: primaryColor }" class="py-8">
+    <PublicLayout>
+        <div :style="{ backgroundColor: primaryColorLight }" class="py-8">
             <div class="mx-auto max-w-2xl px-4">
-                <img v-if="tenant?.logo_url" :src="tenant.logo_url" class="h-10 mb-3" :alt="tenant?.name" />
-                <h1 class="text-2xl font-bold text-white">{{ form?.name || 'Submit a Support Request' }}</h1>
-                <p class="mt-1 text-indigo-200">{{ form?.description || "We'll get back to you as soon as possible." }}</p>
+                <h1 :style="{ color: primaryColor }" class="text-2xl font-bold">{{ form?.name || 'Submit a Support Request' }}</h1>
+                <p class="mt-1 text-gray-600">{{ form?.description || "We'll get back to you as soon as possible." }}</p>
             </div>
         </div>
 
@@ -168,5 +169,5 @@ function submit() {
                 </form>
             </div>
         </div>
-    </div>
+    </PublicLayout>
 </template>
