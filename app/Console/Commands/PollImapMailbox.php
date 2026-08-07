@@ -65,7 +65,11 @@ class PollImapMailbox extends Command
         $skipped = 0;
 
         foreach ($messages as $message) {
-            $messageId = $message->getMessageId()?->toString() ?: 'imap-' . md5($message->getSubject() . $message->getDate());
+            $rawMessageId = $message->getMessageId();
+            $messageId = is_object($rawMessageId) ? (string) $rawMessageId : ($rawMessageId ?: '');
+            if (empty($messageId)) {
+                $messageId = 'imap-' . md5((string) $message->getSubject() . (string) $message->getDate());
+            }
 
             // Idempotency check
             if (InboundEmail::where('message_id', $messageId)->exists()) {
@@ -108,18 +112,21 @@ class PollImapMailbox extends Command
                 $from = $message->getFrom();
                 $fromEmail = '';
                 $fromName = '';
-                if ($from && count($from) > 0) {
-                    $firstFrom = $from[0];
-                    $fromEmail = is_object($firstFrom) ? ($firstFrom->mail ?? (string) $firstFrom) : (string) $firstFrom;
-                    $fromName = is_object($firstFrom) ? ($firstFrom->personal ?? '') : '';
+                if ($from) {
+                    $fromValues = method_exists($from, 'toArray') ? $from->toArray() : (is_array($from) ? $from : [$from]);
+                    if (! empty($fromValues)) {
+                        $firstFrom = reset($fromValues);
+                        $fromEmail = is_object($firstFrom) ? ($firstFrom->mail ?? (string) $firstFrom) : (string) $firstFrom;
+                        $fromName = is_object($firstFrom) ? ($firstFrom->personal ?? '') : '';
+                    }
                 }
 
                 $inboundMessage = new InboundMessage(
                     messageId: $messageId,
                     fromEmail: $fromEmail,
                     fromName: $fromName,
-                    subject: (string) ($message->getSubject() ?? '(No Subject)'),
-                    body: $message->getHTMLBody() ?: ($message->getTextBody() ?: ''),
+                    subject: ((string) $message->getSubject()) ?: '(No Subject)',
+                    body: ((string) ($message->getHTMLBody() ?: '')) ?: ((string) ($message->getTextBody() ?: '')),
                     headers: $headers,
                     attachments: $attachments,
                 );
