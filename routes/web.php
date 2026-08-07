@@ -105,6 +105,8 @@ Route::middleware('auth')->group(function () {
     Route::middleware('role:admin')->group(function () {
         // Teams
         Route::resource('teams', TeamController::class)->except(['create', 'show', 'edit']);
+        Route::post('/teams/{team}/members', [TeamController::class, 'addMember'])->name('teams.add-member');
+        Route::delete('/teams/{team}/members/{user}', [TeamController::class, 'removeMember'])->name('teams.remove-member');
 
         // Labels
         Route::resource('labels', LabelController::class)->except(['create', 'show', 'edit']);
