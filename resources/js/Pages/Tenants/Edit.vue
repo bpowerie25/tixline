@@ -137,9 +137,9 @@ const previewStyle = computed(() => ({
                                     ['sidebar_bg_color', 'Sidebar BG'],
                                 ]" :key="key">
                                     <label class="block text-sm font-medium text-gray-700">{{ label }}</label>
-                                    <div class="mt-1 flex items-center gap-2">
-                                        <input v-model="form[key]" type="color" class="h-10 w-14 shrink-0 cursor-pointer rounded border border-gray-300 p-1" style="appearance: auto; -webkit-appearance: auto;" />
-                                        <input v-model="form[key]" type="text" class="flex-1 rounded-md border-gray-300 text-sm shadow-sm font-mono" />
+                                    <div class="mt-1 relative">
+                                        <input v-model="form[key]" type="color" class="absolute left-2 top-1/2 -translate-y-1/2 h-6 w-6 shrink-0 cursor-pointer rounded border-0 p-0" style="appearance: auto; -webkit-appearance: auto;" />
+                                        <input v-model="form[key]" type="text" class="w-full rounded-md border-gray-300 text-sm shadow-sm font-mono pl-10" />
                                     </div>
                                 </div>
                             </div>
