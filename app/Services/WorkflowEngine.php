@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Team;
 use App\Models\Ticket;
 use App\Models\User;
 use App\Models\Workflow;
@@ -149,6 +150,7 @@ class WorkflowEngine
                 'set_status' => $ticket->update(['status' => $action['value']]),
                 'add_label' => $ticket->labels()->syncWithoutDetaching([$action['value']]),
                 'remove_label' => $ticket->labels()->detach([$action['value']]),
+                'assign_to_matching_team' => $this->assignToMatchingTeam($ticket, $action),
                 'round_robin' => $this->roundRobinAssign($ticket, $action),
                 'mail_agent' => $this->mailAgent($ticket, $action),
                 'mail_requester' => $this->mailRequester($ticket, $action),
@@ -156,6 +158,34 @@ class WorkflowEngine
                 'send_webhook' => $this->sendWebhook($ticket, $action),
                 default => null,
             };
+        }
+    }
+
+    protected function assignToMatchingTeam(Ticket $ticket, array $action): void
+    {
+        $fieldName = $action['value'] ?? '';
+
+        if (empty($fieldName)) {
+            return;
+        }
+
+        $fieldValue = $ticket->custom_fields[$fieldName] ?? '';
+
+        if (empty($fieldValue)) {
+            return;
+        }
+
+        // Find a team whose name matches the field value (case-insensitive)
+        $team = Team::whereRaw('LOWER(name) = ?', [strtolower($fieldValue)])->first();
+
+        if ($team) {
+            $ticket->update(['team_id' => $team->id]);
+        } else {
+            Log::info('Workflow: no matching team found for field value', [
+                'field' => $fieldName,
+                'value' => $fieldValue,
+                'ticket' => $ticket->reference,
+            ]);
         }
     }
 
@@ -167,7 +197,8 @@ class WorkflowEngine
             return;
         }
 
-        $agents = User::where('team_id', $teamId)->pluck('id');
+        $team = Team::find($teamId);
+        $agents = $team ? $team->members()->pluck('users.id') : collect();
 
         if ($agents->isEmpty()) {
             return;

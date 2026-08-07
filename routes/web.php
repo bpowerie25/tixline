@@ -113,6 +113,7 @@ Route::middleware('auth')->group(function () {
 
         // Workflows
         Route::resource('workflows', WorkflowController::class)->except(['create', 'show', 'edit']);
+        Route::post('/workflows/{workflow}/duplicate', [WorkflowController::class, 'duplicate'])->name('workflows.duplicate');
 
         // Forms
         Route::get('/forms/create', [FormController::class, 'create'])->name('forms.create');

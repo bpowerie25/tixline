@@ -142,6 +142,7 @@ const eventActions = [
 const actionTypes = [
     { value: 'assign_to_agent', label: 'Assign to Agent' },
     { value: 'assign_to_team', label: 'Assign to Team' },
+    { value: 'assign_to_matching_team', label: 'Assign to Matching Team (by field)' },
     { value: 'round_robin', label: 'Round Robin (Team)' },
     { value: 'set_priority', label: 'Set Priority' },
     { value: 'set_status', label: 'Set Status' },
@@ -261,6 +262,10 @@ function countRules(conditions) {
                                         <option value="">Select team...</option>
                                         <option v-for="team in teams" :key="team.id" :value="team.id">{{ team.name }}</option>
                                     </select>
+                                    <select v-else-if="action.type === 'assign_to_matching_team'" v-model="action.value" class="flex-1 rounded-md border-gray-300 text-sm shadow-sm">
+                                        <option value="">Select field to match...</option>
+                                        <option v-for="cf in customFields" :key="cf.name" :value="cf.name">{{ cf.label }}</option>
+                                    </select>
                                     <select v-else-if="action.type === 'set_priority'" v-model="action.value" class="flex-1 rounded-md border-gray-300 text-sm shadow-sm">
                                         <option value="low">Low</option>
                                         <option value="normal">Normal</option>
@@ -327,6 +332,7 @@ function countRules(conditions) {
                                 </div>
                                 <div class="flex gap-2">
                                     <button @click="openEdit(workflow)" class="text-sm text-indigo-600 hover:text-indigo-800">Edit</button>
+                                    <button @click="router.post(route('workflows.duplicate', workflow.id))" class="text-sm text-gray-600 hover:text-gray-800">Duplicate</button>
                                     <button @click="deleteWorkflow(workflow)" class="text-sm text-red-600 hover:text-red-800">Delete</button>
                                 </div>
                             </div>

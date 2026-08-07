@@ -70,4 +70,13 @@ class WorkflowController extends Controller
 
         return back()->with('success', 'Workflow deleted.');
     }
+
+    public function duplicate(Workflow $workflow)
+    {
+        $copy = $workflow->replicate();
+        $copy->name = $workflow->name . ' (copy)';
+        $copy->save();
+
+        return back()->with('success', 'Workflow duplicated.');
+    }
 }
