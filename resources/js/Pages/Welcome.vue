@@ -42,7 +42,7 @@ function search() {
                         :style="{ backgroundColor: primaryColor }"
                         class="rounded px-4 py-2 text-sm font-medium text-white transition opacity-90 hover:opacity-100"
                     >
-                        Contact Us
+                        Raise a Ticket
                     </Link>
 
                     <template v-if="canLogin">
@@ -135,7 +135,7 @@ function search() {
                         :style="{ backgroundColor: primaryColor }"
                         class="mt-4 inline-block rounded px-5 py-2 text-sm font-medium text-white transition opacity-90 hover:opacity-100"
                     >
-                        Contact Us
+                        Raise a Ticket
                     </Link>
                 </div>
             </div>
@@ -146,7 +146,7 @@ function search() {
             <div class="mx-auto flex max-w-6xl items-center justify-between text-sm text-gray-500">
                 <div class="flex gap-4">
                     <Link :href="route('kb.portal')" class="hover:text-gray-700">Knowledge Base</Link>
-                    <Link :href="route('submit.create')" class="hover:text-gray-700">Contact Us</Link>
+                    <Link :href="route('submit.create')" class="hover:text-gray-700">Raise a Ticket</Link>
                 </div>
                 <span>Powered by Tixline</span>
             </div>
