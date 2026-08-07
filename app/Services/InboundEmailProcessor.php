@@ -5,6 +5,7 @@ namespace App\Services;
 use App\DTOs\InboundMessage;
 use App\Mail\CustomerAccountCreated;
 use App\Models\Customer;
+use App\Models\Tenant;
 use App\Models\Ticket;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -59,6 +60,7 @@ class InboundEmailProcessor
             'requester_name' => $fromName,
             'requester_email' => $message->fromEmail,
             'source' => 'email',
+            'tenant_id' => app()->bound('tenant') ? app('tenant')->id : Tenant::first()?->id,
         ]);
 
         $this->processAttachments($message, $ticket);
