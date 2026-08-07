@@ -2,6 +2,8 @@
 
 return [
 
+    'multi_tenant' => (bool) env('MULTI_TENANT', false),
+
     'base_domain' => env('TENANT_BASE_DOMAIN'),
 
     'inbound' => [

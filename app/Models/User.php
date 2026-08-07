@@ -127,7 +127,7 @@ class User extends Authenticatable
     // Get the ticket query scoped to this user's visibility
     public function visibleTicketsQuery()
     {
-        if ($this->isAdmin()) {
+        if ($this->isAdmin() || ! config('support.multi_tenant')) {
             return Ticket::query();
         }
 
