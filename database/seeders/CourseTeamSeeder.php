@@ -6,6 +6,7 @@ use App\Models\Team;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Str;
 
 class CourseTeamSeeder extends Seeder
 {
@@ -36,7 +37,7 @@ class CourseTeamSeeder extends Seeder
         foreach ($teams as $team) {
             Team::firstOrCreate(
                 ['name' => $team['name']],
-                ['color' => $team['color']]
+                ['color' => $team['color'], 'slug' => Str::slug($team['name'])]
             );
         }
 
