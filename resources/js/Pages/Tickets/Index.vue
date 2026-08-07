@@ -52,7 +52,7 @@ function bulkAction(action) {
         close: `Close ${selected.value.length} ticket(s)?`,
         resolve: `Resolve ${selected.value.length} ticket(s)?`,
         delete: `Delete ${selected.value.length} ticket(s)? This cannot be undone.`,
-        spam: `Mark ${selected.value.length} ticket(s) as spam? This will delete them and blocklist the sender domain(s).`,
+        spam: `Mark ${selected.value.length} ticket(s) as spam? This will delete them, blocklist the sender(s), and learn spam patterns.`,
     };
 
     if (confirm(labels[action])) {
