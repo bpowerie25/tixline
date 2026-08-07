@@ -60,7 +60,7 @@ const tenant = computed(() => usePage().props.tenant);
                                         <template #trigger>
                                             <button class="inline-flex items-center border-b-2 px-1 pt-1 text-sm font-medium leading-5 transition duration-150 ease-in-out focus:outline-none"
                                                 :class="[
-                                                    route().current('teams.*') || route().current('labels.*') || route().current('workflows.*') || route().current('forms.*') || route().current('canned-responses.*') || route().current('sla-policies.*') || route().current('tenants.*') || route().current('departments.*')
+                                                    route().current('teams.*') || route().current('labels.*') || route().current('workflows.*') || route().current('forms.*') || route().current('canned-responses.*') || route().current('sla-policies.*') || route().current('tenants.*') || route().current('departments.*') || route().current('agents.*')
                                                         ? 'border-indigo-400 text-gray-900 focus:border-indigo-700'
                                                         : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
                                                 ]"
@@ -72,6 +72,7 @@ const tenant = computed(() => usePage().props.tenant);
                                             </button>
                                         </template>
                                         <template #content>
+                                            <DropdownLink :href="route('agents.index')">Agents</DropdownLink>
                                             <DropdownLink :href="route('teams.index')">Teams</DropdownLink>
                                             <DropdownLink :href="route('labels.index')">Labels</DropdownLink>
                                             <DropdownLink :href="route('workflows.index')">Workflows</DropdownLink>
@@ -192,6 +193,7 @@ const tenant = computed(() => usePage().props.tenant);
 
                         <div v-if="$page.props.auth.can.admin" class="border-t border-gray-200 mt-2 pt-2">
                             <div class="px-4 py-1 text-xs font-semibold uppercase text-gray-400">Settings</div>
+                            <ResponsiveNavLink :href="route('agents.index')" :active="route().current('agents.*')">Agents</ResponsiveNavLink>
                             <ResponsiveNavLink :href="route('teams.index')" :active="route().current('teams.*')">Teams</ResponsiveNavLink>
                             <ResponsiveNavLink :href="route('labels.index')" :active="route().current('labels.*')">Labels</ResponsiveNavLink>
                             <ResponsiveNavLink :href="route('workflows.index')" :active="route().current('workflows.*')">Workflows</ResponsiveNavLink>

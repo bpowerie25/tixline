@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AgentController;
 use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\CannedResponseController;
 use App\Http\Controllers\CommentController;
@@ -112,6 +113,9 @@ Route::middleware('auth')->group(function () {
         // Tenants (Skinning)
         Route::get('/tenants/create', [TenantController::class, 'create'])->name('tenants.create');
         Route::resource('tenants', TenantController::class)->except(['create', 'edit']);
+
+        // Agents
+        Route::resource('agents', AgentController::class)->except(['create', 'show', 'edit']);
 
         // Departments
         Route::resource('departments', DepartmentController::class)->except(['create', 'show', 'edit']);
