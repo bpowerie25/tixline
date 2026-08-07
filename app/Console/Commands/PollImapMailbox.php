@@ -125,7 +125,7 @@ class PollImapMailbox extends Command
                     messageId: $messageId,
                     fromEmail: $fromEmail,
                     fromName: $fromName,
-                    subject: ((string) $message->getSubject()) ?: '(No Subject)',
+                    subject: mb_decode_mimeheader((string) $message->getSubject()) ?: '(No Subject)',
                     body: ((string) ($message->getHTMLBody() ?: '')) ?: ((string) ($message->getTextBody() ?: '')),
                     headers: $headers,
                     attachments: $attachments,

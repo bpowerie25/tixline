@@ -11,8 +11,12 @@ class SpamFilter
     {
         $logOnly = config('support.spam.log_only', false);
 
+        // Decode MIME-encoded subjects before checking
+        $decodedSubject = mb_decode_mimeheader($subject);
+
         $checks = [
             fn () => $this->checkAutoSubmitted($headers),
+            fn () => $this->checkAutoReplySubject($decodedSubject),
             fn () => $this->checkBounceOrNdr($fromEmail, $headers),
             fn () => $this->isBlocklisted($fromEmail) ? 'blocklisted' : false,
             fn () => ($this->hasAllowlist() && ! $this->isAllowlisted($fromEmail)) ? 'not_allowlisted' : false,
@@ -58,6 +62,30 @@ class SpamFilter
         // X-Auto-Response-Suppress (Microsoft)
         if (! empty($headers['x-auto-response-suppress'])) {
             return 'auto_submitted';
+        }
+
+        return false;
+    }
+
+    protected function checkAutoReplySubject(string $subject): bool|string
+    {
+        $lower = strtolower($subject);
+        $patterns = [
+            'out of office',
+            'automatic reply',
+            'auto-reply',
+            'autoreply',
+            'abwesenheitsnotiz',    // German OOO
+            'automatische antwort', // German auto-reply
+            'absence du bureau',    // French OOO
+            'respuesta automática', // Spanish auto-reply
+            'fuera de la oficina',  // Spanish OOO
+        ];
+
+        foreach ($patterns as $pattern) {
+            if (str_contains($lower, $pattern)) {
+                return 'auto_reply_subject';
+            }
         }
 
         return false;
