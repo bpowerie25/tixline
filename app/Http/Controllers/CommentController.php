@@ -15,14 +15,17 @@ class CommentController extends Controller
         $validated = $request->validate([
             'body' => 'required|string',
             'is_internal' => 'boolean',
+            'close_ticket' => 'boolean',
             'attachments' => 'nullable|array|max:5',
             'attachments.*' => 'file|max:10240',
         ]);
 
+        $closeTicket = $validated['close_ticket'] ?? false;
+
         $validated['user_id'] = $request->user()->id;
         $validated['type'] = ($validated['is_internal'] ?? false) ? 'note' : 'reply';
 
-        unset($validated['attachments']);
+        unset($validated['attachments'], $validated['close_ticket']);
         $comment = $ticket->comments()->create($validated);
 
         if ($request->hasFile('attachments')) {
@@ -39,6 +42,10 @@ class CommentController extends Controller
             Mail::to($ticket->requester_email)->send(new TicketReply($ticket, $comment));
         }
 
-        return back()->with('success', 'Comment added.');
+        if ($closeTicket) {
+            $ticket->update(['status' => 'closed', 'resolved_at' => $ticket->resolved_at ?? now()]);
+        }
+
+        return back()->with('success', $closeTicket ? 'Reply sent and ticket closed.' : 'Comment added.');
     }
 }

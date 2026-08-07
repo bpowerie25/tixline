@@ -51,8 +51,11 @@ const updateForm = useForm({
     labels: props.ticket.labels.map(l => l.id),
 });
 
-function submitComment() {
-    commentForm.post(route('tickets.comments.store', props.ticket.id), {
+function submitComment(andClose = false) {
+    commentForm.transform((data) => ({
+        ...data,
+        close_ticket: andClose,
+    })).post(route('tickets.comments.store', props.ticket.id), {
         preserveScroll: true,
         forceFormData: true,
         onSuccess: () => {
@@ -220,14 +223,25 @@ const statusColors = {
                                             Canned Response
                                         </span>
                                     </button>
-                                    <button
-                                        type="submit"
-                                        :disabled="commentForm.processing || !commentForm.body"
-                                        class="inline-flex items-center rounded-md px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
-                                        :class="commentForm.is_internal ? 'bg-yellow-600 hover:bg-yellow-700' : 'bg-indigo-600 hover:bg-indigo-700'"
-                                    >
-                                        {{ commentForm.is_internal ? 'Add Note' : 'Send Reply' }}
-                                    </button>
+                                    <div class="flex items-center gap-2">
+                                        <button
+                                            type="submit"
+                                            :disabled="commentForm.processing || !commentForm.body"
+                                            class="inline-flex items-center rounded-md px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+                                            :class="commentForm.is_internal ? 'bg-yellow-600 hover:bg-yellow-700' : 'bg-indigo-600 hover:bg-indigo-700'"
+                                        >
+                                            {{ commentForm.is_internal ? 'Add Note' : 'Reply' }}
+                                        </button>
+                                        <button
+                                            v-if="!commentForm.is_internal && ticket.status !== 'closed'"
+                                            type="button"
+                                            @click="submitComment(true)"
+                                            :disabled="commentForm.processing || !commentForm.body"
+                                            class="inline-flex items-center rounded-md bg-gray-700 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50"
+                                        >
+                                            Reply &amp; Close
+                                        </button>
+                                    </div>
                                 </div>
                             </form>
                         </div>
