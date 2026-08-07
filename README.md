@@ -235,4 +235,4 @@ Tenants are resolved by:
 
 ## License
 
-MIT
+AGPL-3.0-or-later — see [LICENSE](LICENSE) for details.
