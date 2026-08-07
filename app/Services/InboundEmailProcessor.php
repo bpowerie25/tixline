@@ -3,8 +3,12 @@
 namespace App\Services;
 
 use App\DTOs\InboundMessage;
+use App\Mail\CustomerAccountCreated;
+use App\Models\Customer;
 use App\Models\Ticket;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 
 class InboundEmailProcessor
 {
@@ -60,6 +64,20 @@ class InboundEmailProcessor
         $this->processAttachments($message, $ticket);
 
         $this->workflowEngine->run($ticket->fresh(), 'ticket_created');
+
+        // Auto-create customer account if one doesn't exist
+        if (! Customer::where('email', $message->fromEmail)->exists()) {
+            $temporaryPassword = Str::random(12);
+            $customer = Customer::create([
+                'name' => $fromName,
+                'email' => $message->fromEmail,
+                'password' => $temporaryPassword,
+            ]);
+
+            Mail::to($customer->email)->send(
+                new CustomerAccountCreated($customer, $temporaryPassword, $ticket->fresh()->reference)
+            );
+        }
 
         return [
             'status' => 'created',

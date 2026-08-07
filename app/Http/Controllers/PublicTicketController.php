@@ -2,10 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\CustomerAccountCreated;
+use App\Models\Customer;
 use App\Models\Form;
 use App\Models\Ticket;
 use App\Services\WorkflowEngine;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 
 class PublicTicketController extends Controller
@@ -44,8 +48,28 @@ class PublicTicketController extends Controller
 
         $engine->run($ticket->fresh(), 'ticket_created');
 
+        // Auto-create customer account if one doesn't exist
+        $accountCreated = false;
+        $customer = Customer::where('email', $validated['requester_email'])->first();
+
+        if (! $customer) {
+            $temporaryPassword = Str::random(12);
+            $customer = Customer::create([
+                'name' => $validated['requester_name'],
+                'email' => $validated['requester_email'],
+                'password' => $temporaryPassword,
+            ]);
+
+            Mail::to($customer->email)->send(
+                new CustomerAccountCreated($customer, $temporaryPassword, $ticket->reference)
+            );
+
+            $accountCreated = true;
+        }
+
         return Inertia::render('Public/TicketConfirmation', [
             'ticket' => $ticket->only('reference', 'subject'),
+            'accountCreated' => $accountCreated,
         ]);
     }
 }

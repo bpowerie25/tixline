@@ -3,6 +3,7 @@ import { Head } from '@inertiajs/vue3';
 
 const props = defineProps({
     ticket: Object,
+    accountCreated: Boolean,
 });
 </script>
 
@@ -24,6 +25,15 @@ const props = defineProps({
                     <p class="text-lg font-mono font-bold text-indigo-600">{{ ticket.reference }}</p>
                     <p class="mt-2 text-sm text-gray-500">{{ ticket.subject }}</p>
                 </div>
+
+                <div v-if="accountCreated" class="mt-4 rounded-lg bg-blue-50 border border-blue-200 p-4 text-left">
+                    <p class="text-sm font-medium text-blue-800">A portal account has been created for you.</p>
+                    <p class="mt-1 text-sm text-blue-700">Check your email for your login details so you can track and reply to your tickets.</p>
+                    <a :href="route('portal.login')" class="mt-3 inline-block rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
+                        Sign in to portal
+                    </a>
+                </div>
+
                 <a :href="route('submit.create')" class="mt-6 inline-block text-sm text-indigo-600 hover:text-indigo-800">
                     Submit another request
                 </a>
