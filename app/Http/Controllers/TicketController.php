@@ -8,6 +8,7 @@ use App\Models\SpamFilterEntry;
 use App\Models\Team;
 use App\Models\Ticket;
 use App\Models\User;
+use App\Services\SpamLearner;
 use App\Services\WorkflowEngine;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -206,21 +207,28 @@ class TicketController extends Controller
                 return back()->with('success', "{$count} tickets deleted.");
 
             case 'spam':
-                // Auto-blocklist the sender domains
-                $domains = $tickets->pluck('requester_email')
-                    ->map(fn ($email) => strtolower(substr($email, strrpos($email, '@') + 1)))
+                $learner = app(SpamLearner::class);
+
+                // Blocklist individual sender emails and learn from content
+                $emails = $tickets->pluck('requester_email')
+                    ->map(fn ($email) => strtolower($email))
                     ->unique();
 
-                foreach ($domains as $domain) {
+                foreach ($emails as $email) {
                     SpamFilterEntry::firstOrCreate(
-                        ['type' => 'blocklist', 'value' => $domain],
+                        ['type' => 'blocklist', 'value' => $email],
                         ['reason' => 'Auto-blocked: marked as spam by agent']
                     );
                 }
 
+                // Learn spam patterns from ticket content
+                foreach ($tickets as $ticket) {
+                    $learner->learnFromTicket($ticket);
+                }
+
                 Ticket::whereIn('id', $validated['ids'])->delete();
 
-                return back()->with('success', "{$count} tickets deleted and " . $domains->count() . " domain(s) blocklisted.");
+                return back()->with('success', "{$count} tickets deleted, " . $emails->count() . " sender(s) blocklisted, and spam patterns learned.");
         }
 
         return back();

@@ -95,6 +95,8 @@ return [
         */
         'max_tickets_per_hour' => (int) env('SPAM_MAX_PER_HOUR', 10),
 
+        'learned_threshold' => (float) env('SPAM_LEARNED_THRESHOLD', 8.0),
+
         'log_only' => (bool) env('SPAM_LOG_ONLY', false),
 
     ],

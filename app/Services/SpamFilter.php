@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\SpamFilterEntry;
+use App\Services\SpamLearner;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
@@ -22,6 +23,7 @@ class SpamFilter
             fn () => $this->isBlocklisted($fromEmail) ? 'blocklisted' : false,
             fn () => ($this->hasAllowlist() && ! $this->isAllowlisted($fromEmail)) ? 'not_allowlisted' : false,
             fn () => $this->isMarkedAsSpam($headers) ? 'spam_header' : false,
+            fn () => $this->checkLearnedSpam($fromEmail, $decodedSubject, $body),
             fn () => $this->isRateLimited($fromEmail, $tenantId) ? 'rate_limited' : false,
         ];
 
@@ -199,6 +201,26 @@ class SpamFilter
         }
 
         Cache::put($cacheKey, $count + 1, now()->addHour());
+
+        return false;
+    }
+
+    protected function checkLearnedSpam(string $fromEmail, string $subject, string $body): bool|string
+    {
+        $learner = app(SpamLearner::class);
+        $score = $learner->score($fromEmail, $subject, $body);
+        $threshold = config('support.spam.learned_threshold', 8.0);
+
+        if ($score >= $threshold) {
+            Log::info('SpamFilter: learned spam detected', [
+                'from' => $fromEmail,
+                'subject' => $subject,
+                'score' => $score,
+                'threshold' => $threshold,
+            ]);
+
+            return 'learned_spam (score: '.$score.')';
+        }
 
         return false;
     }
