@@ -5,6 +5,7 @@ namespace App\Services;
 use App\DTOs\InboundMessage;
 use App\Mail\CustomerAccountCreated;
 use App\Models\Customer;
+use App\Models\Team;
 use App\Models\Tenant;
 use App\Models\Ticket;
 use Illuminate\Support\Facades\Log;
@@ -66,6 +67,15 @@ class InboundEmailProcessor
         $this->processAttachments($message, $ticket);
 
         $this->workflowEngine->run($ticket->fresh(), 'ticket_created');
+
+        // Default to General Support if no workflow assigned a team
+        $ticket->refresh();
+        if (! $ticket->team_id) {
+            $defaultTeam = Team::where('name', 'General Support')->first();
+            if ($defaultTeam) {
+                $ticket->updateQuietly(['team_id' => $defaultTeam->id]);
+            }
+        }
 
         // Auto-create customer account if one doesn't exist
         if (! Customer::where('email', $message->fromEmail)->exists()) {
