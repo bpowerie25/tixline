@@ -2,13 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\CustomerPasswordReset;
 use App\Models\Customer;
 use App\Models\Ticket;
 use App\Services\WorkflowEngine;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -175,5 +178,74 @@ class CustomerPortalController extends Controller
 
         return redirect()->route('portal.ticket', $ticket)
             ->with('success', 'Ticket created.');
+    }
+
+    public function showForgotPassword()
+    {
+        return Inertia::render('Portal/ForgotPassword');
+    }
+
+    public function sendResetLink(Request $request)
+    {
+        $request->validate(['email' => 'required|email']);
+
+        $customer = Customer::where('email', $request->email)->first();
+
+        if ($customer) {
+            $token = Str::random(64);
+
+            DB::table('customer_password_resets')->where('email', $customer->email)->delete();
+            DB::table('customer_password_resets')->insert([
+                'email' => $customer->email,
+                'token' => Hash::make($token),
+                'created_at' => now(),
+            ]);
+
+            $resetUrl = url("/portal/reset-password/{$token}?email=" . urlencode($customer->email));
+            Mail::to($customer->email)->send(new CustomerPasswordReset($resetUrl));
+        }
+
+        // Always show success to prevent email enumeration
+        return back()->with('success', 'If an account exists with that email, a password reset link has been sent.');
+    }
+
+    public function showResetPassword(Request $request, string $token)
+    {
+        return Inertia::render('Portal/ResetPassword', [
+            'token' => $token,
+            'email' => $request->email,
+        ]);
+    }
+
+    public function resetPassword(Request $request)
+    {
+        $request->validate([
+            'token' => 'required|string',
+            'email' => 'required|email',
+            'password' => 'required|string|min:8|confirmed',
+        ]);
+
+        $record = DB::table('customer_password_resets')
+            ->where('email', $request->email)
+            ->first();
+
+        if (! $record || ! Hash::check($request->token, $record->token)) {
+            return back()->with('error', 'Invalid or expired reset link.');
+        }
+
+        // Check expiry (60 minutes)
+        if (now()->diffInMinutes($record->created_at) > 60) {
+            DB::table('customer_password_resets')->where('email', $request->email)->delete();
+
+            return back()->with('error', 'This reset link has expired. Please request a new one.');
+        }
+
+        Customer::where('email', $request->email)->update([
+            'password' => $request->password,
+        ]);
+
+        DB::table('customer_password_resets')->where('email', $request->email)->delete();
+
+        return redirect()->route('portal.login')->with('success', 'Password reset successfully. You can now sign in.');
     }
 }

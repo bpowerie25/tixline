@@ -45,10 +45,12 @@ function submit() {
                         </button>
                     </form>
 
-                    <p class="mt-4 text-center text-sm text-gray-500">
-                        Don't have an account?
-                        <Link :href="route('portal.register')" :style="{ color: primaryColor }" class="hover:underline">Register</Link>
-                    </p>
+                    <div class="mt-4 flex items-center justify-between text-sm">
+                        <Link :href="route('portal.forgot-password')" class="text-gray-500 hover:text-gray-700">Forgot password?</Link>
+                        <span class="text-gray-500">
+                            <Link :href="route('portal.register')" :style="{ color: primaryColor }" class="hover:underline">Register</Link>
+                        </span>
+                    </div>
                     <p class="mt-2 text-center text-xs text-gray-400">
                         <Link :href="route('login')" class="hover:text-gray-600">Staff login</Link>
                     </p>

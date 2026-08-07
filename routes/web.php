@@ -168,6 +168,10 @@ Route::prefix('portal')->name('portal.')->group(function () {
     Route::get('/register', [CustomerPortalController::class, 'showRegister'])->name('register');
     Route::post('/register', [CustomerPortalController::class, 'register'])->middleware('throttle:5,1')->name('register.submit');
     Route::post('/logout', [CustomerPortalController::class, 'logout'])->name('logout');
+    Route::get('/forgot-password', [CustomerPortalController::class, 'showForgotPassword'])->name('forgot-password');
+    Route::post('/forgot-password', [CustomerPortalController::class, 'sendResetLink'])->middleware('throttle:5,1')->name('forgot-password.submit');
+    Route::get('/reset-password/{token}', [CustomerPortalController::class, 'showResetPassword'])->name('reset-password');
+    Route::post('/reset-password', [CustomerPortalController::class, 'resetPassword'])->name('reset-password.submit');
 
     Route::middleware('auth:customer')->group(function () {
         Route::get('/', [CustomerPortalController::class, 'tickets'])->name('tickets');
