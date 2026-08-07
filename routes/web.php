@@ -34,6 +34,11 @@ Route::get('/', function () {
     ]);
 });
 
+// Cookie Policy
+Route::get('/cookie-policy', function () {
+    return Inertia::render('Public/CookiePolicy');
+})->name('cookie-policy');
+
 // Public ticket submission
 Route::get('/submit', [PublicTicketController::class, 'create'])->name('submit.create');
 Route::post('/submit', [PublicTicketController::class, 'store'])->middleware('throttle:10,1')->name('submit.store');
