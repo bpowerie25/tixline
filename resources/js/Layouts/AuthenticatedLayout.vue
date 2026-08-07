@@ -50,6 +50,9 @@ const tenant = computed(() => usePage().props.tenant);
                                 <NavLink v-if="$page.props.auth.can.manage_team" :href="route('kb.admin.index')" :active="route().current('kb.admin.*')">
                                     KB
                                 </NavLink>
+                                <NavLink :href="route('help.index')" :active="route().current('help.*')">
+                                    Help
+                                </NavLink>
 
                                 <!-- Settings Dropdown (admin only) -->
                                 <div v-if="$page.props.auth.can.admin" class="hidden sm:flex sm:items-center">
@@ -185,6 +188,7 @@ const tenant = computed(() => usePage().props.tenant);
                         <ResponsiveNavLink :href="route('tickets.index')" :active="route().current('tickets.*')">Tickets</ResponsiveNavLink>
                         <ResponsiveNavLink v-if="$page.props.auth.can.manage_team" :href="route('reports.index')" :active="route().current('reports.*')">Reports</ResponsiveNavLink>
                         <ResponsiveNavLink v-if="$page.props.auth.can.manage_team" :href="route('kb.admin.index')" :active="route().current('kb.admin.*')">Knowledge Base</ResponsiveNavLink>
+                        <ResponsiveNavLink :href="route('help.index')" :active="route().current('help.*')">Help</ResponsiveNavLink>
 
                         <div v-if="$page.props.auth.can.admin" class="border-t border-gray-200 mt-2 pt-2">
                             <div class="px-4 py-1 text-xs font-semibold uppercase text-gray-400">Settings</div>
