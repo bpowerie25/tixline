@@ -1,11 +1,21 @@
 <script setup>
 import { Head, useForm } from '@inertiajs/vue3';
-import { computed, watch } from 'vue';
+import { computed } from 'vue';
 
 const props = defineProps({
     form: Object,
     forms: Array,
 });
+
+// Check if the form defines its own versions of the standard fields
+const formFieldNames = computed(() => (props.form?.fields || []).map(f => f.name));
+const hasCustomName = computed(() => formFieldNames.value.includes('name'));
+const hasCustomEmail = computed(() => formFieldNames.value.includes('email'));
+const hasCustomSubject = computed(() => formFieldNames.value.includes('subject'));
+const hasCustomBody = computed(() => formFieldNames.value.includes('message') || formFieldNames.value.includes('body') || formFieldNames.value.includes('description'));
+
+// Extra fields are custom fields that aren't replacing standard ones
+const extraFields = computed(() => (props.form?.fields || []).filter(f => !['name', 'email', 'subject', 'message', 'body', 'description'].includes(f.name)));
 
 const ticketForm = useForm({
     subject: '',
@@ -31,6 +41,12 @@ function shouldShowField(field) {
 }
 
 function submit() {
+    // Map custom field values for standard fields into the ticket form
+    if (hasCustomName.value) ticketForm.requester_name = ticketForm.custom_fields['name'] || '';
+    if (hasCustomEmail.value) ticketForm.requester_email = ticketForm.custom_fields['email'] || '';
+    if (hasCustomSubject.value) ticketForm.subject = ticketForm.custom_fields['subject'] || '';
+    if (hasCustomBody.value) ticketForm.body = ticketForm.custom_fields['message'] || ticketForm.custom_fields['body'] || ticketForm.custom_fields['description'] || '';
+
     ticketForm.post(route('submit.store'));
 }
 </script>
@@ -41,8 +57,8 @@ function submit() {
     <div class="min-h-screen bg-gray-100">
         <div class="bg-indigo-600 py-8">
             <div class="mx-auto max-w-2xl px-4">
-                <h1 class="text-2xl font-bold text-white">Submit a Support Request</h1>
-                <p class="mt-1 text-indigo-200">We'll get back to you as soon as possible.</p>
+                <h1 class="text-2xl font-bold text-white">{{ form?.name || 'Submit a Support Request' }}</h1>
+                <p class="mt-1 text-indigo-200">{{ form?.description || "We'll get back to you as soon as possible." }}</p>
             </div>
         </div>
 
@@ -65,31 +81,32 @@ function submit() {
 
             <div class="overflow-hidden bg-white shadow-sm sm:rounded-lg p-6">
                 <form @submit.prevent="submit" class="space-y-4">
-                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                        <div>
+                    <!-- Default fields (hidden if form defines custom versions) -->
+                    <div v-if="!hasCustomName || !hasCustomEmail" class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div v-if="!hasCustomName">
                             <label class="block text-sm font-medium text-gray-700">Your Name <span class="text-red-500">*</span></label>
                             <input v-model="ticketForm.requester_name" type="text" required class="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
                             <p v-if="ticketForm.errors.requester_name" class="mt-1 text-sm text-red-600">{{ ticketForm.errors.requester_name }}</p>
                         </div>
-                        <div>
+                        <div v-if="!hasCustomEmail">
                             <label class="block text-sm font-medium text-gray-700">Your Email <span class="text-red-500">*</span></label>
                             <input v-model="ticketForm.requester_email" type="email" required class="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
                             <p v-if="ticketForm.errors.requester_email" class="mt-1 text-sm text-red-600">{{ ticketForm.errors.requester_email }}</p>
                         </div>
                     </div>
 
-                    <div>
+                    <div v-if="!hasCustomSubject">
                         <label class="block text-sm font-medium text-gray-700">Subject <span class="text-red-500">*</span></label>
                         <input v-model="ticketForm.subject" type="text" required class="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
                         <p v-if="ticketForm.errors.subject" class="mt-1 text-sm text-red-600">{{ ticketForm.errors.subject }}</p>
                     </div>
 
-                    <div>
+                    <div v-if="!hasCustomBody">
                         <label class="block text-sm font-medium text-gray-700">Description</label>
                         <textarea v-model="ticketForm.body" rows="5" class="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
                     </div>
 
-                    <!-- Custom Form Fields with Conditional Visibility -->
+                    <!-- All form fields rendered in order -->
                     <template v-if="form?.fields">
                         <div v-for="field in form.fields" :key="field.id" v-show="shouldShowField(field)">
                             <label class="block text-sm font-medium text-gray-700">

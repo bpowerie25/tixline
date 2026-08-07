@@ -16,15 +16,20 @@ class PublicTicketController extends Controller
 {
     public function create(Request $request)
     {
+        $forms = Form::where('is_active', true)->get(['id', 'name', 'slug']);
+
         $form = null;
         if ($request->filled('form')) {
             $form = Form::where('slug', $request->form)
                 ->where('is_active', true)
                 ->with('fields')
                 ->first();
+        } elseif ($forms->count() === 1) {
+            $form = Form::where('id', $forms->first()->id)
+                ->where('is_active', true)
+                ->with('fields')
+                ->first();
         }
-
-        $forms = Form::where('is_active', true)->get(['id', 'name', 'slug']);
 
         return Inertia::render('Public/SubmitTicket', [
             'form' => $form,
