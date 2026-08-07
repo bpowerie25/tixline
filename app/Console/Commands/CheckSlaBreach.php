@@ -16,33 +16,38 @@ class CheckSlaBreach extends Command
     {
         $now = now();
 
-        // Response SLA breached — no first response and past deadline
+        // Response SLA breached — no first response and past deadline (fire once)
         $responseBreached = Ticket::whereIn('status', ['open', 'pending'])
             ->whereNull('first_responded_at')
             ->whereNotNull('sla_response_due_at')
             ->where('sla_response_due_at', '<=', $now)
+            ->where('sla_response_breach_fired', false)
             ->get();
 
         foreach ($responseBreached as $ticket) {
             $engine->run($ticket, 'sla_response_breached');
+            $ticket->updateQuietly(['sla_response_breach_fired' => true]);
             $this->line("  SLA response breached: {$ticket->reference}");
         }
 
-        // Resolution SLA breached — past deadline and not resolved
+        // Resolution SLA breached — past deadline and not resolved (fire once)
         $resolutionBreached = Ticket::whereIn('status', ['open', 'pending'])
             ->whereNotNull('sla_resolution_due_at')
             ->where('sla_resolution_due_at', '<=', $now)
+            ->where('sla_resolution_breach_fired', false)
             ->get();
 
         foreach ($resolutionBreached as $ticket) {
             $engine->run($ticket, 'sla_resolution_breached');
+            $ticket->updateQuietly(['sla_resolution_breach_fired' => true]);
             $this->line("  SLA resolution breached: {$ticket->reference}");
         }
 
-        // SLA warning — 75% of time elapsed
+        // SLA warning — 75% of time elapsed (fire once)
         $atRisk = Ticket::whereIn('status', ['open', 'pending'])
             ->whereNotNull('sla_resolution_due_at')
             ->where('sla_resolution_due_at', '>', $now)
+            ->where('sla_warning_fired', false)
             ->get()
             ->filter(function ($ticket) use ($now) {
                 $total = $ticket->created_at->diffInMinutes($ticket->sla_resolution_due_at);
@@ -53,6 +58,7 @@ class CheckSlaBreach extends Command
 
         foreach ($atRisk as $ticket) {
             $engine->run($ticket, 'sla_warning');
+            $ticket->updateQuietly(['sla_warning_fired' => true]);
             $this->line("  SLA at risk: {$ticket->reference}");
         }
 
