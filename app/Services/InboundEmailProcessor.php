@@ -37,7 +37,7 @@ class InboundEmailProcessor
 
             $this->processAttachments($message, $comment);
 
-            if ($existingTicket->status === 'resolved') {
+            if (in_array($existingTicket->status, ['resolved', 'closed'])) {
                 $existingTicket->update(['status' => 'open']);
             }
 
@@ -79,7 +79,7 @@ class InboundEmailProcessor
     {
         if (preg_match('/\[TKT-(\d+)\]/', $subject, $matches)) {
             $ticket = Ticket::where('reference', 'TKT-'.$matches[1])
-                ->whereIn('status', ['open', 'pending', 'resolved'])
+                ->whereIn('status', ['open', 'pending', 'resolved', 'closed'])
                 ->first();
 
             if ($ticket && $this->senderEntitledToTicket($fromEmail, $ticket, $message)) {
