@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\CannedResponse;
 use App\Models\Label;
+use App\Models\SpamFilterEntry;
 use App\Models\Team;
 use App\Models\Ticket;
 use App\Models\User;
@@ -169,5 +170,59 @@ class TicketController extends Controller
 
         return redirect()->route('tickets.index')
             ->with('success', 'Ticket deleted.');
+    }
+
+    public function bulk(Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'integer|exists:tickets,id',
+            'action' => 'required|in:close,resolve,delete,spam',
+        ]);
+
+        $tickets = Ticket::whereIn('id', $validated['ids'])->get();
+        $count = $tickets->count();
+
+        switch ($validated['action']) {
+            case 'close':
+                Ticket::whereIn('id', $validated['ids'])->update([
+                    'status' => 'closed',
+                    'resolved_at' => now(),
+                ]);
+
+                return back()->with('success', "{$count} tickets closed.");
+
+            case 'resolve':
+                Ticket::whereIn('id', $validated['ids'])->update([
+                    'status' => 'resolved',
+                    'resolved_at' => now(),
+                ]);
+
+                return back()->with('success', "{$count} tickets resolved.");
+
+            case 'delete':
+                Ticket::whereIn('id', $validated['ids'])->delete();
+
+                return back()->with('success', "{$count} tickets deleted.");
+
+            case 'spam':
+                // Auto-blocklist the sender domains
+                $domains = $tickets->pluck('requester_email')
+                    ->map(fn ($email) => strtolower(substr($email, strrpos($email, '@') + 1)))
+                    ->unique();
+
+                foreach ($domains as $domain) {
+                    SpamFilterEntry::firstOrCreate(
+                        ['type' => 'blocklist', 'value' => $domain],
+                        ['reason' => 'Auto-blocked: marked as spam by agent']
+                    );
+                }
+
+                Ticket::whereIn('id', $validated['ids'])->delete();
+
+                return back()->with('success', "{$count} tickets deleted and " . $domains->count() . " domain(s) blocklisted.");
+        }
+
+        return back();
     }
 }

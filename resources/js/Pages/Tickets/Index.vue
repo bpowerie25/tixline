@@ -2,7 +2,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import SlaBadge from '@/Components/SlaBadge.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
-import { ref, watch } from 'vue';
+import { ref, watch, computed } from 'vue';
 
 const props = defineProps({
     tickets: Object,
@@ -32,6 +32,41 @@ function applyFilters() {
 }
 
 watch([search, status, priority, teamId, assignedTo], applyFilters);
+
+// Bulk selection
+const selected = ref([]);
+const selectAll = ref(false);
+
+function toggleSelectAll() {
+    if (selectAll.value) {
+        selected.value = props.tickets.data.map(t => t.id);
+    } else {
+        selected.value = [];
+    }
+}
+
+const hasSelection = computed(() => selected.value.length > 0);
+
+function bulkAction(action) {
+    const labels = {
+        close: `Close ${selected.value.length} ticket(s)?`,
+        resolve: `Resolve ${selected.value.length} ticket(s)?`,
+        delete: `Delete ${selected.value.length} ticket(s)? This cannot be undone.`,
+        spam: `Mark ${selected.value.length} ticket(s) as spam? This will delete them and blocklist the sender domain(s).`,
+    };
+
+    if (confirm(labels[action])) {
+        router.post(route('tickets.bulk'), {
+            ids: selected.value,
+            action: action,
+        }, {
+            onSuccess: () => {
+                selected.value = [];
+                selectAll.value = false;
+            },
+        });
+    }
+}
 
 const priorityColors = {
     low: 'bg-gray-100 text-gray-700',
@@ -63,6 +98,11 @@ const statusColors = {
 
         <div class="py-12">
             <div class="mx-auto max-w-7xl sm:px-6 lg:px-8">
+                <!-- Flash messages -->
+                <div v-if="$page.props.flash?.success" class="mb-4 rounded-md bg-green-50 border border-green-200 p-4">
+                    <p class="text-sm text-green-800">{{ $page.props.flash.success }}</p>
+                </div>
+
                 <!-- Filters -->
                 <div class="mb-6 flex flex-wrap gap-3">
                     <input
@@ -95,46 +135,75 @@ const statusColors = {
                     </select>
                 </div>
 
+                <!-- Bulk Action Bar -->
+                <div v-if="hasSelection" class="mb-4 flex items-center gap-3 rounded-md bg-indigo-50 border border-indigo-200 px-4 py-3">
+                    <span class="text-sm font-medium text-indigo-800">{{ selected.length }} selected</span>
+                    <button @click="bulkAction('close')" class="rounded bg-gray-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-gray-700">Close</button>
+                    <button @click="bulkAction('resolve')" class="rounded bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700">Resolve</button>
+                    <button @click="bulkAction('spam')" class="rounded bg-orange-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-orange-700">Spam</button>
+                    <button @click="bulkAction('delete')" class="rounded bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700">Delete</button>
+                    <button @click="selected = []; selectAll = false" class="ml-auto text-xs text-gray-500 hover:text-gray-700">Clear selection</button>
+                </div>
+
                 <!-- Ticket List -->
                 <div class="overflow-hidden bg-white shadow-sm sm:rounded-lg">
                     <div class="divide-y divide-gray-200">
-                        <Link
+                        <!-- Select all header -->
+                        <div class="flex items-center px-6 py-2 bg-gray-50 border-b border-gray-200">
+                            <label class="flex items-center gap-2">
+                                <input type="checkbox" v-model="selectAll" @change="toggleSelectAll" class="rounded text-indigo-600" />
+                                <span class="text-xs text-gray-500">Select all</span>
+                            </label>
+                        </div>
+
+                        <div
                             v-for="ticket in tickets.data"
                             :key="ticket.id"
-                            :href="route('tickets.show', ticket.id)"
-                            class="flex items-center justify-between px-6 py-4 hover:bg-gray-50"
+                            class="flex items-center px-6 py-4 hover:bg-gray-50"
                         >
-                            <div class="min-w-0 flex-1">
-                                <div class="flex items-center gap-3">
-                                    <span class="text-sm font-mono text-gray-500">{{ ticket.reference }}</span>
-                                    <span class="text-sm font-medium text-gray-900 truncate">{{ ticket.subject }}</span>
-                                    <span
-                                        v-for="label in ticket.labels"
-                                        :key="label.id"
-                                        :style="{ backgroundColor: label.color + '22', color: label.color }"
-                                        class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium"
-                                    >
-                                        {{ label.name }}
+                            <input
+                                type="checkbox"
+                                :value="ticket.id"
+                                v-model="selected"
+                                class="mr-4 rounded text-indigo-600 shrink-0"
+                                @click.stop
+                            />
+                            <Link
+                                :href="route('tickets.show', ticket.id)"
+                                class="flex flex-1 items-center justify-between min-w-0"
+                            >
+                                <div class="min-w-0 flex-1">
+                                    <div class="flex items-center gap-3">
+                                        <span class="text-sm font-mono text-gray-500">{{ ticket.reference }}</span>
+                                        <span class="text-sm font-medium text-gray-900 truncate">{{ ticket.subject }}</span>
+                                        <span
+                                            v-for="label in ticket.labels"
+                                            :key="label.id"
+                                            :style="{ backgroundColor: label.color + '22', color: label.color }"
+                                            class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium"
+                                        >
+                                            {{ label.name }}
+                                        </span>
+                                    </div>
+                                    <div class="mt-1 text-sm text-gray-500">
+                                        {{ ticket.requester_name }} &lt;{{ ticket.requester_email }}&gt;
+                                        <span v-if="ticket.team" class="ml-2">&middot; {{ ticket.team.name }}</span>
+                                    </div>
+                                </div>
+                                <div class="ml-4 flex items-center gap-2">
+                                    <span :class="[statusColors[ticket.status], 'inline-flex rounded-full px-2 py-0.5 text-xs font-medium']">
+                                        {{ ticket.status }}
+                                    </span>
+                                    <span :class="[priorityColors[ticket.priority], 'inline-flex rounded-full px-2 py-0.5 text-xs font-medium']">
+                                        {{ ticket.priority }}
+                                    </span>
+                                    <SlaBadge :ticket="ticket" />
+                                    <span v-if="ticket.assignee" class="text-xs text-gray-500">
+                                        {{ ticket.assignee.name }}
                                     </span>
                                 </div>
-                                <div class="mt-1 text-sm text-gray-500">
-                                    {{ ticket.requester_name }} &lt;{{ ticket.requester_email }}&gt;
-                                    <span v-if="ticket.team" class="ml-2">&middot; {{ ticket.team.name }}</span>
-                                </div>
-                            </div>
-                            <div class="ml-4 flex items-center gap-2">
-                                <span :class="[statusColors[ticket.status], 'inline-flex rounded-full px-2 py-0.5 text-xs font-medium']">
-                                    {{ ticket.status }}
-                                </span>
-                                <span :class="[priorityColors[ticket.priority], 'inline-flex rounded-full px-2 py-0.5 text-xs font-medium']">
-                                    {{ ticket.priority }}
-                                </span>
-                                <SlaBadge :ticket="ticket" />
-                                <span v-if="ticket.assignee" class="text-xs text-gray-500">
-                                    {{ ticket.assignee.name }}
-                                </span>
-                            </div>
-                        </Link>
+                            </Link>
+                        </div>
                         <div v-if="!tickets.data.length" class="px-6 py-8 text-center text-gray-500">
                             No tickets found.
                         </div>

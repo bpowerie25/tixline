@@ -86,6 +86,7 @@ Route::middleware('auth')->group(function () {
 
     // Tickets — all agents can view (scoped) and create; policy handles update/delete
     Route::resource('tickets', TicketController::class);
+    Route::post('/tickets/bulk', [TicketController::class, 'bulk'])->name('tickets.bulk');
     Route::post('/tickets/{ticket}/comments', [CommentController::class, 'store'])->name('tickets.comments.store');
 
     // Canned Responses — all agents can view and use
