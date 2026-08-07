@@ -3,6 +3,7 @@ import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
 
 const tenant = computed(() => usePage().props.tenant);
+const primaryColor = computed(() => tenant.value?.primary_color || '#4f46e5');
 
 const form = useForm({
     name: '',
@@ -52,7 +53,7 @@ function submit() {
                         <label class="block text-sm font-medium text-gray-700">Confirm Password</label>
                         <input v-model="form.password_confirmation" type="password" required class="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
                     </div>
-                    <button type="submit" :disabled="form.processing" class="w-full rounded-md bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50">
+                    <button type="submit" :disabled="form.processing" :style="{ backgroundColor: primaryColor }" class="w-full rounded-md px-4 py-2.5 text-sm font-medium text-white opacity-90 hover:opacity-100 disabled:opacity-50">
                         Create Account
                     </button>
                 </form>

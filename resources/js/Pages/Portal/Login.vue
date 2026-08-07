@@ -3,6 +3,7 @@ import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
 
 const tenant = computed(() => usePage().props.tenant);
+const primaryColor = computed(() => tenant.value?.primary_color || '#4f46e5');
 
 const form = useForm({
     email: '',
@@ -40,7 +41,7 @@ function submit() {
                         <input v-model="form.remember" type="checkbox" class="rounded text-indigo-600" />
                         <span class="text-sm text-gray-600">Remember me</span>
                     </label>
-                    <button type="submit" :disabled="form.processing" class="w-full rounded-md bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50">
+                    <button type="submit" :disabled="form.processing" :style="{ backgroundColor: primaryColor }" class="w-full rounded-md px-4 py-2.5 text-sm font-medium text-white opacity-90 hover:opacity-100 disabled:opacity-50">
                         Sign In
                     </button>
                 </form>

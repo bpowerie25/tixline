@@ -3,6 +3,7 @@ import { Head, useForm, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
 
 const tenant = computed(() => usePage().props.tenant);
+const primaryColor = computed(() => tenant.value?.primary_color || '#4f46e5');
 
 const props = defineProps({
     form: Object,
@@ -57,7 +58,7 @@ function submit() {
     <Head title="Submit a Request" />
 
     <div class="min-h-screen bg-gray-100">
-        <div class="bg-indigo-600 py-8">
+        <div :style="{ backgroundColor: primaryColor }" class="py-8">
             <div class="mx-auto max-w-2xl px-4">
                 <img v-if="tenant?.logo_url" :src="tenant.logo_url" class="h-10 mb-3" :alt="tenant?.name" />
                 <h1 class="text-2xl font-bold text-white">{{ form?.name || 'Submit a Support Request' }}</h1>
@@ -160,7 +161,7 @@ function submit() {
                     </template>
 
                     <div class="pt-4">
-                        <button type="submit" :disabled="ticketForm.processing" class="w-full rounded-md bg-indigo-600 px-4 py-3 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50">
+                        <button type="submit" :disabled="ticketForm.processing" :style="{ backgroundColor: primaryColor }" class="w-full rounded-md px-4 py-3 text-sm font-medium text-white opacity-90 hover:opacity-100 disabled:opacity-50">
                             Submit Request
                         </button>
                     </div>
