@@ -12,7 +12,7 @@ class AgentController extends Controller
     public function index()
     {
         return Inertia::render('Agents/Index', [
-            'agents' => User::with('team')->withCount('assignedTickets')->get(),
+            'agents' => User::with('teams')->withCount('assignedTickets')->get(),
             'teams' => Team::all(['id', 'name']),
         ]);
     }
@@ -24,10 +24,15 @@ class AgentController extends Controller
             'email' => 'required|email|max:255|unique:users',
             'password' => 'required|string|min:8',
             'role' => 'required|in:' . implode(',', User::ROLES),
-            'team_id' => 'nullable|exists:teams,id',
+            'team_ids' => 'nullable|array',
+            'team_ids.*' => 'exists:teams,id',
         ]);
 
-        User::create($validated);
+        $teamIds = $validated['team_ids'] ?? [];
+        unset($validated['team_ids']);
+
+        $agent = User::create($validated);
+        $agent->teams()->sync($teamIds);
 
         return back()->with('success', 'Agent created.');
     }
@@ -39,14 +44,19 @@ class AgentController extends Controller
             'email' => 'required|email|max:255|unique:users,email,' . $agent->id,
             'password' => 'nullable|string|min:8',
             'role' => 'required|in:' . implode(',', User::ROLES),
-            'team_id' => 'nullable|exists:teams,id',
+            'team_ids' => 'nullable|array',
+            'team_ids.*' => 'exists:teams,id',
         ]);
 
         if (empty($validated['password'])) {
             unset($validated['password']);
         }
 
+        $teamIds = $validated['team_ids'] ?? [];
+        unset($validated['team_ids']);
+
         $agent->update($validated);
+        $agent->teams()->sync($teamIds);
 
         return back()->with('success', 'Agent updated.');
     }

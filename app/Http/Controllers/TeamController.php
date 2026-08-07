@@ -14,7 +14,7 @@ class TeamController extends Controller
     {
         return Inertia::render('Teams/Index', [
             'teams' => Team::withCount('members', 'tickets')->with('members:id,name,email,team_id')->get(),
-            'agents' => User::all(['id', 'name', 'email', 'team_id']),
+            'agents' => User::all(['id', 'name', 'email']),
         ]);
     }
 
@@ -61,16 +61,14 @@ class TeamController extends Controller
             'user_id' => 'required|exists:users,id',
         ]);
 
-        User::where('id', $validated['user_id'])->update(['team_id' => $team->id]);
+        $team->members()->syncWithoutDetaching([$validated['user_id']]);
 
         return back()->with('success', 'Agent added to team.');
     }
 
     public function removeMember(Team $team, User $user)
     {
-        if ($user->team_id === $team->id) {
-            $user->update(['team_id' => null]);
-        }
+        $team->members()->detach($user->id);
 
         return back()->with('success', 'Agent removed from team.');
     }

@@ -58,7 +58,8 @@ function toggleManage(team) {
 
 const availableAgents = computed(() => {
     if (!managingTeam.value) return [];
-    return props.agents.filter(a => a.team_id !== managingTeam.value.id);
+    const memberIds = (managingTeam.value.members || []).map(m => m.id);
+    return props.agents.filter(a => !memberIds.includes(a.id));
 });
 
 function addMember() {

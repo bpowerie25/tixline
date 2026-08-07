@@ -16,7 +16,7 @@ const form = useForm({
     email: '',
     password: '',
     role: 'agent',
-    team_id: null,
+    team_ids: [],
 });
 
 const roleLabels = {
@@ -46,7 +46,7 @@ function openEdit(agent) {
     form.email = agent.email;
     form.password = '';
     form.role = agent.role;
-    form.team_id = agent.team_id;
+    form.team_ids = (agent.teams || []).map(t => t.id);
     showForm.value = true;
 }
 
@@ -119,11 +119,13 @@ function deleteAgent(agent) {
                                 </select>
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-gray-700">Team</label>
-                                <select v-model="form.team_id" class="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                                    <option :value="null">No team</option>
-                                    <option v-for="team in teams" :key="team.id" :value="team.id">{{ team.name }}</option>
-                                </select>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Teams</label>
+                                <div class="max-h-40 overflow-y-auto space-y-1 rounded-md border border-gray-300 p-2">
+                                    <label v-for="team in teams" :key="team.id" class="flex items-center gap-2">
+                                        <input type="checkbox" :value="team.id" v-model="form.team_ids" class="rounded text-indigo-600" />
+                                        <span class="text-sm text-gray-700">{{ team.name }}</span>
+                                    </label>
+                                </div>
                             </div>
                         </div>
                         <div class="flex items-center gap-3">
@@ -154,7 +156,7 @@ function deleteAgent(agent) {
                                     </div>
                                     <div class="text-sm text-gray-500">
                                         {{ agent.email }}
-                                        <span v-if="agent.team" class="ml-2">&middot; {{ agent.team.name }}</span>
+                                        <span v-if="agent.teams?.length" class="ml-2">&middot; {{ agent.teams.map(t => t.name).join(', ') }}</span>
                                         <span class="ml-2">&middot; {{ agent.assigned_tickets_count }} tickets</span>
                                     </div>
                                 </div>

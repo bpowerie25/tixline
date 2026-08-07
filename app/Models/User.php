@@ -7,7 +7,7 @@ use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -43,9 +43,9 @@ class User extends Authenticatable
         ];
     }
 
-    public function team(): BelongsTo
+    public function teams(): BelongsToMany
     {
-        return $this->belongsTo(Team::class);
+        return $this->belongsToMany(Team::class);
     }
 
     public function assignedTickets(): HasMany
@@ -87,9 +87,9 @@ class User extends Authenticatable
         return ($hierarchy[$this->role] ?? 0) >= ($hierarchy[$role] ?? 0);
     }
 
-    public function department(): ?Department
+    public function teamIds(): array
     {
-        return $this->team?->department;
+        return $this->teams()->pluck('teams.id')->toArray();
     }
 
     // Ticket visibility — what tickets can this user see?
@@ -99,24 +99,26 @@ class User extends Authenticatable
             return true;
         }
 
-        // Assigned to them
         if ($ticket->assigned_to === $this->id) {
             return true;
         }
 
-        // Same team
-        if ($this->team_id && $ticket->team_id === $this->team_id) {
+        $teamIds = $this->teamIds();
+        if ($ticket->team_id && in_array($ticket->team_id, $teamIds)) {
             return true;
         }
 
-        // Group manager — can see all tickets in their department's teams
-        if ($this->isGroupManager() && $this->team?->department_id) {
-            $departmentTeamIds = Team::where('department_id', $this->team->department_id)->pluck('id');
-
-            return $departmentTeamIds->contains($ticket->team_id);
+        // Group manager — can see all tickets in their departments' teams
+        if ($this->isGroupManager()) {
+            $departmentIds = Team::whereIn('id', $teamIds)->whereNotNull('department_id')->pluck('department_id');
+            if ($departmentIds->isNotEmpty()) {
+                $departmentTeamIds = Team::whereIn('department_id', $departmentIds)->pluck('id');
+                if ($departmentTeamIds->contains($ticket->team_id)) {
+                    return true;
+                }
+            }
         }
 
-        // Unassigned tickets (no team) — visible to everyone
         if (! $ticket->team_id) {
             return true;
         }
@@ -131,22 +133,22 @@ class User extends Authenticatable
             return Ticket::query();
         }
 
-        $query = Ticket::where(function ($q) {
-            // Own tickets
-            $q->where('assigned_to', $this->id);
+        $teamIds = $this->teamIds();
 
-            // Unassigned
+        $query = Ticket::where(function ($q) use ($teamIds) {
+            $q->where('assigned_to', $this->id);
             $q->orWhereNull('team_id');
 
-            // Same team
-            if ($this->team_id) {
-                $q->orWhere('team_id', $this->team_id);
+            if (! empty($teamIds)) {
+                $q->orWhereIn('team_id', $teamIds);
             }
 
-            // Group manager — all department teams
-            if ($this->isGroupManager() && $this->team?->department_id) {
-                $departmentTeamIds = Team::where('department_id', $this->team->department_id)->pluck('id');
-                $q->orWhereIn('team_id', $departmentTeamIds);
+            if ($this->isGroupManager()) {
+                $departmentIds = Team::whereIn('id', $teamIds)->whereNotNull('department_id')->pluck('department_id');
+                if ($departmentIds->isNotEmpty()) {
+                    $departmentTeamIds = Team::whereIn('department_id', $departmentIds)->pluck('id');
+                    $q->orWhereIn('team_id', $departmentTeamIds);
+                }
             }
         });
 
