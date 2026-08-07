@@ -60,7 +60,7 @@ const tenant = computed(() => usePage().props.tenant);
                                         <template #trigger>
                                             <button class="inline-flex items-center border-b-2 px-1 pt-1 text-sm font-medium leading-5 transition duration-150 ease-in-out focus:outline-none"
                                                 :class="[
-                                                    route().current('teams.*') || route().current('labels.*') || route().current('workflows.*') || route().current('forms.*') || route().current('canned-responses.*') || route().current('sla-policies.*') || route().current('tenants.*') || route().current('departments.*') || route().current('agents.*')
+                                                    route().current('teams.*') || route().current('labels.*') || route().current('workflows.*') || route().current('forms.*') || route().current('canned-responses.*') || route().current('sla-policies.*') || route().current('tenants.*') || route().current('departments.*') || route().current('agents.*') || route().current('mail-config.*')
                                                         ? 'border-indigo-400 text-gray-900 focus:border-indigo-700'
                                                         : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
                                                 ]"
@@ -81,6 +81,7 @@ const tenant = computed(() => usePage().props.tenant);
                                             <DropdownLink :href="route('sla-policies.index')">SLA Policies</DropdownLink>
                                             <DropdownLink :href="route('tenants.index')">Tenants</DropdownLink>
                                             <DropdownLink :href="route('departments.index')">Departments</DropdownLink>
+                                            <DropdownLink :href="route('mail-config.index')">Mail</DropdownLink>
                                         </template>
                                     </Dropdown>
                                 </div>
@@ -202,6 +203,7 @@ const tenant = computed(() => usePage().props.tenant);
                             <ResponsiveNavLink :href="route('sla-policies.index')" :active="route().current('sla-policies.*')">SLA Policies</ResponsiveNavLink>
                             <ResponsiveNavLink :href="route('tenants.index')" :active="route().current('tenants.*')">Tenants</ResponsiveNavLink>
                             <ResponsiveNavLink :href="route('departments.index')" :active="route().current('departments.*')">Departments</ResponsiveNavLink>
+                            <ResponsiveNavLink :href="route('mail-config.index')" :active="route().current('mail-config.*')">Mail</ResponsiveNavLink>
                         </div>
                     </div>
 

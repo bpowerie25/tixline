@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AgentController;
+use App\Http\Controllers\MailConfigController;
 use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\CannedResponseController;
 use App\Http\Controllers\CommentController;
@@ -116,6 +117,11 @@ Route::middleware('auth')->group(function () {
 
         // Agents
         Route::resource('agents', AgentController::class)->except(['create', 'show', 'edit']);
+
+        // Mail Configuration
+        Route::get('/settings/mail', [MailConfigController::class, 'index'])->name('mail-config.index');
+        Route::post('/settings/mail', [MailConfigController::class, 'store'])->name('mail-config.store');
+        Route::post('/settings/mail/test', [MailConfigController::class, 'test'])->name('mail-config.test');
 
         // Departments
         Route::resource('departments', DepartmentController::class)->except(['create', 'show', 'edit']);
