@@ -164,14 +164,56 @@ import { Head } from '@inertiajs/vue3';
                     </p>
                 </div>
 
-                <!-- Inbound Email -->
+                <!-- Mail Configuration -->
                 <div class="bg-white shadow-sm sm:rounded-lg p-6">
-                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Inbound Email</h3>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Mail Configuration</h3>
                     <p class="text-gray-600 mb-3">
-                        Tickets can be created by customers sending an email to the configured support address. Replies to existing tickets are automatically threaded if the ticket reference (e.g. <code class="bg-gray-100 px-1 rounded text-sm">[TKT-000001]</code>) is in the subject line.
+                        Mail settings are managed under <strong>Settings &gt; Mail</strong>. Credentials are encrypted in the database.
                     </p>
+
+                    <h4 class="font-medium text-gray-800 mt-4 mb-2">Outbound Mail</h4>
+                    <p class="text-gray-600 mb-3">
+                        Configure SMTP (or other provider) settings for sending emails. Use the <strong>Send Test</strong> button to verify your configuration. Tick <strong>Use database config</strong> to override the .env settings.
+                    </p>
+
+                    <h4 class="font-medium text-gray-800 mt-4 mb-2">Inbound Mail</h4>
+                    <p class="text-gray-600 mb-2">Three methods for receiving emails:</p>
+                    <ul class="list-disc list-inside text-gray-600 space-y-1">
+                        <li><strong>IMAP Polling</strong> &mdash; connects to a mailbox (e.g. Titan, Gmail, Outlook), fetches unread emails, processes them into tickets, and marks them as read. Runs on a schedule.</li>
+                        <li><strong>HTTP Webhook</strong> &mdash; receives emails via POST to <code class="bg-gray-100 px-1 rounded text-sm">/inbound/email</code>. Requires <code class="bg-gray-100 px-1 rounded text-sm">INBOUND_WEBHOOK_SECRET</code> in .env.</li>
+                        <li><strong>Postfix Pipe</strong> &mdash; Postfix delivers directly to the app via command line.</li>
+                    </ul>
+
+                    <h4 class="font-medium text-gray-800 mt-4 mb-2">Inbound Email Review</h4>
                     <p class="text-gray-600">
-                        Spam filtering is applied automatically, including blocklist/allowlist checks, SpamAssassin header detection, bounce filtering, and rate limiting.
+                        All inbound emails (processed, rejected, failed) are logged under <strong>Settings &gt; Inbound Emails</strong>. You can view the full email content, headers, and spam filter result. Rejected emails can be <strong>reprocessed</strong> to create a ticket if they were falsely flagged as spam.
+                    </p>
+
+                    <h4 class="font-medium text-gray-800 mt-4 mb-2">Spam Filtering</h4>
+                    <p class="text-gray-600 mb-2">
+                        Spam filtering runs automatically on all inbound emails:
+                    </p>
+                    <ul class="list-disc list-inside text-gray-600 space-y-1">
+                        <li><strong>Blocklist/Allowlist</strong> &mdash; block or allow specific email addresses or domains</li>
+                        <li><strong>SpamAssassin</strong> &mdash; detects spam headers and score thresholds</li>
+                        <li><strong>Bounce detection</strong> &mdash; filters out mailer-daemon, NDR, and auto-reply messages</li>
+                        <li><strong>Rate limiting</strong> &mdash; limits tickets per sender per hour</li>
+                    </ul>
+                    <p class="text-gray-600 mt-2">
+                        Configure spam settings via environment variables: <code class="bg-gray-100 px-1 rounded text-sm">SPAM_BLOCKLIST</code>, <code class="bg-gray-100 px-1 rounded text-sm">SPAM_ALLOWLIST</code>, <code class="bg-gray-100 px-1 rounded text-sm">SPAM_SCORE_THRESHOLD</code>, <code class="bg-gray-100 px-1 rounded text-sm">SPAM_MAX_PER_HOUR</code>.
+                    </p>
+                </div>
+
+                <!-- Cron Job / Scheduler -->
+                <div class="bg-white shadow-sm sm:rounded-lg p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Cron Job (Required)</h3>
+                    <p class="text-gray-600 mb-3">
+                        A cron job is required to run the Laravel scheduler, which handles IMAP polling, SLA checks, and workflow automations.
+                    </p>
+                    <p class="text-gray-600 mb-2">Add this to your server's crontab:</p>
+                    <code class="block bg-gray-100 rounded p-3 text-sm font-mono text-gray-800">* * * * * cd /path/to/tixline &amp;&amp; php artisan schedule:run &gt;&gt; /dev/null 2&gt;&amp;1</code>
+                    <p class="text-gray-600 mt-3">
+                        Without this cron job, IMAP polling, SLA breach detection, and scheduled automations will not run.
                     </p>
                 </div>
 

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AgentController;
+use App\Http\Controllers\InboundEmailReviewController;
 use App\Http\Controllers\MailConfigController;
 use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\CannedResponseController;
@@ -123,6 +124,12 @@ Route::middleware('auth')->group(function () {
         Route::post('/settings/mail', [MailConfigController::class, 'store'])->name('mail-config.store');
         Route::post('/settings/mail/test', [MailConfigController::class, 'test'])->name('mail-config.test');
         Route::post('/settings/mail/test-imap', [MailConfigController::class, 'testImap'])->name('mail-config.test-imap');
+
+        // Inbound Email Review
+        Route::get('/settings/inbound-emails', [InboundEmailReviewController::class, 'index'])->name('inbound-emails.index');
+        Route::get('/settings/inbound-emails/{inboundEmail}', [InboundEmailReviewController::class, 'show'])->name('inbound-emails.show');
+        Route::post('/settings/inbound-emails/{inboundEmail}/reprocess', [InboundEmailReviewController::class, 'reprocess'])->name('inbound-emails.reprocess');
+        Route::delete('/settings/inbound-emails/{inboundEmail}', [InboundEmailReviewController::class, 'destroy'])->name('inbound-emails.destroy');
 
         // Departments
         Route::resource('departments', DepartmentController::class)->except(['create', 'show', 'edit']);

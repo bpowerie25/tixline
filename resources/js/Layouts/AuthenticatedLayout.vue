@@ -82,6 +82,7 @@ const tenant = computed(() => usePage().props.tenant);
                                             <DropdownLink :href="route('tenants.index')">Tenants</DropdownLink>
                                             <DropdownLink :href="route('departments.index')">Departments</DropdownLink>
                                             <DropdownLink :href="route('mail-config.index')">Mail</DropdownLink>
+                                            <DropdownLink :href="route('inbound-emails.index')">Inbound Emails</DropdownLink>
                                         </template>
                                     </Dropdown>
                                 </div>
@@ -204,6 +205,7 @@ const tenant = computed(() => usePage().props.tenant);
                             <ResponsiveNavLink :href="route('tenants.index')" :active="route().current('tenants.*')">Tenants</ResponsiveNavLink>
                             <ResponsiveNavLink :href="route('departments.index')" :active="route().current('departments.*')">Departments</ResponsiveNavLink>
                             <ResponsiveNavLink :href="route('mail-config.index')" :active="route().current('mail-config.*')">Mail</ResponsiveNavLink>
+                            <ResponsiveNavLink :href="route('inbound-emails.index')" :active="route().current('inbound-emails.*')">Inbound Emails</ResponsiveNavLink>
                         </div>
                     </div>
 
