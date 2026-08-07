@@ -78,8 +78,20 @@ class PollImapMailbox extends Command
             try {
                 // Build headers array
                 $headers = [];
-                foreach ($message->getHeader()->raw as $key => $value) {
-                    $headers[strtolower($key)] = is_array($value) ? implode(', ', $value) : (string) $value;
+                $headerObj = $message->getHeader();
+                $rawHeaders = $headerObj->raw ?? '';
+                if (is_string($rawHeaders)) {
+                    foreach (explode("\n", $rawHeaders) as $line) {
+                        $line = trim($line);
+                        if (str_contains($line, ':')) {
+                            [$key, $value] = explode(':', $line, 2);
+                            $headers[strtolower(trim($key))] = trim($value);
+                        }
+                    }
+                } elseif (is_array($rawHeaders) || is_object($rawHeaders)) {
+                    foreach ($rawHeaders as $key => $value) {
+                        $headers[strtolower($key)] = is_array($value) ? implode(', ', $value) : (string) $value;
+                    }
                 }
 
                 // Build attachments
@@ -92,12 +104,22 @@ class PollImapMailbox extends Command
                     ];
                 }
 
+                // Extract sender info safely
+                $from = $message->getFrom();
+                $fromEmail = '';
+                $fromName = '';
+                if ($from && count($from) > 0) {
+                    $firstFrom = $from[0];
+                    $fromEmail = is_object($firstFrom) ? ($firstFrom->mail ?? (string) $firstFrom) : (string) $firstFrom;
+                    $fromName = is_object($firstFrom) ? ($firstFrom->personal ?? '') : '';
+                }
+
                 $inboundMessage = new InboundMessage(
                     messageId: $messageId,
-                    fromEmail: $message->getFrom()[0]->mail ?? '',
-                    fromName: $message->getFrom()[0]->personal ?? '',
-                    subject: $message->getSubject()?->toString() ?? '(No Subject)',
-                    body: $message->getHTMLBody() ?: $message->getTextBody() ?: '',
+                    fromEmail: $fromEmail,
+                    fromName: $fromName,
+                    subject: (string) ($message->getSubject() ?? '(No Subject)'),
+                    body: $message->getHTMLBody() ?: ($message->getTextBody() ?: ''),
                     headers: $headers,
                     attachments: $attachments,
                 );
