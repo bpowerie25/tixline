@@ -1,5 +1,8 @@
 <script setup>
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
+import { computed } from 'vue';
+
+const tenant = computed(() => usePage().props.tenant);
 
 const form = useForm({
     name: '',
@@ -15,12 +18,15 @@ function submit() {
 </script>
 
 <template>
-    <Head title="Register - Customer Portal" />
+    <Head :title="(tenant?.portal_title || 'Portal') + ' - Register'" />
 
     <div class="min-h-screen flex items-center justify-center bg-gray-100">
         <div class="w-full max-w-md px-4">
             <div class="overflow-hidden bg-white shadow-sm sm:rounded-lg p-8">
-                <h2 class="text-2xl font-bold text-gray-900 text-center mb-6">Create Account</h2>
+                <div class="text-center mb-6">
+                    <img v-if="tenant?.logo_url" :src="tenant.logo_url" class="mx-auto h-12 mb-4" :alt="tenant.name" />
+                    <h2 class="text-2xl font-bold text-gray-900">Create Account</h2>
+                </div>
 
                 <form @submit.prevent="submit" class="space-y-4">
                     <div>

@@ -1,5 +1,8 @@
 <script setup>
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
+import { computed } from 'vue';
+
+const tenant = computed(() => usePage().props.tenant);
 
 const form = useForm({
     email: '',
@@ -13,12 +16,15 @@ function submit() {
 </script>
 
 <template>
-    <Head title="Customer Login" />
+    <Head :title="(tenant?.portal_title || 'Portal') + ' - Sign In'" />
 
     <div class="min-h-screen flex items-center justify-center bg-gray-100">
         <div class="w-full max-w-md px-4">
             <div class="overflow-hidden bg-white shadow-sm sm:rounded-lg p-8">
-                <h2 class="text-2xl font-bold text-gray-900 text-center mb-6">Customer Portal</h2>
+                <div class="text-center mb-6">
+                    <img v-if="tenant?.logo_url" :src="tenant.logo_url" class="mx-auto h-12 mb-4" :alt="tenant.name" />
+                    <h2 class="text-2xl font-bold text-gray-900">{{ tenant?.portal_title || 'Portal' }}</h2>
+                </div>
 
                 <form @submit.prevent="submit" class="space-y-4">
                     <div>
@@ -42,6 +48,9 @@ function submit() {
                 <p class="mt-4 text-center text-sm text-gray-500">
                     Don't have an account?
                     <Link :href="route('portal.register')" class="text-indigo-600 hover:text-indigo-800">Register</Link>
+                </p>
+                <p class="mt-2 text-center text-xs text-gray-400">
+                    <Link :href="route('login')" class="hover:text-gray-600">Staff login</Link>
                 </p>
             </div>
         </div>

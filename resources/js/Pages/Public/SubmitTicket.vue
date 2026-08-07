@@ -1,6 +1,8 @@
 <script setup>
-import { Head, useForm } from '@inertiajs/vue3';
+import { Head, useForm, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
+
+const tenant = computed(() => usePage().props.tenant);
 
 const props = defineProps({
     form: Object,
@@ -57,6 +59,7 @@ function submit() {
     <div class="min-h-screen bg-gray-100">
         <div class="bg-indigo-600 py-8">
             <div class="mx-auto max-w-2xl px-4">
+                <img v-if="tenant?.logo_url" :src="tenant.logo_url" class="h-10 mb-3" :alt="tenant?.name" />
                 <h1 class="text-2xl font-bold text-white">{{ form?.name || 'Submit a Support Request' }}</h1>
                 <p class="mt-1 text-indigo-200">{{ form?.description || "We'll get back to you as soon as possible." }}</p>
             </div>

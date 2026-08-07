@@ -1,6 +1,6 @@
 <script setup>
-import { Head, Link, router } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
+import { ref, computed } from 'vue';
 
 defineProps({
     canLogin: {
@@ -10,6 +10,8 @@ defineProps({
         type: Boolean,
     },
 });
+
+const tenant = computed(() => usePage().props.tenant);
 
 const searchQuery = ref('');
 
@@ -27,7 +29,10 @@ function search() {
         <!-- Header -->
         <header class="border-b border-gray-200 bg-white">
             <div class="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-                <span class="text-xl font-bold text-gray-800">Support</span>
+                <div class="flex items-center gap-3">
+                    <img v-if="tenant?.logo_url" :src="tenant.logo_url" class="h-9" :alt="tenant?.name" />
+                    <span class="text-xl font-bold text-gray-800">{{ tenant?.portal_title || 'Support' }}</span>
+                </div>
 
                 <nav class="flex items-center gap-3">
                     <Link
@@ -47,7 +52,7 @@ function search() {
                         </Link>
                         <Link
                             v-else
-                            :href="route('login')"
+                            :href="route('portal.login')"
                             class="rounded bg-gray-800 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-900"
                         >
                             Sign In
@@ -60,7 +65,7 @@ function search() {
         <!-- Hero with search -->
         <section class="bg-rose-50 px-6 py-16 text-center">
             <h1 class="text-3xl font-semibold text-rose-700 md:text-4xl">
-                Hi! How can we help you?
+                {{ tenant?.portal_welcome_text || 'Hi! How can we help you?' }}
             </h1>
 
             <form @submit.prevent="search" class="mx-auto mt-8 max-w-2xl">

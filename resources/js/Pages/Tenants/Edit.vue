@@ -14,6 +14,8 @@ const form = useForm({
     domain: props.tenant?.domain || '',
     logo_url: props.tenant?.logo_url || '',
     favicon_url: props.tenant?.favicon_url || '',
+    logo_file: null,
+    favicon_file: null,
     primary_color: props.tenant?.primary_color || '#6366f1',
     secondary_color: props.tenant?.secondary_color || '#4f46e5',
     accent_color: props.tenant?.accent_color || '#818cf8',
@@ -28,11 +30,40 @@ const form = useForm({
     is_active: props.tenant?.is_active ?? true,
 });
 
+const logoPreview = computed(() => {
+    if (form.logo_file) return URL.createObjectURL(form.logo_file);
+    return form.logo_url || null;
+});
+
+const faviconPreview = computed(() => {
+    if (form.favicon_file) return URL.createObjectURL(form.favicon_file);
+    return form.favicon_url || null;
+});
+
+function handleLogoUpload(e) {
+    const file = e.target.files[0];
+    if (file) {
+        form.logo_file = file;
+        form.logo_url = '';
+    }
+}
+
+function handleFaviconUpload(e) {
+    const file = e.target.files[0];
+    if (file) {
+        form.favicon_file = file;
+        form.favicon_url = '';
+    }
+}
+
 function submit() {
     if (isNew.value) {
-        form.post(route('tenants.store'));
+        form.post(route('tenants.store'), { forceFormData: true });
     } else {
-        form.put(route('tenants.update', props.tenant.id));
+        form.post(route('tenants.update', props.tenant.id), {
+            forceFormData: true,
+            headers: { 'X-HTTP-Method-Override': 'PUT' },
+        });
     }
 }
 
@@ -119,12 +150,26 @@ const previewStyle = computed(() => ({
                             <h3 class="text-lg font-medium text-gray-900">Branding</h3>
                             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <div>
-                                    <label class="block text-sm font-medium text-gray-700">Logo URL</label>
-                                    <input v-model="form.logo_url" type="text" placeholder="https://..." class="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Logo</label>
+                                    <div v-if="logoPreview" class="mb-2 flex items-center gap-3">
+                                        <img :src="logoPreview" class="h-10 rounded border border-gray-200 bg-white p-1" alt="Logo preview" />
+                                        <button type="button" @click="form.logo_file = null; form.logo_url = ''" class="text-xs text-red-500 hover:text-red-700">Remove</button>
+                                    </div>
+                                    <input type="file" accept="image/*" @change="handleLogoUpload" class="text-sm text-gray-500 file:mr-3 file:rounded file:border-0 file:bg-gray-100 file:px-3 file:py-1.5 file:text-sm file:text-gray-700 hover:file:bg-gray-200" />
+                                    <p class="mt-1 text-xs text-gray-400">Or paste a URL:</p>
+                                    <input v-model="form.logo_url" type="text" placeholder="https://..." class="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm" />
+                                    <p v-if="form.errors.logo_file" class="mt-1 text-sm text-red-600">{{ form.errors.logo_file }}</p>
                                 </div>
                                 <div>
-                                    <label class="block text-sm font-medium text-gray-700">Favicon URL</label>
-                                    <input v-model="form.favicon_url" type="text" placeholder="https://..." class="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Favicon</label>
+                                    <div v-if="faviconPreview" class="mb-2 flex items-center gap-3">
+                                        <img :src="faviconPreview" class="h-8 rounded border border-gray-200 bg-white p-1" alt="Favicon preview" />
+                                        <button type="button" @click="form.favicon_file = null; form.favicon_url = ''" class="text-xs text-red-500 hover:text-red-700">Remove</button>
+                                    </div>
+                                    <input type="file" accept="image/*" @change="handleFaviconUpload" class="text-sm text-gray-500 file:mr-3 file:rounded file:border-0 file:bg-gray-100 file:px-3 file:py-1.5 file:text-sm file:text-gray-700 hover:file:bg-gray-200" />
+                                    <p class="mt-1 text-xs text-gray-400">Or paste a URL:</p>
+                                    <input v-model="form.favicon_url" type="text" placeholder="https://..." class="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm" />
+                                    <p v-if="form.errors.favicon_file" class="mt-1 text-sm text-red-600">{{ form.errors.favicon_file }}</p>
                                 </div>
                             </div>
                             <div>
@@ -168,7 +213,7 @@ const previewStyle = computed(() => ({
                                 <!-- Preview header -->
                                 <div class="px-4 py-3 flex items-center justify-between" :style="{ backgroundColor: form.header_bg_color, color: form.header_text_color }">
                                     <div class="flex items-center gap-2">
-                                        <img v-if="form.logo_url" :src="form.logo_url" class="h-6" alt="" />
+                                        <img v-if="logoPreview" :src="logoPreview" class="h-6" alt="" />
                                         <span class="font-semibold">{{ form.name || 'Tenant' }}</span>
                                     </div>
                                     <span class="text-xs opacity-60">Agent</span>
