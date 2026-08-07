@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AgentController;
 use App\Http\Controllers\InboundEmailReviewController;
+use App\Http\Controllers\SpamFilterController;
 use App\Http\Controllers\MailConfigController;
 use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\CannedResponseController;
@@ -130,6 +131,11 @@ Route::middleware('auth')->group(function () {
         Route::get('/settings/inbound-emails/{inboundEmail}', [InboundEmailReviewController::class, 'show'])->name('inbound-emails.show');
         Route::post('/settings/inbound-emails/{inboundEmail}/reprocess', [InboundEmailReviewController::class, 'reprocess'])->name('inbound-emails.reprocess');
         Route::delete('/settings/inbound-emails/{inboundEmail}', [InboundEmailReviewController::class, 'destroy'])->name('inbound-emails.destroy');
+
+        // Spam Filters
+        Route::get('/settings/spam-filters', [SpamFilterController::class, 'index'])->name('spam-filters.index');
+        Route::post('/settings/spam-filters', [SpamFilterController::class, 'store'])->name('spam-filters.store');
+        Route::delete('/settings/spam-filters/{spamFilter}', [SpamFilterController::class, 'destroy'])->name('spam-filters.destroy');
 
         // Departments
         Route::resource('departments', DepartmentController::class)->except(['create', 'show', 'edit']);

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\SpamFilterEntry;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
@@ -123,7 +124,10 @@ class SpamFilter
 
     protected function isBlocklisted(string $email): bool
     {
-        $blocklist = config('support.spam.blocklist', []);
+        $blocklist = array_merge(
+            config('support.spam.blocklist', []),
+            SpamFilterEntry::blocklist()
+        );
         $domain = strtolower(substr($email, strrpos($email, '@') + 1));
         $email = strtolower($email);
 
@@ -139,12 +143,15 @@ class SpamFilter
 
     protected function hasAllowlist(): bool
     {
-        return ! empty(config('support.spam.allowlist', []));
+        return ! empty(config('support.spam.allowlist', [])) || SpamFilterEntry::where('type', 'allowlist')->exists();
     }
 
     protected function isAllowlisted(string $email): bool
     {
-        $allowlist = config('support.spam.allowlist', []);
+        $allowlist = array_merge(
+            config('support.spam.allowlist', []),
+            SpamFilterEntry::allowlist()
+        );
         $domain = strtolower(substr($email, strrpos($email, '@') + 1));
         $email = strtolower($email);
 
