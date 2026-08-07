@@ -322,6 +322,17 @@ const statusColors = {
                             </dl>
                         </div>
 
+                        <!-- Custom Fields -->
+                        <div v-if="ticket.custom_fields && Object.keys(ticket.custom_fields).length" class="overflow-hidden bg-white shadow-sm sm:rounded-lg p-6">
+                            <h3 class="text-sm font-medium text-gray-500 mb-3">Custom Fields</h3>
+                            <dl class="space-y-2 text-sm">
+                                <div v-for="(value, key) in ticket.custom_fields" :key="key" class="flex justify-between">
+                                    <dt class="text-gray-500 capitalize">{{ key.replace(/_/g, ' ') }}</dt>
+                                    <dd class="text-gray-900 text-right">{{ value || '—' }}</dd>
+                                </div>
+                            </dl>
+                        </div>
+
                         <div class="overflow-hidden bg-white shadow-sm sm:rounded-lg p-6">
                             <h3 class="text-sm font-medium text-gray-500 mb-3">Info</h3>
                             <dl class="space-y-2 text-sm">

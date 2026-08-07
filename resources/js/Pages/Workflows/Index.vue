@@ -9,6 +9,7 @@ const props = defineProps({
     teams: Array,
     agents: Array,
     labels: Array,
+    customFields: Array,
 });
 
 const showForm = ref(false);
@@ -92,7 +93,7 @@ function toggleActive(workflow) {
     }, { preserveScroll: true });
 }
 
-const conditionFields = [
+const standardFields = [
     { value: 'subject', label: 'Subject' },
     { value: 'body', label: 'Body' },
     { value: 'requester_email', label: 'Requester Email' },
@@ -102,6 +103,17 @@ const conditionFields = [
     { value: 'source', label: 'Source' },
     { value: 'team_id', label: 'Team' },
     { value: 'assigned_to', label: 'Assigned Agent' },
+];
+
+const customFieldOptions = (props.customFields || []).map(f => ({
+    value: f.name,
+    label: f.label,
+    options: f.options,
+}));
+
+const conditionFields = [
+    ...standardFields,
+    ...customFieldOptions,
 ];
 
 const operators = [

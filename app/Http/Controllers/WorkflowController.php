@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\FormField;
 use App\Models\Label;
 use App\Models\Team;
 use App\Models\User;
@@ -19,6 +20,7 @@ class WorkflowController extends Controller
             'teams' => Team::all(),
             'agents' => User::all(['id', 'name']),
             'labels' => Label::all(),
+            'customFields' => FormField::select('name', 'label', 'type', 'options')->distinct('name')->get(),
         ]);
     }
 
