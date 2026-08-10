@@ -98,7 +98,14 @@ class KbController extends Controller
             'icon' => 'nullable|string|max:50',
         ]);
 
-        $validated['slug'] = Str::slug($validated['name']);
+        $baseSlug = Str::slug($validated['name']);
+        $slug = $baseSlug;
+        $i = 2;
+        while (KbCategory::where('slug', $slug)->exists()) {
+            $slug = "{$baseSlug}-{$i}";
+            $i++;
+        }
+        $validated['slug'] = $slug;
 
         KbCategory::create($validated);
 
