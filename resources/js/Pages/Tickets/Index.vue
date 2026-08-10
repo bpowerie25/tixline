@@ -205,7 +205,7 @@ const statusColors = {
                             </Link>
                         </div>
                         <div v-if="!tickets.data.length" class="px-6 py-8 text-center text-gray-500">
-                            No tickets found.
+                            No {{ status === 'all' ? '' : status }} tickets found.
                         </div>
                     </div>
 
