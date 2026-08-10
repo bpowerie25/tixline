@@ -149,6 +149,7 @@ const actionTypes = [
     { value: 'add_label', label: 'Add Label' },
     { value: 'remove_label', label: 'Remove Label' },
     { value: 'mail_agent', label: 'Mail Agent' },
+    { value: 'mail_team', label: 'Mail Team' },
     { value: 'mail_requester', label: 'Mail Requester' },
     { value: 'add_note', label: 'Add Internal Note' },
     { value: 'send_webhook', label: 'Send Webhook' },
@@ -258,7 +259,7 @@ function countRules(conditions) {
                                         <option value="">Select agent...</option>
                                         <option v-for="agent in agents" :key="agent.id" :value="agent.id">{{ agent.name }}</option>
                                     </select>
-                                    <select v-else-if="['assign_to_team', 'round_robin'].includes(action.type)" v-model="action.value" class="flex-1 rounded-md border-gray-300 text-sm shadow-sm">
+                                    <select v-else-if="['assign_to_team', 'round_robin', 'mail_team'].includes(action.type)" v-model="action.value" class="flex-1 rounded-md border-gray-300 text-sm shadow-sm">
                                         <option value="">Select team...</option>
                                         <option v-for="team in teams" :key="team.id" :value="team.id">{{ team.name }}</option>
                                     </select>

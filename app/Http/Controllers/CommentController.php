@@ -39,6 +39,11 @@ class CommentController extends Controller
                 $ticket->update(['first_responded_at' => now()]);
             }
 
+            // Auto-set to pending after agent reply (awaiting customer response)
+            if (! $closeTicket && in_array($ticket->status, ['open'])) {
+                $ticket->update(['status' => 'pending']);
+            }
+
             Mail::to($ticket->requester_email)->send(new TicketReply($ticket, $comment));
         }
 

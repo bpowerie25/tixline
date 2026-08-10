@@ -153,6 +153,7 @@ class WorkflowEngine
                 'assign_to_matching_team' => $this->assignToMatchingTeam($ticket, $action),
                 'round_robin' => $this->roundRobinAssign($ticket, $action),
                 'mail_agent' => $this->mailAgent($ticket, $action),
+                'mail_team' => $this->mailTeam($ticket, $action),
                 'mail_requester' => $this->mailRequester($ticket, $action),
                 'add_note' => $this->addNote($ticket, $action),
                 'send_webhook' => $this->sendWebhook($ticket, $action),
@@ -229,6 +230,25 @@ class WorkflowEngine
 
         Mail::raw($template, function ($message) use ($agent, $ticket) {
             $message->to($agent->email)
+                ->subject("[{$ticket->reference}] {$ticket->subject}");
+        });
+    }
+
+    protected function mailTeam(Ticket $ticket, array $action): void
+    {
+        $teamId = $action['value'] ?? $ticket->team_id;
+        $team = $teamId ? Team::with('members')->find($teamId) : null;
+
+        if (! $team || $team->members->isEmpty()) {
+            return;
+        }
+
+        $template = $action['template'] ?? "Ticket [{$ticket->reference}] {$ticket->subject} has been assigned to your team.";
+
+        $recipients = $team->members->pluck('email')->toArray();
+
+        Mail::raw($template, function ($message) use ($recipients, $ticket) {
+            $message->to($recipients)
                 ->subject("[{$ticket->reference}] {$ticket->subject}");
         });
     }

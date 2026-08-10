@@ -150,7 +150,7 @@ class CustomerPortalController extends Controller
             'is_internal' => false,
         ]);
 
-        if (in_array($ticket->status, ['resolved', 'closed'])) {
+        if (in_array($ticket->status, ['pending', 'resolved', 'closed'])) {
             $ticket->update(['status' => 'open']);
         }
 

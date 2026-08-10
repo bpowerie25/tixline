@@ -43,7 +43,7 @@ class InboundEmailProcessor
 
             $this->processAttachments($message, $comment);
 
-            if (in_array($existingTicket->status, ['resolved', 'closed'])) {
+            if (in_array($existingTicket->status, ['pending', 'resolved', 'closed'])) {
                 $existingTicket->update(['status' => 'open']);
             }
 
