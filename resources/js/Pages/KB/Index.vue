@@ -23,6 +23,12 @@ function deleteArticle(article) {
     }
 }
 
+function deleteCategory(cat) {
+    if (confirm(`Delete category "${cat.name}"? Articles in this category will need to be reassigned.`)) {
+        router.delete(route('kb.admin.categories.destroy', cat.id));
+    }
+}
+
 const statusColors = {
     draft: 'bg-gray-100 text-gray-600',
     published: 'bg-green-100 text-green-700',
@@ -63,6 +69,22 @@ const statusColors = {
                         <button type="submit" :disabled="catForm.processing" class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700">Create</button>
                         <button type="button" @click="showCatForm = false" class="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">Cancel</button>
                     </form>
+                </div>
+
+                <!-- Categories -->
+                <div v-if="categories.length" class="mb-6 overflow-hidden bg-white shadow-sm sm:rounded-lg">
+                    <div class="px-6 py-3 border-b border-gray-200">
+                        <h3 class="text-sm font-medium text-gray-500">Categories</h3>
+                    </div>
+                    <div class="divide-y divide-gray-200">
+                        <div v-for="cat in categories" :key="cat.id" class="flex items-center justify-between px-6 py-3">
+                            <div>
+                                <span class="font-medium text-gray-900">{{ cat.name }}</span>
+                                <span v-if="cat.description" class="ml-2 text-sm text-gray-500">{{ cat.description }}</span>
+                            </div>
+                            <button @click="deleteCategory(cat)" class="text-sm text-red-600 hover:text-red-800">Delete</button>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Articles list -->
