@@ -8,8 +8,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class FormField extends Model
 {
     protected $fillable = [
-        'form_id', 'name', 'label', 'type', 'options', 'is_required',
-        'sort_order', 'conditions',
+        'form_id', 'name', 'label', 'description', 'type', 'options',
+        'is_required', 'sort_order', 'conditions',
     ];
 
     protected function casts(): array

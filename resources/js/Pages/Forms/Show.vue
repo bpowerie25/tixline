@@ -33,6 +33,7 @@ function addField() {
         id: null,
         name: '',
         label: '',
+        description: '',
         type: 'text',
         options: [],
         is_required: false,
@@ -162,6 +163,11 @@ function submit() {
                                             <option v-for="ft in fieldTypes" :key="ft.value" :value="ft.value">{{ ft.label }}</option>
                                         </select>
                                     </div>
+                                </div>
+
+                                <div class="mt-3">
+                                    <label class="block text-xs font-medium text-gray-500">Help Text <span class="font-normal text-gray-400">(optional — shown below the field)</span></label>
+                                    <input v-model="field.description" type="text" placeholder="e.g. Please select the module you need help with" class="mt-1 w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
                                 </div>
 
                                 <!-- Options for select/radio -->

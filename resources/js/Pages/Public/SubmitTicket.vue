@@ -118,6 +118,7 @@ function submit() {
                                 {{ field.label }}
                                 <span v-if="field.is_required" class="text-red-500">*</span>
                             </label>
+                            <p v-if="field.description" class="mt-0.5 text-xs text-gray-500">{{ field.description }}</p>
 
                             <input
                                 v-if="['text', 'email', 'number', 'date'].includes(field.type)"
