@@ -16,6 +16,7 @@ const form = useForm({
     favicon_url: props.tenant?.favicon_url || '',
     logo_file: null,
     favicon_file: null,
+    header_height: props.tenant?.header_height || 'medium',
     primary_color: props.tenant?.primary_color || '#6366f1',
     secondary_color: props.tenant?.secondary_color || '#4f46e5',
     accent_color: props.tenant?.accent_color || '#818cf8',
@@ -172,9 +173,19 @@ const previewStyle = computed(() => ({
                                     <p v-if="form.errors.favicon_file" class="mt-1 text-sm text-red-600">{{ form.errors.favicon_file }}</p>
                                 </div>
                             </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700">Font Family</label>
-                                <input v-model="form.font_family" type="text" placeholder="Inter, system-ui, sans-serif" class="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
+                            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Font Family</label>
+                                    <input v-model="form.font_family" type="text" placeholder="Inter, system-ui, sans-serif" class="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Portal Header Height</label>
+                                    <select v-model="form.header_height" class="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                        <option value="small">Small</option>
+                                        <option value="medium">Medium (default)</option>
+                                        <option value="large">Large</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
 

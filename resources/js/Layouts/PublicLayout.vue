@@ -5,6 +5,11 @@ import { computed, ref, onMounted } from 'vue';
 const tenant = computed(() => usePage().props.tenant);
 const primaryColor = computed(() => tenant.value?.primary_color || '#be123c');
 
+const logoHeightClass = computed(() => {
+    const heights = { small: 'h-7', medium: 'h-9', large: 'h-14' };
+    return heights[tenant.value?.header_height] || 'h-9';
+});
+
 const showCookieBanner = ref(false);
 
 onMounted(() => {
@@ -25,7 +30,7 @@ function acceptCookies() {
         <header class="border-b border-gray-200 bg-white">
             <div class="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
                 <Link href="/" class="flex items-center gap-3">
-                    <img v-if="tenant?.logo_url" :src="tenant.logo_url" class="h-9" :alt="tenant?.name" />
+                    <img v-if="tenant?.logo_url" :src="tenant.logo_url" :class="logoHeightClass" :alt="tenant?.name" />
                     <span class="text-xl font-bold text-gray-800">{{ tenant?.portal_title || 'Support' }}</span>
                 </Link>
 

@@ -21,6 +21,7 @@ class ResolveTenant
                 'name' => $tenant->name,
                 'logo_url' => $tenant->logo_url,
                 'favicon_url' => $tenant->favicon_url,
+                'header_height' => $tenant->header_height ?? 'medium',
                 'primary_color' => $tenant->primary_color,
                 'secondary_color' => $tenant->secondary_color,
                 'accent_color' => $tenant->accent_color,
