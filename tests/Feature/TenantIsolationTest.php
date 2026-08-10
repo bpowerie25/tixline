@@ -29,8 +29,8 @@ class TenantIsolationTest extends TestCase
         $this->tenantA = Tenant::create(['name' => 'Acme', 'slug' => 'acme']);
         $this->tenantB = Tenant::create(['name' => 'Globex', 'slug' => 'globex']);
 
-        $this->agentA = User::factory()->create(['role' => 'agent', 'tenant_id' => $this->tenantA->id]);
-        $this->agentB = User::factory()->create(['role' => 'agent', 'tenant_id' => $this->tenantB->id]);
+        $this->agentA = User::factory()->create(['role_id' => \App\Models\Role::where('name', \App\Models\Role::AGENT)->first()->id, 'tenant_id' => $this->tenantA->id]);
+        $this->agentB = User::factory()->create(['role_id' => \App\Models\Role::where('name', \App\Models\Role::AGENT)->first()->id, 'tenant_id' => $this->tenantB->id]);
     }
 
     protected function setTenant(Tenant $tenant): void

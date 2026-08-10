@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Role;
 use App\Models\Team;
 use App\Models\Tenant;
 use App\Models\User;
@@ -42,30 +43,34 @@ class CourseTeamSeeder extends Seeder
         }
 
         // Agents
+        $adminRole = Role::where('name', Role::ADMIN)->first();
+        $agentRole = Role::where('name', Role::AGENT)->first();
+
         $agents = [
-            ['name' => 'Marika Mascitti', 'email' => 'marika.mascitti@unibo.it', 'role' => 'agent'],
-            ['name' => 'Roberto Henriques', 'email' => 'roberto@novaims.unl.pt', 'role' => 'agent'],
-            ['name' => 'José AméricoRio', 'email' => 'jrio@novaims.unl.pt', 'role' => 'agent'],
-            ['name' => 'Yuriy Perezhohin', 'email' => 'yperezhohin@novaims.unl.pt', 'role' => 'agent'],
-            ['name' => 'JoãoSilva Martins', 'email' => 'jmartins@novaims.unl.pt', 'role' => 'agent'],
-            ['name' => 'Gurjot Singh', 'email' => 'gurjot.singh@liu.se', 'role' => 'agent'],
-            ['name' => 'Katerina Linden', 'email' => 'katerina.linden@liu.se', 'role' => 'agent'],
-            ['name' => 'Mark Cudden', 'email' => 'Mark.Cudden@ncirl.ie', 'role' => 'agent'],
-            ['name' => 'Michael Bradford', 'email' => 'michael.bradford@ncirl.ie', 'role' => 'agent'],
-            ['name' => 'Radu Ciobanu', 'email' => 'radu.ciobanu@upb.ro', 'role' => 'agent'],
-            ['name' => 'Cătălin Negru', 'email' => 'Catalin.Negru@ncirl.ie', 'role' => 'agent'],
-            ['name' => 'Bogdan Mocanu', 'email' => 'Bogdan.Mocanu@ncirl.ie', 'role' => 'agent'],
-            ['name' => 'Grace Herbert', 'email' => 'Grace.Herbert@ncirl.ie', 'role' => 'agent'],
-            ['name' => 'Tomas Herink', 'email' => 'tomas@matrixinternet.ie', 'role' => 'admin'],
+            ['name' => 'Marika Mascitti', 'email' => 'marika.mascitti@unibo.it', 'role_name' => 'agent'],
+            ['name' => 'Roberto Henriques', 'email' => 'roberto@novaims.unl.pt', 'role_name' => 'agent'],
+            ['name' => 'José AméricoRio', 'email' => 'jrio@novaims.unl.pt', 'role_name' => 'agent'],
+            ['name' => 'Yuriy Perezhohin', 'email' => 'yperezhohin@novaims.unl.pt', 'role_name' => 'agent'],
+            ['name' => 'JoãoSilva Martins', 'email' => 'jmartins@novaims.unl.pt', 'role_name' => 'agent'],
+            ['name' => 'Gurjot Singh', 'email' => 'gurjot.singh@liu.se', 'role_name' => 'agent'],
+            ['name' => 'Katerina Linden', 'email' => 'katerina.linden@liu.se', 'role_name' => 'agent'],
+            ['name' => 'Mark Cudden', 'email' => 'Mark.Cudden@ncirl.ie', 'role_name' => 'agent'],
+            ['name' => 'Michael Bradford', 'email' => 'michael.bradford@ncirl.ie', 'role_name' => 'agent'],
+            ['name' => 'Radu Ciobanu', 'email' => 'radu.ciobanu@upb.ro', 'role_name' => 'agent'],
+            ['name' => 'Cătălin Negru', 'email' => 'Catalin.Negru@ncirl.ie', 'role_name' => 'agent'],
+            ['name' => 'Bogdan Mocanu', 'email' => 'Bogdan.Mocanu@ncirl.ie', 'role_name' => 'agent'],
+            ['name' => 'Grace Herbert', 'email' => 'Grace.Herbert@ncirl.ie', 'role_name' => 'agent'],
+            ['name' => 'Tomas Herink', 'email' => 'tomas@matrixinternet.ie', 'role_name' => 'admin'],
         ];
 
         foreach ($agents as $agent) {
+            $roleId = $agent['role_name'] === 'admin' ? $adminRole->id : $agentRole->id;
             User::firstOrCreate(
                 ['email' => $agent['email']],
                 [
                     'name' => $agent['name'],
                     'password' => 'ChangeMeNow2026!',
-                    'role' => $agent['role'],
+                    'role_id' => $roleId,
                     'tenant_id' => $tenantId,
                 ]
             );

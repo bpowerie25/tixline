@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Department;
+use App\Models\Role;
 use App\Models\Team;
 use App\Models\Ticket;
 use App\Models\User;
@@ -38,34 +39,48 @@ class PermissionTest extends TestCase
         $this->teamA = Team::create(['name' => 'Tier 1', 'slug' => 'tier-1', 'department_id' => $this->department->id]);
         $this->teamB = Team::create(['name' => 'Tier 2', 'slug' => 'tier-2', 'department_id' => $this->department->id]);
 
-        $this->admin = User::factory()->create(['role' => 'admin']);
-        $this->groupManager = User::factory()->create(['role' => 'group_manager', 'team_id' => $this->teamA->id]);
-        $this->teamLead = User::factory()->create(['role' => 'team_lead', 'team_id' => $this->teamA->id]);
-        $this->agentA = User::factory()->create(['role' => 'agent', 'team_id' => $this->teamA->id]);
-        $this->agentB = User::factory()->create(['role' => 'agent', 'team_id' => $this->teamB->id]);
+        $adminRole = Role::where('name', Role::ADMIN)->first();
+        $gmRole = Role::where('name', Role::GROUP_MANAGER)->first();
+        $tlRole = Role::where('name', Role::TEAM_LEAD)->first();
+        $agentRole = Role::where('name', Role::AGENT)->first();
+
+        $this->admin = User::factory()->create(['role_id' => $adminRole->id]);
+        $this->groupManager = User::factory()->create(['role_id' => $gmRole->id]);
+        $this->groupManager->teams()->attach($this->teamA);
+        $this->teamLead = User::factory()->create(['role_id' => $tlRole->id]);
+        $this->teamLead->teams()->attach($this->teamA);
+        $this->agentA = User::factory()->create(['role_id' => $agentRole->id]);
+        $this->agentA->teams()->attach($this->teamA);
+        $this->agentB = User::factory()->create(['role_id' => $agentRole->id]);
+        $this->agentB->teams()->attach($this->teamB);
 
         $this->department->update(['manager_id' => $this->groupManager->id]);
         $this->teamA->update(['lead_id' => $this->teamLead->id]);
     }
 
-    // === Role hierarchy ===
+    // === Permission checks ===
 
-    public function test_admin_is_at_least_all_roles(): void
+    public function test_admin_has_all_permissions(): void
     {
-        $this->assertTrue($this->admin->isAtLeast('admin'));
-        $this->assertTrue($this->admin->isAtLeast('group_manager'));
-        $this->assertTrue($this->admin->isAtLeast('team_lead'));
-        $this->assertTrue($this->admin->isAtLeast('agent'));
+        $this->assertTrue($this->admin->hasPermission('tickets.view'));
+        $this->assertTrue($this->admin->hasPermission('teams.manage'));
+        $this->assertTrue($this->admin->hasPermission('roles.manage'));
+        $this->assertTrue($this->admin->hasPermission('departments.manage'));
     }
 
-    public function test_agent_is_not_team_lead(): void
+    public function test_agent_has_limited_permissions(): void
     {
-        $this->assertFalse($this->agentA->isAtLeast('team_lead'));
+        $this->assertTrue($this->agentA->hasPermission('tickets.view'));
+        $this->assertTrue($this->agentA->hasPermission('tickets.create'));
+        $this->assertFalse($this->agentA->hasPermission('tickets.delete'));
+        $this->assertFalse($this->agentA->hasPermission('teams.manage'));
     }
 
-    public function test_team_lead_is_at_least_agent(): void
+    public function test_team_lead_has_ticket_and_report_permissions(): void
     {
-        $this->assertTrue($this->teamLead->isAtLeast('agent'));
+        $this->assertTrue($this->teamLead->hasPermission('tickets.delete'));
+        $this->assertTrue($this->teamLead->hasPermission('reports.view'));
+        $this->assertFalse($this->teamLead->hasPermission('teams.manage'));
     }
 
     // === Admin-only route protection ===
@@ -205,7 +220,7 @@ class PermissionTest extends TestCase
         $this->assertTrue($visible->contains('subject', 'Any'));
     }
 
-    // === Ticket policy — update/delete ===
+    // === Ticket policy -- update/delete ===
 
     public function test_agent_can_update_own_ticket(): void
     {

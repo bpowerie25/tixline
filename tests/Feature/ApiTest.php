@@ -17,7 +17,7 @@ class ApiTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->user = User::factory()->create(['role' => 'admin']);
+        $this->user = User::factory()->create(['role_id' => \App\Models\Role::where('name', \App\Models\Role::ADMIN)->first()->id]);
     }
 
     public function test_api_requires_auth(): void

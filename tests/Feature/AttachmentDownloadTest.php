@@ -53,7 +53,7 @@ class AttachmentDownloadTest extends TestCase
 
     public function test_agent_can_download_visible_ticket_attachment(): void
     {
-        $agent = User::factory()->create(['role' => 'admin']);
+        $agent = User::factory()->create(['role_id' => \App\Models\Role::where('name', \App\Models\Role::ADMIN)->first()->id]);
         [$ticket, $attachment] = $this->createTicketWithAttachment();
 
         $response = $this->actingAs($agent)
@@ -69,7 +69,7 @@ class AttachmentDownloadTest extends TestCase
     {
         $teamA = Team::create(['name' => 'Team A', 'slug' => 'team-a']);
         $teamB = Team::create(['name' => 'Team B', 'slug' => 'team-b']);
-        $agent = User::factory()->create(['role' => 'agent', 'team_id' => $teamA->id]);
+        $agent = User::factory()->create(['role_id' => \App\Models\Role::where('name', \App\Models\Role::AGENT)->first()->id, 'team_id' => $teamA->id]);
 
         [$ticket, $attachment] = $this->createTicketWithAttachment([
             'team_id' => $teamB->id,
@@ -119,7 +119,7 @@ class AttachmentDownloadTest extends TestCase
 
     public function test_html_attachment_served_as_octet_stream(): void
     {
-        $agent = User::factory()->create(['role' => 'admin']);
+        $agent = User::factory()->create(['role_id' => \App\Models\Role::where('name', \App\Models\Role::ADMIN)->first()->id]);
         [$ticket, $attachment] = $this->createTicketWithAttachment();
 
         $response = $this->actingAs($agent)
@@ -132,7 +132,7 @@ class AttachmentDownloadTest extends TestCase
 
     public function test_svg_attachment_served_as_download(): void
     {
-        $agent = User::factory()->create(['role' => 'admin']);
+        $agent = User::factory()->create(['role_id' => \App\Models\Role::where('name', \App\Models\Role::ADMIN)->first()->id]);
         $ticket = Ticket::create([
             'subject' => 'Test',
             'requester_name' => 'Test',
@@ -159,7 +159,7 @@ class AttachmentDownloadTest extends TestCase
 
     public function test_comment_attachment_authorized_through_ticket(): void
     {
-        $agent = User::factory()->create(['role' => 'admin']);
+        $agent = User::factory()->create(['role_id' => \App\Models\Role::where('name', \App\Models\Role::ADMIN)->first()->id]);
         $ticket = Ticket::create([
             'subject' => 'Test',
             'requester_name' => 'Test',

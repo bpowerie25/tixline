@@ -129,7 +129,7 @@ class WorkflowRegexTest extends TestCase
 
     public function test_workflow_save_rejects_invalid_regex(): void
     {
-        $admin = User::factory()->create(['role' => 'admin']);
+        $admin = User::factory()->create(['role_id' => \App\Models\Role::where('name', \App\Models\Role::ADMIN)->first()->id]);
 
         $response = $this->actingAs($admin)->post(route('workflows.store'), [
             'name' => 'Bad regex workflow',
@@ -151,7 +151,7 @@ class WorkflowRegexTest extends TestCase
 
     public function test_workflow_save_accepts_valid_regex(): void
     {
-        $admin = User::factory()->create(['role' => 'admin']);
+        $admin = User::factory()->create(['role_id' => \App\Models\Role::where('name', \App\Models\Role::ADMIN)->first()->id]);
 
         $response = $this->actingAs($admin)->post(route('workflows.store'), [
             'name' => 'Good regex workflow',

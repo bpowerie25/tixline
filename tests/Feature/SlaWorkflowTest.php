@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Role;
 use App\Models\Team;
 use App\Models\Ticket;
 use App\Models\User;
@@ -55,7 +56,7 @@ class SlaWorkflowTest extends TestCase
 
     public function test_sla_warning_triggers_workflow(): void
     {
-        $lead = User::factory()->create(['role' => 'team_lead']);
+        $lead = User::factory()->create(['role_id' => Role::where('name', Role::TEAM_LEAD)->first()->id]);
 
         Workflow::create([
             'name' => 'Alert lead on SLA warning',
@@ -136,7 +137,7 @@ class SlaWorkflowTest extends TestCase
 
     public function test_field_change_event_fires_through_controller(): void
     {
-        $admin = User::factory()->create(['role' => 'admin']);
+        $admin = User::factory()->create(['role_id' => Role::where('name', Role::ADMIN)->first()->id]);
 
         Workflow::create([
             'name' => 'On assign',

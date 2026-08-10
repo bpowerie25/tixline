@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Form;
 use App\Models\Label;
+use App\Models\Role;
 use App\Models\Team;
 use App\Models\Ticket;
 use App\Models\User;
@@ -25,11 +26,14 @@ class DatabaseSeeder extends Seeder
         $billing = Team::create(['name' => 'Billing', 'slug' => 'billing', 'color' => '#f59e0b']);
         $technical = Team::create(['name' => 'Technical', 'slug' => 'technical', 'color' => '#10b981']);
 
+        $adminRole = Role::where('name', Role::ADMIN)->first();
+        $agentRole = Role::where('name', Role::AGENT)->first();
+
         // Admin
         $admin = User::factory()->create([
             'name' => 'Admin User',
             'email' => 'admin@example.com',
-            'role' => 'admin',
+            'role_id' => $adminRole->id,
             'team_id' => null,
         ]);
 
@@ -37,21 +41,21 @@ class DatabaseSeeder extends Seeder
         $agent1 = User::factory()->create([
             'name' => 'Sarah Chen',
             'email' => 'sarah@example.com',
-            'role' => 'agent',
+            'role_id' => $agentRole->id,
             'team_id' => $support->id,
         ]);
 
         $agent2 = User::factory()->create([
             'name' => 'Marcus Johnson',
             'email' => 'marcus@example.com',
-            'role' => 'agent',
+            'role_id' => $agentRole->id,
             'team_id' => $billing->id,
         ]);
 
         $agent3 = User::factory()->create([
             'name' => 'Emily Park',
             'email' => 'emily@example.com',
-            'role' => 'agent',
+            'role_id' => $agentRole->id,
             'team_id' => $technical->id,
         ]);
 

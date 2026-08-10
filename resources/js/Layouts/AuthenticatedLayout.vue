@@ -7,10 +7,20 @@ import NavLink from '@/Components/NavLink.vue';
 import ResponsiveNavLink from '@/Components/ResponsiveNavLink.vue';
 import ThemeProvider from '@/Components/ThemeProvider.vue';
 import { Link, usePage } from '@inertiajs/vue3';
+import { useCan } from '@/Composables/useCan';
+
+const { can, canAny } = useCan();
 
 const showingNavigationDropdown = ref(false);
 
 const tenant = computed(() => usePage().props.tenant);
+
+const hasAnySettingsPermission = computed(() => canAny([
+    'teams.manage', 'labels.manage', 'workflows.manage', 'forms.manage',
+    'agents.manage', 'canned-responses.manage', 'sla-policies.manage',
+    'tenants.manage', 'mail.manage', 'inbound-emails.view', 'spam-filters.manage',
+    'departments.manage', 'roles.manage',
+]));
 </script>
 
 <template>
@@ -44,26 +54,26 @@ const tenant = computed(() => usePage().props.tenant);
                                 <NavLink :href="route('tickets.index')" :active="route().current('tickets.*')">
                                     Tickets
                                 </NavLink>
-                                <NavLink v-if="$page.props.auth.can.manage_team" :href="route('reports.index')" :active="route().current('reports.*')">
+                                <NavLink v-if="can('reports.view')" :href="route('reports.index')" :active="route().current('reports.*')">
                                     Reports
                                 </NavLink>
-                                <NavLink v-if="$page.props.auth.can.manage_team" :href="route('custom-reports.index')" :active="route().current('custom-reports.*')">
+                                <NavLink v-if="can('reports.custom.manage')" :href="route('custom-reports.index')" :active="route().current('custom-reports.*')">
                                     Custom Reports
                                 </NavLink>
-                                <NavLink v-if="$page.props.auth.can.manage_team" :href="route('kb.admin.index')" :active="route().current('kb.admin.*')">
+                                <NavLink v-if="can('kb.admin.view')" :href="route('kb.admin.index')" :active="route().current('kb.admin.*')">
                                     KB
                                 </NavLink>
                                 <NavLink :href="route('help.index')" :active="route().current('help.*')">
                                     Help
                                 </NavLink>
 
-                                <!-- Settings Dropdown (admin only) -->
-                                <div v-if="$page.props.auth.can.admin" class="hidden sm:flex sm:items-center">
+                                <!-- Settings Dropdown -->
+                                <div v-if="hasAnySettingsPermission" class="hidden sm:flex sm:items-center">
                                     <Dropdown align="left" width="48">
                                         <template #trigger>
                                             <button class="inline-flex items-center border-b-2 px-1 pt-1 text-sm font-medium leading-5 transition duration-150 ease-in-out focus:outline-none"
                                                 :class="[
-                                                    route().current('teams.*') || route().current('labels.*') || route().current('workflows.*') || route().current('forms.*') || route().current('canned-responses.*') || route().current('sla-policies.*') || route().current('tenants.*') || route().current('departments.*') || route().current('agents.*') || route().current('mail-config.*')
+                                                    route().current('teams.*') || route().current('labels.*') || route().current('workflows.*') || route().current('forms.*') || route().current('canned-responses.*') || route().current('sla-policies.*') || route().current('tenants.*') || route().current('departments.*') || route().current('agents.*') || route().current('mail-config.*') || route().current('roles.*')
                                                         ? 'border-indigo-400 text-gray-900 focus:border-indigo-700'
                                                         : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
                                                 ]"
@@ -75,18 +85,19 @@ const tenant = computed(() => usePage().props.tenant);
                                             </button>
                                         </template>
                                         <template #content>
-                                            <DropdownLink :href="route('agents.index')">Agents</DropdownLink>
-                                            <DropdownLink :href="route('teams.index')">Teams</DropdownLink>
-                                            <DropdownLink :href="route('labels.index')">Labels</DropdownLink>
-                                            <DropdownLink :href="route('workflows.index')">Workflows</DropdownLink>
-                                            <DropdownLink :href="route('forms.index')">Forms</DropdownLink>
-                                            <DropdownLink :href="route('canned-responses.index')">Canned Responses</DropdownLink>
-                                            <DropdownLink :href="route('sla-policies.index')">SLA Policies</DropdownLink>
-                                            <DropdownLink :href="route('tenants.index')">Tenants</DropdownLink>
-                                            <DropdownLink :href="route('departments.index')">Departments</DropdownLink>
-                                            <DropdownLink :href="route('mail-config.index')">Mail</DropdownLink>
-                                            <DropdownLink :href="route('inbound-emails.index')">Inbound Emails</DropdownLink>
-                                            <DropdownLink :href="route('spam-filters.index')">Spam Filters</DropdownLink>
+                                            <DropdownLink v-if="can('agents.manage')" :href="route('agents.index')">Agents</DropdownLink>
+                                            <DropdownLink v-if="can('teams.manage')" :href="route('teams.index')">Teams</DropdownLink>
+                                            <DropdownLink v-if="can('labels.manage')" :href="route('labels.index')">Labels</DropdownLink>
+                                            <DropdownLink v-if="can('workflows.manage')" :href="route('workflows.index')">Workflows</DropdownLink>
+                                            <DropdownLink v-if="can('forms.manage')" :href="route('forms.index')">Forms</DropdownLink>
+                                            <DropdownLink v-if="can('canned-responses.manage')" :href="route('canned-responses.index')">Canned Responses</DropdownLink>
+                                            <DropdownLink v-if="can('sla-policies.manage')" :href="route('sla-policies.index')">SLA Policies</DropdownLink>
+                                            <DropdownLink v-if="can('tenants.manage')" :href="route('tenants.index')">Tenants</DropdownLink>
+                                            <DropdownLink v-if="can('departments.manage')" :href="route('departments.index')">Departments</DropdownLink>
+                                            <DropdownLink v-if="can('roles.manage')" :href="route('roles.index')">Roles</DropdownLink>
+                                            <DropdownLink v-if="can('mail.manage')" :href="route('mail-config.index')">Mail</DropdownLink>
+                                            <DropdownLink v-if="can('inbound-emails.view')" :href="route('inbound-emails.index')">Inbound Emails</DropdownLink>
+                                            <DropdownLink v-if="can('spam-filters.manage')" :href="route('spam-filters.index')">Spam Filters</DropdownLink>
                                         </template>
                                     </Dropdown>
                                 </div>
@@ -193,25 +204,26 @@ const tenant = computed(() => usePage().props.tenant);
                     <div class="space-y-1 pb-3 pt-2">
                         <ResponsiveNavLink :href="route('dashboard')" :active="route().current('dashboard')">Dashboard</ResponsiveNavLink>
                         <ResponsiveNavLink :href="route('tickets.index')" :active="route().current('tickets.*')">Tickets</ResponsiveNavLink>
-                        <ResponsiveNavLink v-if="$page.props.auth.can.manage_team" :href="route('reports.index')" :active="route().current('reports.*')">Reports</ResponsiveNavLink>
-                        <ResponsiveNavLink v-if="$page.props.auth.can.manage_team" :href="route('custom-reports.index')" :active="route().current('custom-reports.*')">Custom Reports</ResponsiveNavLink>
-                        <ResponsiveNavLink v-if="$page.props.auth.can.manage_team" :href="route('kb.admin.index')" :active="route().current('kb.admin.*')">Knowledge Base</ResponsiveNavLink>
+                        <ResponsiveNavLink v-if="can('reports.view')" :href="route('reports.index')" :active="route().current('reports.*')">Reports</ResponsiveNavLink>
+                        <ResponsiveNavLink v-if="can('reports.custom.manage')" :href="route('custom-reports.index')" :active="route().current('custom-reports.*')">Custom Reports</ResponsiveNavLink>
+                        <ResponsiveNavLink v-if="can('kb.admin.view')" :href="route('kb.admin.index')" :active="route().current('kb.admin.*')">Knowledge Base</ResponsiveNavLink>
                         <ResponsiveNavLink :href="route('help.index')" :active="route().current('help.*')">Help</ResponsiveNavLink>
 
-                        <div v-if="$page.props.auth.can.admin" class="border-t border-gray-200 mt-2 pt-2">
+                        <div v-if="hasAnySettingsPermission" class="border-t border-gray-200 mt-2 pt-2">
                             <div class="px-4 py-1 text-xs font-semibold uppercase text-gray-400">Settings</div>
-                            <ResponsiveNavLink :href="route('agents.index')" :active="route().current('agents.*')">Agents</ResponsiveNavLink>
-                            <ResponsiveNavLink :href="route('teams.index')" :active="route().current('teams.*')">Teams</ResponsiveNavLink>
-                            <ResponsiveNavLink :href="route('labels.index')" :active="route().current('labels.*')">Labels</ResponsiveNavLink>
-                            <ResponsiveNavLink :href="route('workflows.index')" :active="route().current('workflows.*')">Workflows</ResponsiveNavLink>
-                            <ResponsiveNavLink :href="route('forms.index')" :active="route().current('forms.*')">Forms</ResponsiveNavLink>
-                            <ResponsiveNavLink :href="route('canned-responses.index')" :active="route().current('canned-responses.*')">Canned Responses</ResponsiveNavLink>
-                            <ResponsiveNavLink :href="route('sla-policies.index')" :active="route().current('sla-policies.*')">SLA Policies</ResponsiveNavLink>
-                            <ResponsiveNavLink :href="route('tenants.index')" :active="route().current('tenants.*')">Tenants</ResponsiveNavLink>
-                            <ResponsiveNavLink :href="route('departments.index')" :active="route().current('departments.*')">Departments</ResponsiveNavLink>
-                            <ResponsiveNavLink :href="route('mail-config.index')" :active="route().current('mail-config.*')">Mail</ResponsiveNavLink>
-                            <ResponsiveNavLink :href="route('inbound-emails.index')" :active="route().current('inbound-emails.*')">Inbound Emails</ResponsiveNavLink>
-                            <ResponsiveNavLink :href="route('spam-filters.index')" :active="route().current('spam-filters.*')">Spam Filters</ResponsiveNavLink>
+                            <ResponsiveNavLink v-if="can('agents.manage')" :href="route('agents.index')" :active="route().current('agents.*')">Agents</ResponsiveNavLink>
+                            <ResponsiveNavLink v-if="can('teams.manage')" :href="route('teams.index')" :active="route().current('teams.*')">Teams</ResponsiveNavLink>
+                            <ResponsiveNavLink v-if="can('labels.manage')" :href="route('labels.index')" :active="route().current('labels.*')">Labels</ResponsiveNavLink>
+                            <ResponsiveNavLink v-if="can('workflows.manage')" :href="route('workflows.index')" :active="route().current('workflows.*')">Workflows</ResponsiveNavLink>
+                            <ResponsiveNavLink v-if="can('forms.manage')" :href="route('forms.index')" :active="route().current('forms.*')">Forms</ResponsiveNavLink>
+                            <ResponsiveNavLink v-if="can('canned-responses.manage')" :href="route('canned-responses.index')" :active="route().current('canned-responses.*')">Canned Responses</ResponsiveNavLink>
+                            <ResponsiveNavLink v-if="can('sla-policies.manage')" :href="route('sla-policies.index')" :active="route().current('sla-policies.*')">SLA Policies</ResponsiveNavLink>
+                            <ResponsiveNavLink v-if="can('tenants.manage')" :href="route('tenants.index')" :active="route().current('tenants.*')">Tenants</ResponsiveNavLink>
+                            <ResponsiveNavLink v-if="can('departments.manage')" :href="route('departments.index')" :active="route().current('departments.*')">Departments</ResponsiveNavLink>
+                            <ResponsiveNavLink v-if="can('roles.manage')" :href="route('roles.index')" :active="route().current('roles.*')">Roles</ResponsiveNavLink>
+                            <ResponsiveNavLink v-if="can('mail.manage')" :href="route('mail-config.index')" :active="route().current('mail-config.*')">Mail</ResponsiveNavLink>
+                            <ResponsiveNavLink v-if="can('inbound-emails.view')" :href="route('inbound-emails.index')" :active="route().current('inbound-emails.*')">Inbound Emails</ResponsiveNavLink>
+                            <ResponsiveNavLink v-if="can('spam-filters.manage')" :href="route('spam-filters.index')" :active="route().current('spam-filters.*')">Spam Filters</ResponsiveNavLink>
                         </div>
                     </div>
 

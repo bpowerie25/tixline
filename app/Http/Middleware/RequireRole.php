@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Role;
 use Closure;
 use Illuminate\Http\Request;
 
@@ -15,15 +16,17 @@ class RequireRole
             abort(403);
         }
 
-        // Check if user has any of the specified roles OR is at least the minimum role
+        $userRoleName = $user->role?->name;
+
+        // Check if user has any of the specified roles
         foreach ($roles as $role) {
-            if ($user->role === $role) {
+            if ($userRoleName === $role) {
                 return $next($request);
             }
         }
 
         // Admin always passes
-        if ($user->isAdmin()) {
+        if ($userRoleName === Role::ADMIN) {
             return $next($request);
         }
 

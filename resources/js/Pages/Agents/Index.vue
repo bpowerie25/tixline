@@ -6,6 +6,7 @@ import { ref } from 'vue';
 const props = defineProps({
     agents: Array,
     teams: Array,
+    roles: Array,
 });
 
 const showForm = ref(false);
@@ -15,28 +16,14 @@ const form = useForm({
     name: '',
     email: '',
     password: '',
-    role: 'agent',
+    role_id: '',
     team_ids: [],
 });
-
-const roleLabels = {
-    admin: 'Admin',
-    group_manager: 'Group Manager',
-    team_lead: 'Team Lead',
-    agent: 'Agent',
-};
-
-const roleColors = {
-    admin: 'bg-red-100 text-red-700',
-    group_manager: 'bg-purple-100 text-purple-700',
-    team_lead: 'bg-blue-100 text-blue-700',
-    agent: 'bg-green-100 text-green-700',
-};
 
 function openCreate() {
     editingAgent.value = null;
     form.reset();
-    form.role = 'agent';
+    form.role_id = '';
     showForm.value = true;
 }
 
@@ -45,7 +32,7 @@ function openEdit(agent) {
     form.name = agent.name;
     form.email = agent.email;
     form.password = '';
-    form.role = agent.role;
+    form.role_id = agent.role_id || '';
     form.team_ids = (agent.teams || []).map(t => t.id);
     showForm.value = true;
 }
@@ -111,12 +98,11 @@ function deleteAgent(agent) {
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">Role</label>
-                                <select v-model="form.role" required class="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                                    <option value="agent">Agent</option>
-                                    <option value="team_lead">Team Lead</option>
-                                    <option value="group_manager">Group Manager</option>
-                                    <option value="admin">Admin</option>
+                                <select v-model="form.role_id" required class="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                    <option value="">Select role...</option>
+                                    <option v-for="role in roles" :key="role.id" :value="role.id">{{ role.display_name }}</option>
                                 </select>
+                                <p v-if="form.errors.role_id" class="mt-1 text-sm text-red-600">{{ form.errors.role_id }}</p>
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Teams</label>
@@ -150,8 +136,8 @@ function deleteAgent(agent) {
                                 <div>
                                     <div class="flex items-center gap-2">
                                         <span class="font-medium text-gray-900">{{ agent.name }}</span>
-                                        <span :class="[roleColors[agent.role], 'inline-flex rounded-full px-2 py-0.5 text-xs font-medium']">
-                                            {{ roleLabels[agent.role] }}
+                                        <span v-if="agent.role" class="inline-flex rounded-full bg-indigo-100 text-indigo-700 px-2 py-0.5 text-xs font-medium">
+                                            {{ agent.role?.display_name }}
                                         </span>
                                     </div>
                                     <div class="text-sm text-gray-500">

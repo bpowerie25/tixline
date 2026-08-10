@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Models\Role;
 use App\Models\Ticket;
 use App\Models\User;
 
@@ -9,7 +10,7 @@ class TicketPolicy
 {
     public function viewAny(User $user): bool
     {
-        return true; // All authenticated users can view (scoped by visibleTicketsQuery)
+        return $user->hasPermission('tickets.view');
     }
 
     public function view(User $user, Ticket $ticket): bool
@@ -19,22 +20,26 @@ class TicketPolicy
 
     public function create(User $user): bool
     {
-        return true; // All authenticated users can create tickets
+        return $user->hasPermission('tickets.create');
     }
 
     public function update(User $user, Ticket $ticket): bool
     {
+        if (! $user->hasPermission('tickets.update')) {
+            return false;
+        }
+
         if ($user->isAdmin()) {
             return true;
         }
 
         // Team lead can update any ticket in their team
-        if ($user->isTeamLead() && $ticket->team_id === $user->team_id) {
+        if ($user->role?->name === Role::TEAM_LEAD && $ticket->team_id && in_array($ticket->team_id, $user->teamIds())) {
             return true;
         }
 
         // Group manager can update any ticket in their department
-        if ($user->isGroupManager() && $user->canSeeTicket($ticket)) {
+        if ($user->role?->name === Role::GROUP_MANAGER && $user->canSeeTicket($ticket)) {
             return true;
         }
 
@@ -44,22 +49,28 @@ class TicketPolicy
 
     public function delete(User $user, Ticket $ticket): bool
     {
-        return $user->isAtLeast(User::ROLE_TEAM_LEAD);
+        return $user->hasPermission('tickets.delete');
     }
 
     public function assign(User $user, Ticket $ticket): bool
     {
+        if (! $user->hasPermission('tickets.assign')) {
+            return false;
+        }
+
         if ($user->isAdmin()) {
             return true;
         }
 
+        $teamIds = $user->teamIds();
+
         // Team lead can assign within their team
-        if ($user->isTeamLead() && $ticket->team_id === $user->team_id) {
+        if ($user->role?->name === Role::TEAM_LEAD && $ticket->team_id && in_array($ticket->team_id, $teamIds)) {
             return true;
         }
 
         // Group manager can assign within department
-        if ($user->isGroupManager() && $user->canSeeTicket($ticket)) {
+        if ($user->role?->name === Role::GROUP_MANAGER && $user->canSeeTicket($ticket)) {
             return true;
         }
 

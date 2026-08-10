@@ -17,7 +17,7 @@ class TicketControllerTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->agent = User::factory()->create(['role' => 'admin']);
+        $this->agent = User::factory()->create(['role_id' => \App\Models\Role::where('name', \App\Models\Role::ADMIN)->first()->id]);
     }
 
     public function test_index_requires_auth(): void

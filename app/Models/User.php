@@ -7,33 +7,21 @@ use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
-#[Fillable(['name', 'email', 'password', 'role', 'team_id', 'tenant_id'])]
+#[Fillable(['name', 'email', 'password', 'role_id', 'team_id', 'tenant_id'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
     use HasApiTokens, HasFactory, Notifiable;
 
-    const ROLE_ADMIN = 'admin';
-
-    const ROLE_GROUP_MANAGER = 'group_manager';
-
-    const ROLE_TEAM_LEAD = 'team_lead';
-
-    const ROLE_AGENT = 'agent';
-
-    const ROLES = [
-        self::ROLE_ADMIN,
-        self::ROLE_GROUP_MANAGER,
-        self::ROLE_TEAM_LEAD,
-        self::ROLE_AGENT,
-    ];
+    protected ?array $permissionCache = null;
 
     protected function casts(): array
     {
@@ -41,6 +29,11 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    public function role(): BelongsTo
+    {
+        return $this->belongsTo(Role::class);
     }
 
     public function teams(): BelongsToMany
@@ -53,38 +46,22 @@ class User extends Authenticatable
         return $this->hasMany(Ticket::class, 'assigned_to');
     }
 
-    // Role checks
+    public function hasPermission(string $permission): bool
+    {
+        if ($this->permissionCache === null) {
+            if (! $this->relationLoaded('role') || ! $this->role?->relationLoaded('permissions')) {
+                $this->load('role.permissions');
+            }
+
+            $this->permissionCache = $this->role?->permissions->pluck('name')->toArray() ?? [];
+        }
+
+        return in_array($permission, $this->permissionCache);
+    }
+
     public function isAdmin(): bool
     {
-        return $this->role === self::ROLE_ADMIN;
-    }
-
-    public function isGroupManager(): bool
-    {
-        return $this->role === self::ROLE_GROUP_MANAGER;
-    }
-
-    public function isTeamLead(): bool
-    {
-        return $this->role === self::ROLE_TEAM_LEAD;
-    }
-
-    public function isAgent(): bool
-    {
-        return $this->role === self::ROLE_AGENT;
-    }
-
-    // Hierarchy checks
-    public function isAtLeast(string $role): bool
-    {
-        $hierarchy = [
-            self::ROLE_ADMIN => 4,
-            self::ROLE_GROUP_MANAGER => 3,
-            self::ROLE_TEAM_LEAD => 2,
-            self::ROLE_AGENT => 1,
-        ];
-
-        return ($hierarchy[$this->role] ?? 0) >= ($hierarchy[$role] ?? 0);
+        return $this->role?->name === Role::ADMIN;
     }
 
     public function teamIds(): array
@@ -92,7 +69,7 @@ class User extends Authenticatable
         return $this->teams()->pluck('teams.id')->toArray();
     }
 
-    // Ticket visibility — what tickets can this user see?
+    // Ticket visibility -- what tickets can this user see?
     public function canSeeTicket(Ticket $ticket): bool
     {
         if ($this->isAdmin()) {
@@ -108,8 +85,8 @@ class User extends Authenticatable
             return true;
         }
 
-        // Group manager — can see all tickets in their departments' teams
-        if ($this->isGroupManager()) {
+        // Group manager -- can see all tickets in their departments' teams
+        if ($this->role?->name === Role::GROUP_MANAGER) {
             $departmentIds = Team::whereIn('id', $teamIds)->whereNotNull('department_id')->pluck('department_id');
             if ($departmentIds->isNotEmpty()) {
                 $departmentTeamIds = Team::whereIn('department_id', $departmentIds)->pluck('id');
@@ -143,7 +120,7 @@ class User extends Authenticatable
                 $q->orWhereIn('team_id', $teamIds);
             }
 
-            if ($this->isGroupManager()) {
+            if ($this->role?->name === Role::GROUP_MANAGER) {
                 $departmentIds = Team::whereIn('id', $teamIds)->whereNotNull('department_id')->pluck('department_id');
                 if ($departmentIds->isNotEmpty()) {
                     $departmentTeamIds = Team::whereIn('department_id', $departmentIds)->pluck('id');

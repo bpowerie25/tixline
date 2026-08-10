@@ -22,7 +22,7 @@ class CommentControllerTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->agent = User::factory()->create(['role' => 'agent']);
+        $this->agent = User::factory()->create(['role_id' => \App\Models\Role::where('name', \App\Models\Role::AGENT)->first()->id]);
         $this->ticket = Ticket::create([
             'subject' => 'Test ticket',
             'requester_name' => 'Customer',

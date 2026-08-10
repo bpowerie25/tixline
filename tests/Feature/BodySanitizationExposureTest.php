@@ -16,7 +16,7 @@ class BodySanitizationExposureTest extends TestCase
 
     public function test_agent_ticket_show_contains_sanitized_body_not_raw(): void
     {
-        $agent = User::factory()->create(['role' => 'admin']);
+        $agent = User::factory()->create(['role_id' => \App\Models\Role::where('name', \App\Models\Role::ADMIN)->first()->id]);
 
         $ticket = Ticket::create([
             'subject' => 'Test',
@@ -40,7 +40,7 @@ class BodySanitizationExposureTest extends TestCase
 
     public function test_agent_ticket_index_does_not_expose_raw_body(): void
     {
-        $agent = User::factory()->create(['role' => 'admin']);
+        $agent = User::factory()->create(['role_id' => \App\Models\Role::where('name', \App\Models\Role::ADMIN)->first()->id]);
 
         Ticket::create([
             'subject' => 'Test',
@@ -94,7 +94,7 @@ class BodySanitizationExposureTest extends TestCase
 
     public function test_comment_body_hidden_in_ticket_show(): void
     {
-        $agent = User::factory()->create(['role' => 'admin']);
+        $agent = User::factory()->create(['role_id' => \App\Models\Role::where('name', \App\Models\Role::ADMIN)->first()->id]);
 
         $ticket = Ticket::create([
             'subject' => 'Test',
@@ -120,7 +120,7 @@ class BodySanitizationExposureTest extends TestCase
 
     public function test_api_show_deliberately_exposes_raw_body(): void
     {
-        $user = User::factory()->create(['role' => 'admin']);
+        $user = User::factory()->create(['role_id' => \App\Models\Role::where('name', \App\Models\Role::ADMIN)->first()->id]);
         Sanctum::actingAs($user);
 
         $ticket = Ticket::create([

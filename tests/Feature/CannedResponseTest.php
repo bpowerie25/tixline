@@ -17,7 +17,7 @@ class CannedResponseTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->agent = User::factory()->create(['role' => 'agent']);
+        $this->agent = User::factory()->create(['role_id' => \App\Models\Role::where('name', \App\Models\Role::AGENT)->first()->id]);
     }
 
     public function test_create_canned_response(): void

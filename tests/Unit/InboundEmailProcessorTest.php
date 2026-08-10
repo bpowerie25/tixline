@@ -171,7 +171,7 @@ class InboundEmailProcessorTest extends TestCase
 
     public function test_known_agent_can_thread_by_reference_with_auth(): void
     {
-        $agent = \App\Models\User::factory()->create(['role' => 'agent']);
+        $agent = \App\Models\User::factory()->create(['role_id' => \App\Models\Role::where('name', \App\Models\Role::AGENT)->first()->id]);
 
         $ticket = Ticket::create([
             'subject' => 'Issue',
@@ -287,7 +287,7 @@ class InboundEmailProcessorTest extends TestCase
 
     public function test_agent_address_with_failing_auth_never_gains_entitlement(): void
     {
-        $agent = \App\Models\User::factory()->create(['role' => 'agent']);
+        $agent = \App\Models\User::factory()->create(['role_id' => \App\Models\Role::where('name', \App\Models\Role::AGENT)->first()->id]);
 
         $ticket = Ticket::create([
             'subject' => 'Sensitive ticket',
@@ -310,7 +310,7 @@ class InboundEmailProcessorTest extends TestCase
 
     public function test_agent_address_with_no_auth_results_never_gains_entitlement(): void
     {
-        $agent = \App\Models\User::factory()->create(['role' => 'agent']);
+        $agent = \App\Models\User::factory()->create(['role_id' => \App\Models\Role::where('name', \App\Models\Role::AGENT)->first()->id]);
 
         $ticket = Ticket::create([
             'subject' => 'Ticket',

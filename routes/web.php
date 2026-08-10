@@ -17,6 +17,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PublicTicketController;
 use App\Http\Controllers\CustomReportController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SlaPolicyController;
 use App\Http\Controllers\TeamController;
 use App\Http\Controllers\TenantController;
@@ -99,8 +100,8 @@ Route::middleware('auth')->group(function () {
     Route::resource('canned-responses', CannedResponseController::class)->except(['create', 'show', 'edit']);
     Route::get('/api/canned-responses', [CannedResponseController::class, 'forTicket'])->name('canned-responses.list');
 
-    // Custom Reports — team leads and above
-    Route::middleware('role:team_lead,group_manager')->group(function () {
+    // Custom Reports
+    Route::middleware('permission:reports.custom.manage')->group(function () {
         Route::get('/reports/custom', [CustomReportController::class, 'index'])->name('custom-reports.index');
         Route::post('/reports/custom', [CustomReportController::class, 'store'])->name('custom-reports.store');
         Route::get('/reports/custom/{report}', [CustomReportController::class, 'show'])->name('custom-reports.show');
@@ -114,60 +115,87 @@ Route::middleware('auth')->group(function () {
         Route::get('/reports/custom/{report}/export', [CustomReportController::class, 'export'])->name('custom-reports.export');
     });
 
-    // Reports — team leads and above
-    Route::get('/reports', [ReportController::class, 'index'])->middleware('role:team_lead,group_manager')->name('reports.index');
+    // Reports
+    Route::get('/reports', [ReportController::class, 'index'])->middleware('permission:reports.view')->name('reports.index');
 
-    // Admin-only routes
-    Route::middleware('role:admin')->group(function () {
-        // Teams
+    // Teams
+    Route::middleware('permission:teams.manage')->group(function () {
         Route::resource('teams', TeamController::class)->except(['create', 'show', 'edit']);
         Route::post('/teams/{team}/members', [TeamController::class, 'addMember'])->name('teams.add-member');
         Route::delete('/teams/{team}/members/{user}', [TeamController::class, 'removeMember'])->name('teams.remove-member');
+    });
 
-        // Labels
+    // Labels
+    Route::middleware('permission:labels.manage')->group(function () {
         Route::resource('labels', LabelController::class)->except(['create', 'show', 'edit']);
+    });
 
-        // Workflows
+    // Workflows
+    Route::middleware('permission:workflows.manage')->group(function () {
         Route::resource('workflows', WorkflowController::class)->except(['create', 'show', 'edit']);
         Route::post('/workflows/{workflow}/duplicate', [WorkflowController::class, 'duplicate'])->name('workflows.duplicate');
+    });
 
-        // Forms
+    // Forms
+    Route::middleware('permission:forms.manage')->group(function () {
         Route::get('/forms/create', [FormController::class, 'create'])->name('forms.create');
         Route::resource('forms', FormController::class)->except(['create', 'edit']);
+    });
 
-        // SLA Policies
+    // SLA Policies
+    Route::middleware('permission:sla-policies.manage')->group(function () {
         Route::resource('sla-policies', SlaPolicyController::class)->except(['create', 'show', 'edit']);
+    });
 
-        // Tenants (Skinning)
+    // Tenants (Skinning)
+    Route::middleware('permission:tenants.manage')->group(function () {
         Route::get('/tenants/create', [TenantController::class, 'create'])->name('tenants.create');
         Route::resource('tenants', TenantController::class)->except(['create', 'edit']);
+    });
 
-        // Agents
+    // Agents
+    Route::middleware('permission:agents.manage')->group(function () {
         Route::resource('agents', AgentController::class)->except(['create', 'show', 'edit']);
+    });
 
-        // Mail Configuration
+    // Mail Configuration
+    Route::middleware('permission:mail.manage')->group(function () {
         Route::get('/settings/mail', [MailConfigController::class, 'index'])->name('mail-config.index');
         Route::post('/settings/mail', [MailConfigController::class, 'store'])->name('mail-config.store');
         Route::post('/settings/mail/test', [MailConfigController::class, 'test'])->name('mail-config.test');
         Route::post('/settings/mail/test-imap', [MailConfigController::class, 'testImap'])->name('mail-config.test-imap');
+    });
 
-        // Inbound Email Review
+    // Inbound Email Review
+    Route::middleware('permission:inbound-emails.manage')->group(function () {
         Route::get('/settings/inbound-emails', [InboundEmailReviewController::class, 'index'])->name('inbound-emails.index');
         Route::get('/settings/inbound-emails/{inboundEmail}', [InboundEmailReviewController::class, 'show'])->name('inbound-emails.show');
         Route::post('/settings/inbound-emails/{inboundEmail}/reprocess', [InboundEmailReviewController::class, 'reprocess'])->name('inbound-emails.reprocess');
         Route::delete('/settings/inbound-emails/{inboundEmail}', [InboundEmailReviewController::class, 'destroy'])->name('inbound-emails.destroy');
+    });
 
-        // Spam Filters
+    // Spam Filters
+    Route::middleware('permission:spam-filters.manage')->group(function () {
         Route::get('/settings/spam-filters', [SpamFilterController::class, 'index'])->name('spam-filters.index');
         Route::post('/settings/spam-filters', [SpamFilterController::class, 'store'])->name('spam-filters.store');
         Route::delete('/settings/spam-filters/{spamFilter}', [SpamFilterController::class, 'destroy'])->name('spam-filters.destroy');
+    });
 
-        // Departments
+    // Departments
+    Route::middleware('permission:departments.manage')->group(function () {
         Route::resource('departments', DepartmentController::class)->except(['create', 'show', 'edit']);
     });
 
-    // Knowledge Base Admin — team leads and above
-    Route::middleware('role:team_lead,group_manager')->prefix('admin/kb')->name('kb.admin.')->group(function () {
+    // Roles
+    Route::middleware('permission:roles.manage')->group(function () {
+        Route::get('/roles', [RoleController::class, 'index'])->name('roles.index');
+        Route::post('/roles', [RoleController::class, 'store'])->name('roles.store');
+        Route::put('/roles/{role}', [RoleController::class, 'update'])->name('roles.update');
+        Route::delete('/roles/{role}', [RoleController::class, 'destroy'])->name('roles.destroy');
+    });
+
+    // Knowledge Base Admin
+    Route::middleware('permission:kb.admin.view')->prefix('admin/kb')->name('kb.admin.')->group(function () {
         Route::get('/', [KbController::class, 'index'])->name('index');
         Route::get('/create', [KbController::class, 'create'])->name('create');
         Route::post('/', [KbController::class, 'store'])->name('store');
