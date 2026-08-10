@@ -50,6 +50,10 @@ class KbController extends Controller
         $validated['slug'] = Str::slug($validated['title']);
         $validated['author_id'] = $request->user()->id;
 
+        if (empty($validated['excerpt'])) {
+            $validated['excerpt'] = Str::limit(strip_tags($validated['body']), 200);
+        }
+
         if ($validated['status'] === 'published') {
             $validated['published_at'] = now();
         }
@@ -71,6 +75,10 @@ class KbController extends Controller
         ]);
 
         $validated['slug'] = Str::slug($validated['title']);
+
+        if (empty($validated['excerpt'])) {
+            $validated['excerpt'] = Str::limit(strip_tags($validated['body']), 200);
+        }
 
         if ($validated['status'] === 'published' && ! $kbArticle->published_at) {
             $validated['published_at'] = now();
