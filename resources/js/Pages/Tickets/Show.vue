@@ -102,6 +102,9 @@ const statusColors = {
 
         <div class="py-12">
             <div class="mx-auto max-w-7xl sm:px-6 lg:px-8">
+                <div v-if="$page.props.flash?.success" class="mb-4 rounded-md bg-green-50 border border-green-200 p-4">
+                    <p class="text-sm text-green-800">{{ $page.props.flash.success }}</p>
+                </div>
                 <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
                     <!-- Main Content -->
                     <div class="lg:col-span-2 space-y-6">
@@ -163,7 +166,7 @@ const statusColors = {
 
                         <!-- Reply Form -->
                         <div class="overflow-hidden bg-white shadow-sm sm:rounded-lg p-6">
-                            <form @submit.prevent="submitComment">
+                            <form @submit.prevent="submitComment()">
                                 <div class="mb-3 flex items-center gap-4">
                                     <label class="flex items-center gap-2">
                                         <input type="radio" :value="false" v-model="commentForm.is_internal" class="text-indigo-600" />

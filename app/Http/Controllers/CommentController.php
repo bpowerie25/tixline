@@ -26,9 +26,7 @@ class CommentController extends Controller
         $validated['type'] = ($validated['is_internal'] ?? false) ? 'note' : 'reply';
 
         unset($validated['attachments'], $validated['close_ticket']);
-        \Log::info('Creating comment', ['ticket_id' => $ticket->id, 'validated' => $validated]);
         $comment = $ticket->comments()->create($validated);
-        \Log::info('Comment created', ['comment_id' => $comment->id, 'exists' => $comment->exists]);
 
         if ($request->hasFile('attachments')) {
             foreach ($request->file('attachments') as $file) {
