@@ -39,6 +39,11 @@ class CommentController extends Controller
                 $ticket->update(['first_responded_at' => now()]);
             }
 
+            // Auto-assign to the replying agent if unassigned
+            if (! $ticket->assigned_to) {
+                $ticket->update(['assigned_to' => $request->user()->id]);
+            }
+
             // Auto-set to pending after agent reply (awaiting customer response)
             if (! $closeTicket && in_array($ticket->status, ['open'])) {
                 $ticket->update(['status' => 'pending']);
