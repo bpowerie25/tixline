@@ -154,6 +154,26 @@ class CustomerPortalController extends Controller
             $ticket->update(['status' => 'open']);
         }
 
+        // Notify assigned agent or team
+        $recipients = [];
+        if ($ticket->assigned_to && $ticket->assignee) {
+            $recipients[] = $ticket->assignee->email;
+        } elseif ($ticket->team_id) {
+            $team = $ticket->team()->with('members')->first();
+            if ($team) {
+                $recipients = $team->members->pluck('email')->toArray();
+            }
+        }
+        if (! empty($recipients)) {
+            \Illuminate\Support\Facades\Mail::raw(
+                "Ticket [{$ticket->reference}] {$ticket->subject} has a new reply from {$ticket->requester_name}.",
+                function ($message) use ($recipients, $ticket) {
+                    $message->to($recipients)
+                        ->subject("[{$ticket->reference}] New reply: {$ticket->subject}");
+                }
+            );
+        }
+
         return back()->with('success', 'Reply sent.');
     }
 

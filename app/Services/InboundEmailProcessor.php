@@ -47,6 +47,8 @@ class InboundEmailProcessor
                 $existingTicket->update(['status' => 'open']);
             }
 
+            $this->notifyAgentOrTeam($existingTicket);
+
             return [
                 'status' => 'reply',
                 'ticket_id' => $existingTicket->id,
@@ -96,6 +98,35 @@ class InboundEmailProcessor
             'ticket_id' => $ticket->id,
             'reference' => $ticket->fresh()->reference,
         ];
+    }
+
+    protected function notifyAgentOrTeam(Ticket $ticket): void
+    {
+        $recipients = [];
+
+        if ($ticket->assigned_to) {
+            $agent = $ticket->assignee;
+            if ($agent) {
+                $recipients[] = $agent->email;
+            }
+        } elseif ($ticket->team_id) {
+            $team = $ticket->team()->with('members')->first();
+            if ($team) {
+                $recipients = $team->members->pluck('email')->toArray();
+            }
+        }
+
+        if (empty($recipients)) {
+            return;
+        }
+
+        Mail::raw(
+            "Ticket [{$ticket->reference}] {$ticket->subject} has a new reply from {$ticket->requester_name}.",
+            function ($message) use ($recipients, $ticket) {
+                $message->to($recipients)
+                    ->subject("[{$ticket->reference}] New reply: {$ticket->subject}");
+            }
+        );
     }
 
     protected function processAttachments(InboundMessage $message, $attachable): void
