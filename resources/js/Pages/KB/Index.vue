@@ -9,12 +9,32 @@ const props = defineProps({
 });
 
 const showCatForm = ref(false);
+const editingCat = ref(null);
 const catForm = useForm({ name: '', description: '', icon: '' });
 
 function createCategory() {
     catForm.post(route('kb.admin.categories.store'), {
         onSuccess: () => { showCatForm.value = false; catForm.reset(); },
     });
+}
+
+function editCategory(cat) {
+    editingCat.value = cat.id;
+    catForm.name = cat.name;
+    catForm.description = cat.description || '';
+    catForm.icon = cat.icon || '';
+    showCatForm.value = false;
+}
+
+function updateCategory() {
+    catForm.put(route('kb.admin.categories.update', editingCat.value), {
+        onSuccess: () => { editingCat.value = null; catForm.reset(); },
+    });
+}
+
+function cancelEdit() {
+    editingCat.value = null;
+    catForm.reset();
 }
 
 function deleteArticle(article) {
@@ -77,12 +97,33 @@ const statusColors = {
                         <h3 class="text-sm font-medium text-gray-500">Categories</h3>
                     </div>
                     <div class="divide-y divide-gray-200">
-                        <div v-for="cat in categories" :key="cat.id" class="flex items-center justify-between px-6 py-3">
-                            <div>
-                                <span class="font-medium text-gray-900">{{ cat.name }}</span>
-                                <span v-if="cat.description" class="ml-2 text-sm text-gray-500">{{ cat.description }}</span>
-                            </div>
-                            <button @click="deleteCategory(cat)" class="text-sm text-red-600 hover:text-red-800">Delete</button>
+                        <div v-for="cat in categories" :key="cat.id" class="px-6 py-3">
+                            <template v-if="editingCat === cat.id">
+                                <form @submit.prevent="updateCategory" class="flex items-end gap-3">
+                                    <div class="flex-1">
+                                        <label class="block text-xs font-medium text-gray-500">Name</label>
+                                        <input v-model="catForm.name" type="text" required class="mt-1 w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
+                                    </div>
+                                    <div class="flex-1">
+                                        <label class="block text-xs font-medium text-gray-500">Description</label>
+                                        <input v-model="catForm.description" type="text" class="mt-1 w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
+                                    </div>
+                                    <button type="submit" :disabled="catForm.processing" class="rounded-md bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-700">Save</button>
+                                    <button type="button" @click="cancelEdit" class="rounded-md border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">Cancel</button>
+                                </form>
+                            </template>
+                            <template v-else>
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <span class="font-medium text-gray-900">{{ cat.name }}</span>
+                                        <span v-if="cat.description" class="ml-2 text-sm text-gray-500">{{ cat.description }}</span>
+                                    </div>
+                                    <div class="flex gap-3">
+                                        <button @click="editCategory(cat)" class="text-sm text-indigo-600 hover:text-indigo-800">Edit</button>
+                                        <button @click="deleteCategory(cat)" class="text-sm text-red-600 hover:text-red-800">Delete</button>
+                                    </div>
+                                </div>
+                            </template>
                         </div>
                     </div>
                 </div>
