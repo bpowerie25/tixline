@@ -42,7 +42,7 @@ function formatHours(hours) {
                 <h2 class="text-xl font-semibold leading-tight text-gray-800">Reports</h2>
                 <div class="flex gap-1">
                     <button v-for="d in [7, 30, 90]" :key="d" @click="changePeriod(d)"
-                        :class="days === d ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'"
+                        :class="Number(days) === d ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'"
                         class="rounded-md px-3 py-1.5 text-sm font-medium border border-gray-300">
                         {{ d }}d
                     </button>

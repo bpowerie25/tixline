@@ -12,7 +12,7 @@ class ReportController extends Controller
 {
     public function index(Request $request)
     {
-        $days = $request->input('days', 30);
+        $days = (int) $request->input('days', 30);
         $since = now()->subDays($days);
 
         // Volume by day
