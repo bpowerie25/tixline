@@ -184,6 +184,7 @@ const previewStyle = computed(() => ({
                                         <option value="small">Small</option>
                                         <option value="medium">Medium (default)</option>
                                         <option value="large">Large</option>
+                                        <option value="xlarge">Extra Large</option>
                                     </select>
                                 </div>
                             </div>

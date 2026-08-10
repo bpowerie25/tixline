@@ -64,7 +64,7 @@ class TenantController extends Controller
             'domain' => 'nullable|string|max:255|unique:tenants'.($tenantId ? ",domain,{$tenantId}" : ''),
             'logo_url' => 'nullable|string|max:500',
             'favicon_url' => 'nullable|string|max:500',
-            'header_height' => 'nullable|string|in:small,medium,large',
+            'header_height' => 'nullable|string|in:small,medium,large,xlarge',
             'logo_file' => 'nullable|image|max:2048',
             'favicon_file' => 'nullable|image|max:512',
             'primary_color' => 'nullable|string|max:7',

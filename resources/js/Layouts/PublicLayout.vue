@@ -6,7 +6,7 @@ const tenant = computed(() => usePage().props.tenant);
 const primaryColor = computed(() => tenant.value?.primary_color || '#be123c');
 
 const logoHeightClass = computed(() => {
-    const heights = { small: 'h-7', medium: 'h-9', large: 'h-14' };
+    const heights = { small: 'h-7', medium: 'h-9', large: 'h-14', xlarge: 'h-20' };
     return heights[tenant.value?.header_height] || 'h-9';
 });
 
