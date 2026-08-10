@@ -151,6 +151,7 @@ class WorkflowEngine
                 'add_label' => $ticket->labels()->syncWithoutDetaching([$action['value']]),
                 'remove_label' => $ticket->labels()->detach([$action['value']]),
                 'assign_to_matching_team' => $this->assignToMatchingTeam($ticket, $action),
+                'mail_matching_team' => $this->mailMatchingTeam($ticket, $action),
                 'round_robin' => $this->roundRobinAssign($ticket, $action),
                 'mail_agent' => $this->mailAgent($ticket, $action),
                 'mail_team' => $this->mailTeam($ticket, $action),
@@ -188,6 +189,35 @@ class WorkflowEngine
                 'ticket' => $ticket->reference,
             ]);
         }
+    }
+
+    protected function mailMatchingTeam(Ticket $ticket, array $action): void
+    {
+        $fieldName = $action['value'] ?? '';
+
+        if (empty($fieldName)) {
+            return;
+        }
+
+        $fieldValue = $ticket->custom_fields[$fieldName] ?? '';
+
+        if (empty($fieldValue)) {
+            return;
+        }
+
+        $team = Team::with('members')->whereRaw('LOWER(name) = ?', [strtolower($fieldValue)])->first();
+
+        if (! $team || $team->members->isEmpty()) {
+            return;
+        }
+
+        $template = $action['template'] ?? "Ticket [{$ticket->reference}] {$ticket->subject} has been assigned to your team.";
+        $recipients = $team->members->pluck('email')->toArray();
+
+        Mail::raw($template, function ($message) use ($recipients, $ticket) {
+            $message->to($recipients)
+                ->subject("[{$ticket->reference}] {$ticket->subject}");
+        });
     }
 
     protected function roundRobinAssign(Ticket $ticket, array $action): void
