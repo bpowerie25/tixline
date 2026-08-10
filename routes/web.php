@@ -156,6 +156,7 @@ Route::middleware('auth')->group(function () {
     // Agents
     Route::middleware('permission:agents.manage')->group(function () {
         Route::resource('agents', AgentController::class)->except(['create', 'show', 'edit']);
+        Route::post('agents/{agent}/invite', [AgentController::class, 'sendInvite'])->name('agents.invite');
     });
 
     // Mail Configuration

@@ -54,6 +54,10 @@ function deleteAgent(agent) {
         form.delete(route('agents.destroy', agent.id));
     }
 }
+
+function sendInvite(agent) {
+    router.post(route('agents.invite', agent.id));
+}
 </script>
 
 <template>
@@ -148,6 +152,7 @@ function deleteAgent(agent) {
                                 </div>
                             </div>
                             <div class="flex items-center gap-3">
+                                <button @click="sendInvite(agent)" class="text-sm text-gray-600 hover:text-gray-800">Send Invite</button>
                                 <button @click="openEdit(agent)" class="text-sm text-indigo-600 hover:text-indigo-800">Edit</button>
                                 <button @click="deleteAgent(agent)" class="text-sm text-red-600 hover:text-red-800">Delete</button>
                             </div>

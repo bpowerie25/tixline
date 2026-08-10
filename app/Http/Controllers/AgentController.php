@@ -6,6 +6,8 @@ use App\Models\Role;
 use App\Models\Team;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Password;
 use Inertia\Inertia;
 
 class AgentController extends Controller
@@ -61,6 +63,27 @@ class AgentController extends Controller
         $agent->teams()->sync($teamIds);
 
         return back()->with('success', 'Agent updated.');
+    }
+
+    public function sendInvite(User $agent)
+    {
+        $token = Password::broker()->createToken($agent);
+        $resetUrl = url(route('password.reset', $token, false)) . '?email=' . urlencode($agent->email);
+
+        Mail::raw(
+            "Hi {$agent->name},\n\n"
+            . "You've been added as an agent on " . config('app.name') . ".\n\n"
+            . "Please set your password by clicking the link below:\n"
+            . "{$resetUrl}\n\n"
+            . "This link will expire in 60 minutes.\n\n"
+            . "Regards,\n" . config('app.name'),
+            function ($message) use ($agent) {
+                $message->to($agent->email)
+                    ->subject('You\'ve been invited to ' . config('app.name'));
+            }
+        );
+
+        return back()->with('success', "Invite sent to {$agent->email}.");
     }
 
     public function destroy(User $agent)
