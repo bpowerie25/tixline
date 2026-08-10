@@ -71,6 +71,13 @@ function updateTicket() {
     });
 }
 
+function resolveAndClose() {
+    if (!confirm('Resolve and close this ticket?')) return;
+    router.put(route('tickets.update', props.ticket.id), {
+        status: 'closed',
+    }, { preserveScroll: true });
+}
+
 const priorityColors = {
     low: 'bg-gray-100 text-gray-700',
     normal: 'bg-blue-100 text-blue-700',
@@ -307,6 +314,13 @@ const statusColors = {
                                     Update
                                 </button>
                             </form>
+                            <button
+                                v-if="ticket.status !== 'closed'"
+                                @click="resolveAndClose"
+                                class="mt-2 w-full rounded-md bg-gray-700 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800"
+                            >
+                                Resolve &amp; Close
+                            </button>
                         </div>
 
                         <!-- SLA Status -->

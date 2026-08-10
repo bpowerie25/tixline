@@ -67,7 +67,7 @@ Route::get('/dashboard', function () {
         'stats' => [
             'open' => $baseQuery()->where('status', 'open')->count(),
             'pending' => $baseQuery()->where('status', 'pending')->count(),
-            'resolved_today' => $baseQuery()->where('status', 'resolved')
+            'resolved_today' => $baseQuery()->whereIn('status', ['resolved', 'closed'])
                 ->whereDate('resolved_at', today())->count(),
             'total' => $baseQuery()->count(),
         ],

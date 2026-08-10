@@ -131,7 +131,7 @@ class TicketController extends Controller
             'labels.*' => 'exists:labels,id',
         ]);
 
-        if (isset($validated['status']) && $validated['status'] === 'resolved' && ! $ticket->resolved_at) {
+        if (isset($validated['status']) && in_array($validated['status'], ['resolved', 'closed']) && ! $ticket->resolved_at) {
             $validated['resolved_at'] = now();
         }
 
