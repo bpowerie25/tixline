@@ -79,10 +79,14 @@ class SpamFilter
             'auto-reply',
             'autoreply',
             'abwesenheitsnotiz',    // German OOO
+            'abwesenheit bis',      // German OOO variant ("absence until")
             'automatische antwort', // German auto-reply
             'absence du bureau',    // French OOO
             'respuesta automática', // Spanish auto-reply
             'fuera de la oficina',  // Spanish OOO
+            'risposta automatica',  // Italian auto-reply
+            'fuori dall\'ufficio',  // Italian OOO (escaped)
+            'fuori dall\u2019ufficio', // Italian OOO (smart quote)
         ];
 
         foreach ($patterns as $pattern) {
