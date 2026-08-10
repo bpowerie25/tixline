@@ -15,7 +15,7 @@ const props = defineProps({
 });
 
 function changePeriod(days) {
-    router.get(route('reports.index'), { days }, { preserveState: true });
+    router.get(route('reports.index'), { days }, { preserveState: false });
 }
 
 const maxVolume = computed(() => Math.max(...Object.values(props.volumeByDay), 1));
