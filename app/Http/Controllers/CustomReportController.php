@@ -133,14 +133,23 @@ class CustomReportController extends Controller
             'widget_type' => 'required|string',
             'chart_type' => 'required|string',
             'title' => 'required|string|max:255',
-            'grid_x' => 'required|integer|min:0',
-            'grid_y' => 'required|integer|min:0',
-            'grid_w' => 'required|integer|min:1',
-            'grid_h' => 'required|integer|min:1',
+            'grid_x' => 'sometimes|integer|min:0',
+            'grid_y' => 'sometimes|integer|min:0',
+            'grid_w' => 'sometimes|integer|min:1',
+            'grid_h' => 'sometimes|integer|min:1',
             'filters' => 'nullable|array',
         ]);
 
-        $widget = $report->widgets()->create($validated);
+        // Default grid position: place below existing widgets, half-width
+        $maxY = $report->widgets()->max('grid_y') ?? 0;
+        $maxH = $report->widgets()->where('grid_y', $maxY)->max('grid_h') ?? 0;
+
+        $widget = $report->widgets()->create(array_merge([
+            'grid_x' => 0,
+            'grid_y' => $maxY + $maxH,
+            'grid_w' => 6,
+            'grid_h' => 6,
+        ], $validated));
 
         if ($request->wantsJson()) {
             return response()->json([

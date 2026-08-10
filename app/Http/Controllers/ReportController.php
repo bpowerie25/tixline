@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Ticket;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -75,6 +76,15 @@ class ReportController extends Controller
             ? $resolvedTickets->sum(fn ($t) => $t->created_at->diffInMinutes($t->resolved_at) / 60) / $resolvedTickets->count()
             : null;
 
+        // Average resolution time (business hours only - excludes weekends)
+        $avgResolutionBusinessHours = null;
+        if ($resolvedTickets->isNotEmpty()) {
+            $totalBusinessHours = $resolvedTickets->sum(function ($t) {
+                return $this->calculateBusinessHours($t->created_at, $t->resolved_at);
+            });
+            $avgResolutionBusinessHours = round($totalBusinessHours / $resolvedTickets->count(), 1);
+        }
+
         return Inertia::render('Reports/Index', [
             'days' => $days,
             'volumeByDay' => $volumeByDay,
@@ -83,6 +93,28 @@ class ReportController extends Controller
             'agentStats' => $agentStats,
             'sourceBreakdown' => $sourceBreakdown,
             'avgResolutionHours' => $avgResolutionHours ? round($avgResolutionHours, 1) : null,
+            'avgResolutionBusinessHours' => $avgResolutionBusinessHours,
         ]);
+    }
+
+    private function calculateBusinessHours(Carbon $start, Carbon $end): float
+    {
+        $hours = 0;
+        $current = $start->copy();
+
+        while ($current->lt($end)) {
+            if ($current->isWeekday()) {
+                $endOfDay = $current->copy()->endOfDay();
+                if ($endOfDay->gt($end)) {
+                    $hours += $current->diffInMinutes($end) / 60;
+                } else {
+                    $hours += $current->diffInMinutes($endOfDay) / 60;
+                }
+            }
+
+            $current = $current->copy()->addDay()->startOfDay();
+        }
+
+        return $hours;
     }
 }

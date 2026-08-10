@@ -23,6 +23,7 @@ class WidgetDataService
             'ticket_volume' => $this->ticketVolume($query),
             'avg_response_time' => $this->avgResponseTime($query),
             'avg_resolution_time' => $this->avgResolutionTime($query),
+            'avg_resolution_time_business' => $this->avgResolutionTimeBusiness($query),
             'sla_compliance' => $this->slaCompliance($query),
             'agent_performance' => $this->agentPerformance($query, $filters),
             default => ['labels' => [], 'values' => []],
@@ -175,6 +176,41 @@ class WidgetDataService
         $totalHours = $tickets->sum(fn ($t) => $t->created_at->diffInMinutes($t->resolved_at) / 60);
 
         return ['value' => round($totalHours / $tickets->count(), 1)];
+    }
+
+    private function avgResolutionTimeBusiness(Builder $query): array
+    {
+        $tickets = (clone $query)->whereNotNull('resolved_at')
+            ->get(['created_at', 'resolved_at']);
+
+        if ($tickets->isEmpty()) {
+            return ['value' => null];
+        }
+
+        $totalHours = $tickets->sum(fn ($t) => $this->calculateBusinessHours($t->created_at, $t->resolved_at));
+
+        return ['value' => round($totalHours / $tickets->count(), 1)];
+    }
+
+    private function calculateBusinessHours(\Carbon\Carbon $start, \Carbon\Carbon $end): float
+    {
+        $hours = 0;
+        $current = $start->copy();
+
+        while ($current->lt($end)) {
+            if ($current->isWeekday()) {
+                $endOfDay = $current->copy()->endOfDay();
+                if ($endOfDay->gt($end)) {
+                    $hours += $current->diffInMinutes($end) / 60;
+                } else {
+                    $hours += $current->diffInMinutes($endOfDay) / 60;
+                }
+            }
+
+            $current = $current->copy()->addDay()->startOfDay();
+        }
+
+        return $hours;
     }
 
     private function slaCompliance(Builder $query): array

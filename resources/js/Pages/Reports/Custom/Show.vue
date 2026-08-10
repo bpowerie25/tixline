@@ -61,7 +61,7 @@ function onLayoutUpdated(newLayout) {
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
                 'X-Requested-With': 'XMLHttpRequest',
             },
-            body: JSON.stringify({ layout: layoutPayload }),
+            body: JSON.stringify({ widgets: layoutPayload }),
         });
     }, 500);
 }

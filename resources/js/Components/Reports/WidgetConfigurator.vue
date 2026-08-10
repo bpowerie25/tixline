@@ -34,7 +34,7 @@ const validChartTypes = computed(() => {
     const meta = props.widgetTypes.find(t => t.type === form.widget_type);
     if (meta?.chart_types) return meta.chart_types;
     // Default chart types based on widget type
-    if (['avg_response_time', 'avg_resolution_time', 'sla_compliance'].includes(form.widget_type)) {
+    if (['avg_response_time', 'avg_resolution_time', 'avg_resolution_time_business', 'sla_compliance'].includes(form.widget_type)) {
         return ['number', 'bar', 'line'];
     }
     if (form.widget_type === 'agent_performance') {

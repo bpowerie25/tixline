@@ -11,6 +11,7 @@ const props = defineProps({
     agentStats: Array,
     sourceBreakdown: Object,
     avgResolutionHours: Number,
+    avgResolutionBusinessHours: Number,
 });
 
 function changePeriod(days) {
@@ -52,7 +53,7 @@ function formatHours(hours) {
         <div class="py-12">
             <div class="mx-auto max-w-7xl sm:px-6 lg:px-8 space-y-6">
                 <!-- Summary Cards -->
-                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
                     <div class="rounded-lg bg-white p-6 shadow">
                         <div class="text-sm font-medium text-gray-500">Total Tickets</div>
                         <div class="mt-2 text-3xl font-bold text-gray-900">{{ totalTickets }}</div>
@@ -64,6 +65,10 @@ function formatHours(hours) {
                     <div class="rounded-lg bg-white p-6 shadow">
                         <div class="text-sm font-medium text-gray-500">Avg Resolution Time</div>
                         <div class="mt-2 text-3xl font-bold text-indigo-600">{{ formatHours(avgResolutionHours) }}</div>
+                    </div>
+                    <div class="rounded-lg bg-white p-6 shadow">
+                        <div class="text-sm font-medium text-gray-500">Avg Resolution (Business)</div>
+                        <div class="mt-2 text-3xl font-bold text-purple-600">{{ formatHours(avgResolutionBusinessHours) }}</div>
                     </div>
                     <div class="rounded-lg bg-white p-6 shadow">
                         <div class="text-sm font-medium text-gray-500">Resolved (period)</div>
