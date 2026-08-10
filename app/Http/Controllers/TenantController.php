@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Tenant;
+use App\Services\ActivityLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -38,7 +39,9 @@ class TenantController extends Controller
         $validated['slug'] = Str::slug($validated['name']);
         $validated = $this->handleFileUploads($request, $validated);
 
-        Tenant::create($validated);
+        $tenant = Tenant::create($validated);
+
+        ActivityLogger::log('tenant_created', "Created tenant {$tenant->name}", $tenant);
 
         return redirect()->route('tenants.index')
             ->with('success', 'Tenant created.');
@@ -52,6 +55,8 @@ class TenantController extends Controller
         $validated = $this->handleFileUploads($request, $validated, $tenant);
 
         $tenant->update($validated);
+
+        ActivityLogger::log('tenant_updated', "Updated tenant {$tenant->name}", $tenant);
 
         return redirect()->route('tenants.index')
             ->with('success', 'Tenant updated.');

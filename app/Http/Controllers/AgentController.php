@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ActivityLog;
 use App\Models\Role;
 use App\Models\Team;
 use App\Models\User;
+use App\Services\ActivityLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Password;
@@ -14,8 +16,20 @@ class AgentController extends Controller
 {
     public function index()
     {
+        $agents = User::with(['teams', 'role'])->withCount('assignedTickets')->get();
+
+        $lastLogins = ActivityLog::where('action', 'login')
+            ->whereIn('user_id', $agents->pluck('id'))
+            ->selectRaw('user_id, MAX(created_at) as last_login_at')
+            ->groupBy('user_id')
+            ->pluck('last_login_at', 'user_id');
+
+        $agents->each(function ($agent) use ($lastLogins) {
+            $agent->last_login_at = $lastLogins[$agent->id] ?? null;
+        });
+
         return Inertia::render('Agents/Index', [
-            'agents' => User::with(['teams', 'role'])->withCount('assignedTickets')->get(),
+            'agents' => $agents,
             'teams' => Team::all(['id', 'name']),
             'roles' => Role::all(['id', 'name', 'display_name']),
         ]);
@@ -37,6 +51,8 @@ class AgentController extends Controller
 
         $agent = User::create($validated);
         $agent->teams()->sync($teamIds);
+
+        ActivityLogger::log('agent_created', "Created agent {$agent->name} ({$agent->email})", $agent);
 
         return back()->with('success', 'Agent created.');
     }
@@ -61,6 +77,8 @@ class AgentController extends Controller
 
         $agent->update($validated);
         $agent->teams()->sync($teamIds);
+
+        ActivityLogger::log('agent_updated', "Updated agent {$agent->name} ({$agent->email})", $agent);
 
         return back()->with('success', 'Agent updated.');
     }
@@ -91,6 +109,8 @@ class AgentController extends Controller
         if ($agent->id === auth()->id()) {
             return back()->with('error', 'You cannot delete your own account.');
         }
+
+        ActivityLogger::log('agent_deleted', "Deleted agent {$agent->name} ({$agent->email})", $agent);
 
         $agent->delete();
 

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\AgentController;
 use App\Http\Controllers\InboundEmailReviewController;
 use App\Http\Controllers\SpamFilterController;
@@ -151,6 +152,11 @@ Route::middleware('auth')->group(function () {
     Route::middleware('permission:tenants.manage')->group(function () {
         Route::get('/tenants/create', [TenantController::class, 'create'])->name('tenants.create');
         Route::resource('tenants', TenantController::class)->except(['create', 'edit']);
+    });
+
+    // Activity Logs
+    Route::middleware('permission:activity-logs.view')->group(function () {
+        Route::get('/activity-logs', [ActivityLogController::class, 'index'])->name('activity-logs.index');
     });
 
     // Agents

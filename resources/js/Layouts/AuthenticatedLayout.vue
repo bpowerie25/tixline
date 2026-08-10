@@ -19,7 +19,7 @@ const hasAnySettingsPermission = computed(() => canAny([
     'teams.manage', 'labels.manage', 'workflows.manage', 'forms.manage',
     'agents.manage', 'canned-responses.manage', 'sla-policies.manage',
     'tenants.manage', 'mail.manage', 'inbound-emails.view', 'spam-filters.manage',
-    'departments.manage', 'roles.manage',
+    'departments.manage', 'roles.manage', 'activity-logs.view',
 ]));
 </script>
 
@@ -73,7 +73,7 @@ const hasAnySettingsPermission = computed(() => canAny([
                                         <template #trigger>
                                             <button class="inline-flex items-center border-b-2 px-1 pt-1 text-sm font-medium leading-5 transition duration-150 ease-in-out focus:outline-none"
                                                 :class="[
-                                                    route().current('teams.*') || route().current('labels.*') || route().current('workflows.*') || route().current('forms.*') || route().current('canned-responses.*') || route().current('sla-policies.*') || route().current('tenants.*') || route().current('departments.*') || route().current('agents.*') || route().current('mail-config.*') || route().current('roles.*')
+                                                    route().current('teams.*') || route().current('labels.*') || route().current('workflows.*') || route().current('forms.*') || route().current('canned-responses.*') || route().current('sla-policies.*') || route().current('tenants.*') || route().current('departments.*') || route().current('agents.*') || route().current('mail-config.*') || route().current('roles.*') || route().current('activity-logs.*')
                                                         ? 'border-indigo-400 text-gray-900 focus:border-indigo-700'
                                                         : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
                                                 ]"
@@ -98,6 +98,7 @@ const hasAnySettingsPermission = computed(() => canAny([
                                             <DropdownLink v-if="can('mail.manage')" :href="route('mail-config.index')">Mail</DropdownLink>
                                             <DropdownLink v-if="can('inbound-emails.view')" :href="route('inbound-emails.index')">Inbound Emails</DropdownLink>
                                             <DropdownLink v-if="can('spam-filters.manage')" :href="route('spam-filters.index')">Spam Filters</DropdownLink>
+                                            <DropdownLink v-if="can('activity-logs.view')" :href="route('activity-logs.index')">Activity Logs</DropdownLink>
                                         </template>
                                     </Dropdown>
                                 </div>
@@ -224,6 +225,7 @@ const hasAnySettingsPermission = computed(() => canAny([
                             <ResponsiveNavLink v-if="can('mail.manage')" :href="route('mail-config.index')" :active="route().current('mail-config.*')">Mail</ResponsiveNavLink>
                             <ResponsiveNavLink v-if="can('inbound-emails.view')" :href="route('inbound-emails.index')" :active="route().current('inbound-emails.*')">Inbound Emails</ResponsiveNavLink>
                             <ResponsiveNavLink v-if="can('spam-filters.manage')" :href="route('spam-filters.index')" :active="route().current('spam-filters.*')">Spam Filters</ResponsiveNavLink>
+                            <ResponsiveNavLink v-if="can('activity-logs.view')" :href="route('activity-logs.index')" :active="route().current('activity-logs.*')">Activity Logs</ResponsiveNavLink>
                         </div>
                     </div>
 

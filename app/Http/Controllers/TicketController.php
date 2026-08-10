@@ -8,6 +8,7 @@ use App\Models\SpamFilterEntry;
 use App\Models\Team;
 use App\Models\Ticket;
 use App\Models\User;
+use App\Services\ActivityLogger;
 use App\Services\SpamLearner;
 use App\Services\WorkflowEngine;
 use Illuminate\Http\Request;
@@ -113,6 +114,8 @@ class TicketController extends Controller
 
         $engine->run($ticket->fresh(), 'ticket_created');
 
+        ActivityLogger::log('ticket_created', "Created ticket {$ticket->reference}: {$ticket->subject}", $ticket);
+
         return redirect()->route('tickets.show', $ticket)
             ->with('success', 'Ticket created.');
     }
@@ -150,6 +153,11 @@ class TicketController extends Controller
         $fresh = $ticket->fresh();
         $engine->run($fresh, 'ticket_updated');
 
+        $changes = array_diff_assoc($validated, $oldValues);
+        if (! empty($changes)) {
+            ActivityLogger::log('ticket_updated', "Updated ticket {$ticket->reference}", $ticket, ['changes' => $changes]);
+        }
+
         // Fire specific field change events
         if (isset($validated['assigned_to']) && $oldValues['assigned_to'] != $fresh->assigned_to) {
             $engine->run($fresh, 'ticket_assigned');
@@ -167,6 +175,8 @@ class TicketController extends Controller
     public function destroy(Ticket $ticket)
     {
         $this->authorize('delete', $ticket);
+
+        ActivityLogger::log('ticket_deleted', "Deleted ticket {$ticket->reference}: {$ticket->subject}", $ticket);
 
         $ticket->delete();
 
@@ -192,6 +202,8 @@ class TicketController extends Controller
                     'resolved_at' => now(),
                 ]);
 
+                ActivityLogger::log('tickets_bulk_closed', "Bulk closed {$count} tickets", null, ['ids' => $validated['ids']]);
+
                 return back()->with('success', "{$count} tickets closed.");
 
             case 'resolve':
@@ -200,9 +212,13 @@ class TicketController extends Controller
                     'resolved_at' => now(),
                 ]);
 
+                ActivityLogger::log('tickets_bulk_resolved', "Bulk resolved {$count} tickets", null, ['ids' => $validated['ids']]);
+
                 return back()->with('success', "{$count} tickets resolved.");
 
             case 'delete':
+                ActivityLogger::log('tickets_bulk_deleted', "Bulk deleted {$count} tickets", null, ['ids' => $validated['ids']]);
+
                 Ticket::whereIn('id', $validated['ids'])->delete();
 
                 return back()->with('success', "{$count} tickets deleted.");
@@ -226,6 +242,8 @@ class TicketController extends Controller
                 foreach ($tickets as $ticket) {
                     $learner->learnFromTicket($ticket);
                 }
+
+                ActivityLogger::log('tickets_bulk_spam', "Marked {$count} tickets as spam, blocklisted {$emails->count()} sender(s)", null, ['ids' => $validated['ids']]);
 
                 Ticket::whereIn('id', $validated['ids'])->delete();
 
