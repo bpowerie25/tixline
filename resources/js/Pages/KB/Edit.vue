@@ -1,5 +1,6 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import RichTextEditor from '@/Components/RichTextEditor.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { computed } from 'vue';
 
@@ -70,9 +71,8 @@ function submit() {
                             <input v-model="form.excerpt" type="text" class="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="Brief summary for search results" />
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700">Body</label>
-                            <textarea v-model="form.body" rows="16" required class="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 font-mono text-sm" />
-                            <p class="mt-1 text-xs text-gray-400">HTML is supported.</p>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Body</label>
+                            <RichTextEditor v-model="form.body" />
                         </div>
                     </div>
 
