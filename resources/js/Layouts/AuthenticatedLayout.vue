@@ -47,6 +47,9 @@ const tenant = computed(() => usePage().props.tenant);
                                 <NavLink v-if="$page.props.auth.can.manage_team" :href="route('reports.index')" :active="route().current('reports.*')">
                                     Reports
                                 </NavLink>
+                                <NavLink v-if="$page.props.auth.can.manage_team" :href="route('custom-reports.index')" :active="route().current('custom-reports.*')">
+                                    Custom Reports
+                                </NavLink>
                                 <NavLink v-if="$page.props.auth.can.manage_team" :href="route('kb.admin.index')" :active="route().current('kb.admin.*')">
                                     KB
                                 </NavLink>
@@ -191,6 +194,7 @@ const tenant = computed(() => usePage().props.tenant);
                         <ResponsiveNavLink :href="route('dashboard')" :active="route().current('dashboard')">Dashboard</ResponsiveNavLink>
                         <ResponsiveNavLink :href="route('tickets.index')" :active="route().current('tickets.*')">Tickets</ResponsiveNavLink>
                         <ResponsiveNavLink v-if="$page.props.auth.can.manage_team" :href="route('reports.index')" :active="route().current('reports.*')">Reports</ResponsiveNavLink>
+                        <ResponsiveNavLink v-if="$page.props.auth.can.manage_team" :href="route('custom-reports.index')" :active="route().current('custom-reports.*')">Custom Reports</ResponsiveNavLink>
                         <ResponsiveNavLink v-if="$page.props.auth.can.manage_team" :href="route('kb.admin.index')" :active="route().current('kb.admin.*')">Knowledge Base</ResponsiveNavLink>
                         <ResponsiveNavLink :href="route('help.index')" :active="route().current('help.*')">Help</ResponsiveNavLink>
 

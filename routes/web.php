@@ -15,6 +15,7 @@ use App\Http\Controllers\KbController;
 use App\Http\Controllers\LabelController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PublicTicketController;
+use App\Http\Controllers\CustomReportController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SlaPolicyController;
 use App\Http\Controllers\TeamController;
@@ -97,6 +98,21 @@ Route::middleware('auth')->group(function () {
     // Canned Responses — all agents can view and use
     Route::resource('canned-responses', CannedResponseController::class)->except(['create', 'show', 'edit']);
     Route::get('/api/canned-responses', [CannedResponseController::class, 'forTicket'])->name('canned-responses.list');
+
+    // Custom Reports — team leads and above
+    Route::middleware('role:team_lead,group_manager')->group(function () {
+        Route::get('/reports/custom', [CustomReportController::class, 'index'])->name('custom-reports.index');
+        Route::post('/reports/custom', [CustomReportController::class, 'store'])->name('custom-reports.store');
+        Route::get('/reports/custom/{report}', [CustomReportController::class, 'show'])->name('custom-reports.show');
+        Route::put('/reports/custom/{report}', [CustomReportController::class, 'update'])->name('custom-reports.update');
+        Route::delete('/reports/custom/{report}', [CustomReportController::class, 'destroy'])->name('custom-reports.destroy');
+        Route::put('/reports/custom/{report}/layout', [CustomReportController::class, 'updateLayout'])->name('custom-reports.layout');
+        Route::post('/reports/custom/{report}/widgets', [CustomReportController::class, 'storeWidget'])->name('custom-reports.widgets.store');
+        Route::put('/reports/custom/{report}/widgets/{widget}', [CustomReportController::class, 'updateWidget'])->name('custom-reports.widgets.update');
+        Route::delete('/reports/custom/{report}/widgets/{widget}', [CustomReportController::class, 'destroyWidget'])->name('custom-reports.widgets.destroy');
+        Route::get('/reports/custom/{report}/widget-data/{widget}', [CustomReportController::class, 'widgetData'])->name('custom-reports.widgets.data');
+        Route::get('/reports/custom/{report}/export', [CustomReportController::class, 'export'])->name('custom-reports.export');
+    });
 
     // Reports — team leads and above
     Route::get('/reports', [ReportController::class, 'index'])->middleware('role:team_lead,group_manager')->name('reports.index');

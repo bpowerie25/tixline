@@ -12,7 +12,7 @@ const props = defineProps({
 });
 
 const search = ref(props.filters.search || '');
-const status = ref(props.filters.status || '');
+const status = ref(props.filters.status || 'open');
 const priority = ref(props.filters.priority || '');
 const teamId = ref(props.filters.team_id || '');
 const assignedTo = ref(props.filters.assigned_to || '');
@@ -112,7 +112,7 @@ const statusColors = {
                         class="rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                     />
                     <select v-model="status" class="rounded-md border-gray-300 text-sm shadow-sm">
-                        <option value="">All Statuses</option>
+                        <option value="all">All Statuses</option>
                         <option value="open">Open</option>
                         <option value="pending">Pending</option>
                         <option value="resolved">Resolved</option>

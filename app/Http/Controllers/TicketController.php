@@ -19,8 +19,9 @@ class TicketController extends Controller
     {
         $query = $request->user()->visibleTicketsQuery()->with(['assignee', 'team', 'labels']);
 
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
+        $status = $request->filled('status') ? $request->status : 'open';
+        if ($status !== 'all') {
+            $query->where('status', $status);
         }
 
         if ($request->filled('priority')) {
@@ -48,7 +49,7 @@ class TicketController extends Controller
 
         return Inertia::render('Tickets/Index', [
             'tickets' => $tickets,
-            'filters' => $request->only(['status', 'priority', 'team_id', 'assigned_to', 'search']),
+            'filters' => array_merge($request->only(['priority', 'team_id', 'assigned_to', 'search']), ['status' => $status]),
             'teams' => Team::all(),
             'agents' => User::all(['id', 'name']),
         ]);
