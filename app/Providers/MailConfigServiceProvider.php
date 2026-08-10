@@ -9,18 +9,11 @@ class MailConfigServiceProvider extends ServiceProvider
 {
     public function boot(): void
     {
-        // Skip during migrations/CLI install
-        if ($this->app->runningInConsole() && ! $this->app->runningUnitTests()) {
-            try {
-                $this->applyMailConfig();
-            } catch (\Throwable) {
-                // Table may not exist yet
-            }
-
-            return;
+        try {
+            $this->applyMailConfig();
+        } catch (\Throwable) {
+            // Table may not exist yet (fresh install or test environment)
         }
-
-        $this->applyMailConfig();
     }
 
     protected function applyMailConfig(): void
