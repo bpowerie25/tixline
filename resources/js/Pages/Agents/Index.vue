@@ -75,6 +75,9 @@ function sendInvite(agent) {
 
         <div class="py-12">
             <div class="mx-auto max-w-7xl sm:px-6 lg:px-8 space-y-6">
+                <div v-if="$page.props.flash?.success" class="rounded-md bg-green-50 border border-green-200 p-4">
+                    <p class="text-sm text-green-800">{{ $page.props.flash.success }}</p>
+                </div>
                 <!-- Form -->
                 <div v-if="showForm" class="overflow-hidden bg-white shadow-sm sm:rounded-lg p-6">
                     <h3 class="text-lg font-medium text-gray-900 mb-4">{{ editingAgent ? 'Edit Agent' : 'Create Agent' }}</h3>
