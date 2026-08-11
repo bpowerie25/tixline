@@ -261,7 +261,7 @@ class CustomerPortalController extends Controller
         }
 
         Customer::where('email', $request->email)->update([
-            'password' => $request->password,
+            'password' => Hash::make($request->password),
         ]);
 
         DB::table('customer_password_resets')->where('email', $request->email)->delete();
