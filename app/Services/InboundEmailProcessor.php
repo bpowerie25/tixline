@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\DTOs\InboundMessage;
+use App\Helpers\EmailLayout;
 use App\Mail\CustomerAccountCreated;
 use App\Models\Customer;
 use App\Models\Team;
@@ -120,13 +121,14 @@ class InboundEmailProcessor
             return;
         }
 
-        Mail::raw(
-            "Ticket [{$ticket->reference}] {$ticket->subject} has a new reply from {$ticket->requester_name}.",
-            function ($message) use ($recipients, $ticket) {
-                $message->to($recipients)
-                    ->subject("[{$ticket->reference}] New reply: {$ticket->subject}");
-            }
+        $html = EmailLayout::wrap(
+            "<p>Ticket [{$ticket->reference}] {$ticket->subject} has a new reply from {$ticket->requester_name}.</p>"
         );
+
+        Mail::html($html, function ($message) use ($recipients, $ticket) {
+            $message->to($recipients)
+                ->subject("[{$ticket->reference}] New reply: {$ticket->subject}");
+        });
     }
 
     protected function processAttachments(InboundMessage $message, $attachable): void

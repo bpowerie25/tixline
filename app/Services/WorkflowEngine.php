@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Helpers\EmailLayout;
 use App\Models\Team;
 use App\Models\Ticket;
 use App\Models\User;
@@ -213,8 +214,9 @@ class WorkflowEngine
 
         $template = $action['template'] ?? "Ticket [{$ticket->reference}] {$ticket->subject} has been assigned to your team.";
         $recipients = $team->members->pluck('email')->toArray();
+        $html = EmailLayout::wrap("<p>{$template}</p>");
 
-        Mail::raw($template, function ($message) use ($recipients, $ticket) {
+        Mail::html($html, function ($message) use ($recipients, $ticket) {
             $message->to($recipients)
                 ->subject("[{$ticket->reference}] {$ticket->subject}");
         });
@@ -257,8 +259,9 @@ class WorkflowEngine
         }
 
         $template = $action['template'] ?? "You have been assigned ticket [{$ticket->reference}] {$ticket->subject}";
+        $html = EmailLayout::wrap("<p>{$template}</p>");
 
-        Mail::raw($template, function ($message) use ($agent, $ticket) {
+        Mail::html($html, function ($message) use ($agent, $ticket) {
             $message->to($agent->email)
                 ->subject("[{$ticket->reference}] {$ticket->subject}");
         });
@@ -274,10 +277,10 @@ class WorkflowEngine
         }
 
         $template = $action['template'] ?? "Ticket [{$ticket->reference}] {$ticket->subject} has been assigned to your team.";
-
         $recipients = $team->members->pluck('email')->toArray();
+        $html = EmailLayout::wrap("<p>{$template}</p>");
 
-        Mail::raw($template, function ($message) use ($recipients, $ticket) {
+        Mail::html($html, function ($message) use ($recipients, $ticket) {
             $message->to($recipients)
                 ->subject("[{$ticket->reference}] {$ticket->subject}");
         });
@@ -286,8 +289,9 @@ class WorkflowEngine
     protected function mailRequester(Ticket $ticket, array $action): void
     {
         $template = $action['template'] ?? "Your ticket [{$ticket->reference}] has been received. We'll get back to you shortly.";
+        $html = EmailLayout::wrap("<p>{$template}</p>", EmailLayout::portalUrl());
 
-        Mail::raw($template, function ($message) use ($ticket) {
+        Mail::html($html, function ($message) use ($ticket) {
             $message->to($ticket->requester_email)
                 ->subject("[{$ticket->reference}] {$ticket->subject}");
         });
