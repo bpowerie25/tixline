@@ -23,6 +23,12 @@ class EmailLayout
         $tenantName = e($tenant?->name ?? config('app.name', 'Support'));
         $primaryColor = $tenant?->primary_color ?? '#be123c';
         $logoUrl = $tenant?->logo_url;
+        if ($logoUrl && ! str_starts_with($logoUrl, 'http')) {
+            $baseUrl = $tenant?->domain
+                ? ((request()?->isSecure() ? 'https' : 'http') . '://' . $tenant->domain)
+                : config('app.url');
+            $logoUrl = rtrim($baseUrl, '/') . '/' . ltrim($logoUrl, '/');
+        }
 
         $logoHtml = $logoUrl
             ? '<img src="' . e($logoUrl) . '" alt="' . $tenantName . '" style="max-height: 40px; max-width: 200px;" />'
