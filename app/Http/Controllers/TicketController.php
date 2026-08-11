@@ -159,7 +159,10 @@ class TicketController extends Controller
         }
 
         // Fire specific field change events
-        if (isset($validated['assigned_to']) && $oldValues['assigned_to'] != $fresh->assigned_to) {
+        if (
+            (isset($validated['assigned_to']) && $oldValues['assigned_to'] != $fresh->assigned_to) ||
+            (isset($validated['team_id']) && $oldValues['team_id'] != $fresh->team_id)
+        ) {
             $engine->run($fresh, 'ticket_assigned');
         }
         if (isset($validated['status']) && $oldValues['status'] != $fresh->status) {
