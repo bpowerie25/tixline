@@ -76,6 +76,11 @@ class User extends Authenticatable
             return true;
         }
 
+        // Custom (non-system) roles with tickets.view can see all tickets
+        if (! $this->role?->is_system && $this->hasPermission('tickets.view')) {
+            return true;
+        }
+
         if ($ticket->assigned_to === $this->id) {
             return true;
         }
@@ -107,6 +112,11 @@ class User extends Authenticatable
     public function visibleTicketsQuery()
     {
         if ($this->isAdmin() || ! config('support.multi_tenant')) {
+            return Ticket::query();
+        }
+
+        // Custom (non-system) roles with tickets.view can see all tickets
+        if (! $this->role?->is_system && $this->hasPermission('tickets.view')) {
             return Ticket::query();
         }
 
