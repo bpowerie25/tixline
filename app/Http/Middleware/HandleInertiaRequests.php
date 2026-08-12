@@ -44,6 +44,16 @@ class HandleInertiaRequests extends Middleware
                 ...(new Ziggy)->toArray(),
                 'location' => $request->url(),
             ],
+            ...$this->additionalSharedProps($request),
         ];
+    }
+
+    /**
+     * Define additional props to share. Override in subclasses to inject
+     * extra data (e.g., plan/usage info in the cloud layer).
+     */
+    protected function additionalSharedProps(Request $request): array
+    {
+        return [];
     }
 }
