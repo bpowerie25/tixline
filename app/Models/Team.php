@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -9,7 +10,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Team extends Model
 {
-    protected $fillable = ['name', 'slug', 'description', 'color', 'department_id', 'lead_id'];
+    use BelongsToTenant;
+
+    protected $fillable = ['name', 'slug', 'description', 'color', 'department_id', 'lead_id', 'tenant_id'];
 
     public function department(): BelongsTo
     {

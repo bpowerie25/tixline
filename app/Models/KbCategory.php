@@ -2,12 +2,15 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class KbCategory extends Model
 {
-    protected $fillable = ['name', 'slug', 'description', 'icon', 'sort_order'];
+    use BelongsToTenant;
+
+    protected $fillable = ['name', 'slug', 'description', 'icon', 'sort_order', 'tenant_id'];
 
     public function articles(): HasMany
     {

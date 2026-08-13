@@ -2,17 +2,20 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class ActivityLog extends Model
 {
+    use BelongsToTenant;
+
     public $timestamps = false;
 
     protected $fillable = [
         'user_id', 'action', 'description', 'subject_type', 'subject_id',
-        'ip_address', 'properties',
+        'ip_address', 'properties', 'tenant_id',
     ];
 
     protected function casts(): array

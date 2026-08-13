@@ -2,12 +2,15 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class CannedResponse extends Model
 {
-    protected $fillable = ['name', 'shortcode', 'body', 'user_id', 'is_shared'];
+    use BelongsToTenant;
+
+    protected $fillable = ['name', 'shortcode', 'body', 'user_id', 'is_shared', 'tenant_id'];
 
     protected function casts(): array
     {

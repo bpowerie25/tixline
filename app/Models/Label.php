@@ -2,12 +2,15 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Label extends Model
 {
-    protected $fillable = ['name', 'slug', 'color'];
+    use BelongsToTenant;
+
+    protected $fillable = ['name', 'slug', 'color', 'tenant_id'];
 
     public function tickets(): BelongsToMany
     {

@@ -2,13 +2,16 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 
 class SpamFilterEntry extends Model
 {
+    use BelongsToTenant;
+
     protected $table = 'spam_filters';
 
-    protected $fillable = ['type', 'value', 'reason'];
+    protected $fillable = ['type', 'value', 'reason', 'tenant_id'];
 
     public static function blocklist(): array
     {

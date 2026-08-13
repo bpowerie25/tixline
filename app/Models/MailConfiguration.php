@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 
 class MailConfiguration extends Model
 {
+    use BelongsToTenant;
+
     protected $fillable = [
         'mailer', 'host', 'port', 'encryption',
         'username', 'password',
@@ -13,6 +16,7 @@ class MailConfiguration extends Model
         'inbound_method', 'imap_host', 'imap_port', 'imap_encryption',
         'imap_username', 'imap_password', 'imap_folder',
         'imap_poll_interval', 'imap_delete_after_process',
+        'tenant_id',
     ];
 
     protected function casts(): array

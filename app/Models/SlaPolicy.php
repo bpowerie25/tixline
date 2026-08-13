@@ -2,13 +2,16 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 
 class SlaPolicy extends Model
 {
+    use BelongsToTenant;
+
     protected $fillable = [
         'name', 'description', 'priority', 'first_response_hours',
-        'resolution_hours', 'is_active',
+        'resolution_hours', 'is_active', 'tenant_id',
     ];
 
     protected function casts(): array
