@@ -29,6 +29,7 @@ const form = useForm({
     portal_welcome_text: props.tenant?.portal_welcome_text || '',
     support_email: props.tenant?.support_email || '',
     is_active: props.tenant?.is_active ?? true,
+    agents_see_all_tickets: props.tenant?.agents_see_all_tickets ?? false,
 });
 
 const logoPreview = computed(() => {
@@ -116,10 +117,14 @@ const previewStyle = computed(() => ({
                                     <label class="block text-sm font-medium text-gray-700">Support Email</label>
                                     <input v-model="form.support_email" type="email" class="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
                                 </div>
-                                <div class="flex items-end">
+                                <div class="flex items-end gap-6">
                                     <label class="flex items-center gap-2">
                                         <input v-model="form.is_active" type="checkbox" class="rounded text-indigo-600" />
                                         <span class="text-sm font-medium text-gray-700">Active</span>
+                                    </label>
+                                    <label class="flex items-center gap-2">
+                                        <input v-model="form.agents_see_all_tickets" type="checkbox" class="rounded text-indigo-600" />
+                                        <span class="text-sm font-medium text-gray-700">All agents can view all tickets</span>
                                     </label>
                                 </div>
                             </div>
