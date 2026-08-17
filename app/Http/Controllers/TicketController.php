@@ -193,23 +193,40 @@ class TicketController extends Controller
             'ids' => 'required|array|min:1',
             'ids.*' => 'integer|exists:tickets,id',
             'action' => 'required|in:close,resolve,delete,spam,assign',
-            'assigned_to' => 'required_if:action,assign|nullable|exists:users,id',
+            'assigned_to' => 'nullable|exists:users,id',
+            'team_id' => 'nullable|exists:teams,id',
         ]);
+
+        if ($validated['action'] === 'assign' && empty($validated['assigned_to']) && empty($validated['team_id'])) {
+            return back()->withErrors(['assign' => 'Please select an agent or team to assign to.']);
+        }
 
         $tickets = Ticket::whereIn('id', $validated['ids'])->get();
         $count = $tickets->count();
 
         switch ($validated['action']) {
             case 'assign':
-                $agent = User::findOrFail($validated['assigned_to']);
+                $update = [];
+                $parts = [];
 
-                Ticket::whereIn('id', $validated['ids'])->update([
-                    'assigned_to' => $agent->id,
-                ]);
+                if (! empty($validated['assigned_to'])) {
+                    $agent = User::findOrFail($validated['assigned_to']);
+                    $update['assigned_to'] = $agent->id;
+                    $parts[] = $agent->name;
+                }
 
-                ActivityLogger::log('tickets_bulk_assigned', "Bulk assigned {$count} tickets to {$agent->name}", null, ['ids' => $validated['ids'], 'assigned_to' => $agent->id]);
+                if (! empty($validated['team_id'])) {
+                    $team = Team::findOrFail($validated['team_id']);
+                    $update['team_id'] = $team->id;
+                    $parts[] = $team->name;
+                }
 
-                return back()->with('success', "{$count} tickets assigned to {$agent->name}.");
+                Ticket::whereIn('id', $validated['ids'])->update($update);
+
+                $label = implode(' / ', $parts);
+                ActivityLogger::log('tickets_bulk_assigned', "Bulk assigned {$count} tickets to {$label}", null, ['ids' => $validated['ids']] + $update);
+
+                return back()->with('success', "{$count} tickets assigned to {$label}.");
 
             case 'close':
                 Ticket::whereIn('id', $validated['ids'])->update([
