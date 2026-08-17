@@ -26,6 +26,7 @@ class WidgetDataService
             'avg_resolution_time_business' => $this->avgResolutionTimeBusiness($query),
             'sla_compliance' => $this->slaCompliance($query),
             'agent_performance' => $this->agentPerformance($query, $filters),
+            'ticket_list' => $this->ticketList($query),
             default => ['labels' => [], 'values' => []],
         };
     }
@@ -237,6 +238,31 @@ class WidgetDataService
         return [
             'labels' => ['Met', 'Breached'],
             'values' => [$met, $breached],
+        ];
+    }
+
+    private function ticketList(Builder $query): array
+    {
+        $tickets = (clone $query)
+            ->with(['assignee:id,name', 'team:id,name'])
+            ->latest()
+            ->limit(100)
+            ->get(['id', 'reference', 'subject', 'requester_name', 'status', 'priority', 'assigned_to', 'team_id', 'created_at']);
+
+        $rows = $tickets->map(fn ($t) => [
+            'Reference' => $t->reference,
+            'Subject' => $t->subject,
+            'Requester' => $t->requester_name,
+            'Team' => $t->team?->name ?? '-',
+            'Assigned To' => $t->assignee?->name ?? 'Unassigned',
+            'Status' => $t->status,
+            'Priority' => $t->priority,
+            'Submitted' => $t->created_at->format('d M Y H:i'),
+        ])->all();
+
+        return [
+            'columns' => ['Reference', 'Subject', 'Requester', 'Team', 'Assigned To', 'Status', 'Priority', 'Submitted'],
+            'rows' => $rows,
         ];
     }
 

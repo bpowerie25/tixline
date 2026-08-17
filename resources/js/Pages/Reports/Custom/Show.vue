@@ -81,7 +81,7 @@ function addWidget(widgetType) {
 
 function getDefaultChartType(widgetType) {
     if (['avg_response_time', 'avg_resolution_time', 'sla_compliance'].includes(widgetType)) return 'number';
-    if (widgetType === 'agent_performance') return 'table';
+    if (['agent_performance', 'ticket_list'].includes(widgetType)) return 'table';
     if (widgetType === 'ticket_volume') return 'line';
     return 'bar';
 }
@@ -99,6 +99,7 @@ function getDefaultTitle(widgetType) {
         avg_resolution_time: 'Avg Resolution Time',
         sla_compliance: 'SLA Compliance',
         agent_performance: 'Agent Performance',
+        ticket_list: 'Ticket List',
     };
     return map[widgetType] || widgetType;
 }
