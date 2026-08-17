@@ -47,22 +47,27 @@ function toggleSelectAll() {
 
 const hasSelection = computed(() => selected.value.length > 0);
 
-function bulkAction(action) {
+const bulkAssignTo = ref('');
+
+function bulkAction(action, extra = {}) {
     const labels = {
         close: `Close ${selected.value.length} ticket(s)?`,
         resolve: `Resolve ${selected.value.length} ticket(s)?`,
         delete: `Delete ${selected.value.length} ticket(s)? This cannot be undone.`,
         spam: `Mark ${selected.value.length} ticket(s) as spam? This will delete them, blocklist the sender(s), and learn spam patterns.`,
+        assign: `Assign ${selected.value.length} ticket(s)?`,
     };
 
     if (confirm(labels[action])) {
         router.post(route('tickets.bulk'), {
             ids: selected.value,
             action: action,
+            ...extra,
         }, {
             onSuccess: () => {
                 selected.value = [];
                 selectAll.value = false;
+                bulkAssignTo.value = '';
             },
         });
     }
@@ -142,6 +147,12 @@ const statusColors = {
                     <button @click="bulkAction('resolve')" class="rounded bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700">Resolve</button>
                     <button @click="bulkAction('spam')" class="rounded bg-orange-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-orange-700">Spam</button>
                     <button @click="bulkAction('delete')" class="rounded bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700">Delete</button>
+                    <span class="mx-1 text-gray-300">|</span>
+                    <select v-model="bulkAssignTo" class="rounded border-gray-300 text-xs shadow-sm py-1.5">
+                        <option value="">Assign to...</option>
+                        <option v-for="agent in agents" :key="agent.id" :value="agent.id">{{ agent.name }}</option>
+                    </select>
+                    <button @click="bulkAction('assign', { assigned_to: bulkAssignTo })" :disabled="!bulkAssignTo" :class="[bulkAssignTo ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-indigo-300 cursor-not-allowed', 'rounded px-3 py-1.5 text-xs font-medium text-white']">Assign</button>
                     <button @click="selected = []; selectAll = false" class="ml-auto text-xs text-gray-500 hover:text-gray-700">Clear selection</button>
                 </div>
 
