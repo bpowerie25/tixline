@@ -77,7 +77,7 @@ class User extends Authenticatable
             return true;
         }
 
-        if ($this->tenant?->agents_see_all_tickets) {
+        if ($this->role?->name === Role::TEAM_LEAD) {
             return true;
         }
 
@@ -120,7 +120,7 @@ class User extends Authenticatable
             return Ticket::query();
         }
 
-        if ($this->tenant?->agents_see_all_tickets) {
+        if ($this->role?->name === Role::TEAM_LEAD) {
             return Ticket::query();
         }
 

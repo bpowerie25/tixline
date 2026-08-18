@@ -84,7 +84,6 @@ class TenantController extends Controller
             'portal_welcome_text' => 'nullable|string',
             'support_email' => 'nullable|email|max:255',
             'is_active' => 'boolean',
-            'agents_see_all_tickets' => 'boolean',
         ];
     }
 

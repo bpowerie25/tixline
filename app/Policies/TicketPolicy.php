@@ -33,8 +33,8 @@ class TicketPolicy
             return true;
         }
 
-        // Team lead can update any ticket in their team
-        if ($user->role?->name === Role::TEAM_LEAD && $ticket->team_id && in_array($ticket->team_id, $user->teamIds())) {
+        // Team lead can update any ticket
+        if ($user->role?->name === Role::TEAM_LEAD) {
             return true;
         }
 
@@ -64,8 +64,8 @@ class TicketPolicy
 
         $teamIds = $user->teamIds();
 
-        // Team lead can assign within their team
-        if ($user->role?->name === Role::TEAM_LEAD && $ticket->team_id && in_array($ticket->team_id, $teamIds)) {
+        // Team lead can assign any ticket
+        if ($user->role?->name === Role::TEAM_LEAD) {
             return true;
         }
 
