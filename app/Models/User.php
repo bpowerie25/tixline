@@ -86,7 +86,7 @@ class User extends Authenticatable
             return true;
         }
 
-        if ($ticket->assigned_to === $this->id) {
+        if ($ticket->assigned_to == $this->id && $ticket->assigned_to !== null) {
             return true;
         }
 

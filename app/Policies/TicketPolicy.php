@@ -43,8 +43,8 @@ class TicketPolicy
             return true;
         }
 
-        // Agent can only update tickets assigned to them
-        return $ticket->assigned_to === $user->id;
+        // Agent can update tickets they can see
+        return $user->canSeeTicket($ticket);
     }
 
     public function delete(User $user, Ticket $ticket): bool
@@ -74,7 +74,7 @@ class TicketPolicy
             return true;
         }
 
-        // Agent can reassign tickets currently assigned to them
-        return $ticket->assigned_to === $user->id;
+        // Agent can assign tickets they can see
+        return $user->canSeeTicket($ticket);
     }
 }
