@@ -74,6 +74,7 @@ class TicketPolicy
             return true;
         }
 
-        return false;
+        // Agent can reassign tickets currently assigned to them
+        return $ticket->assigned_to === $user->id;
     }
 }

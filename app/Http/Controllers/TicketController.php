@@ -141,6 +141,10 @@ class TicketController extends Controller
         $labels = $validated['labels'] ?? null;
         unset($validated['labels']);
 
+        if (array_key_exists('assigned_to', $validated) && $validated['assigned_to'] != $ticket->assigned_to) {
+            $this->authorize('assign', $ticket);
+        }
+
         // Track changes for field_changed events
         $oldValues = $ticket->only(['status', 'priority', 'team_id', 'assigned_to']);
 
