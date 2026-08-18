@@ -28,6 +28,8 @@ class Ticket extends Model
     protected function casts(): array
     {
         return [
+            'assigned_to' => 'integer',
+            'team_id' => 'integer',
             'custom_fields' => 'array',
             'first_responded_at' => 'datetime',
             'resolved_at' => 'datetime',
