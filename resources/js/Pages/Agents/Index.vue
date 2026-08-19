@@ -18,6 +18,7 @@ const form = useForm({
     password: '',
     role_id: '',
     team_ids: [],
+    is_external: false,
 });
 
 function openCreate() {
@@ -34,6 +35,7 @@ function openEdit(agent) {
     form.password = '';
     form.role_id = agent.role_id || '';
     form.team_ids = (agent.teams || []).map(t => t.id);
+    form.is_external = agent.is_external || false;
     showForm.value = true;
 }
 
@@ -133,6 +135,13 @@ function timeAgo(dateStr) {
                                 </div>
                             </div>
                         </div>
+                        <div>
+                            <label class="flex items-center gap-2">
+                                <input type="checkbox" v-model="form.is_external" class="rounded text-indigo-600" />
+                                <span class="text-sm font-medium text-gray-700">External agent</span>
+                            </label>
+                            <p class="mt-1 text-xs text-gray-500">External agents can only see tickets assigned to their teams or directly to them.</p>
+                        </div>
                         <div class="flex items-center gap-3">
                             <button type="submit" :disabled="form.processing" class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50">
                                 {{ editingAgent ? 'Update Agent' : 'Create Agent' }}
@@ -157,6 +166,9 @@ function timeAgo(dateStr) {
                                         <span class="font-medium text-gray-900">{{ agent.name }}</span>
                                         <span v-if="agent.role" class="inline-flex rounded-full bg-indigo-100 text-indigo-700 px-2 py-0.5 text-xs font-medium">
                                             {{ agent.role?.display_name }}
+                                        </span>
+                                        <span v-if="agent.is_external" class="inline-flex rounded-full bg-amber-100 text-amber-700 px-2 py-0.5 text-xs font-medium">
+                                            External
                                         </span>
                                     </div>
                                     <div class="text-sm text-gray-500">

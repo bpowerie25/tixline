@@ -15,7 +15,7 @@ use Illuminate\Notifications\Notifiable;
 use App\Models\Concerns\BelongsToTenant;
 use Laravel\Sanctum\HasApiTokens;
 
-#[Fillable(['name', 'email', 'password', 'role_id', 'team_id', 'tenant_id'])]
+#[Fillable(['name', 'email', 'password', 'role_id', 'team_id', 'tenant_id', 'is_external'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -29,6 +29,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_external' => 'boolean',
         ];
     }
 
@@ -106,7 +107,7 @@ class User extends Authenticatable
             }
         }
 
-        if (! $ticket->team_id) {
+        if (! $ticket->team_id && ! $this->is_external) {
             return true;
         }
 
@@ -116,7 +117,7 @@ class User extends Authenticatable
     // Get the ticket query scoped to this user's visibility
     public function visibleTicketsQuery()
     {
-        if ($this->isAdmin() || ! config('support.multi_tenant')) {
+        if ($this->isAdmin()) {
             return Ticket::query();
         }
 
@@ -133,7 +134,10 @@ class User extends Authenticatable
 
         $query = Ticket::where(function ($q) use ($teamIds) {
             $q->where('assigned_to', $this->id);
-            $q->orWhereNull('team_id');
+
+            if (! $this->is_external) {
+                $q->orWhereNull('team_id');
+            }
 
             if (! empty($teamIds)) {
                 $q->orWhereIn('team_id', $teamIds);

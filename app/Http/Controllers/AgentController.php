@@ -44,6 +44,7 @@ class AgentController extends Controller
             'role_id' => 'required|exists:roles,id',
             'team_ids' => 'nullable|array',
             'team_ids.*' => 'exists:teams,id',
+            'is_external' => 'boolean',
         ]);
 
         $teamIds = $validated['team_ids'] ?? [];
@@ -66,6 +67,7 @@ class AgentController extends Controller
             'role_id' => 'required|exists:roles,id',
             'team_ids' => 'nullable|array',
             'team_ids.*' => 'exists:teams,id',
+            'is_external' => 'boolean',
         ]);
 
         if (empty($validated['password'])) {
