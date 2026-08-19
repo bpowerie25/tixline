@@ -34,8 +34,20 @@ const commentForm = useForm({
 
 const fileInput = ref(null);
 
+const maxFileSize = 10 * 1024 * 1024; // 10MB
+const attachmentError = ref('');
+
 function handleFiles(e) {
-    commentForm.attachments = Array.from(e.target.files);
+    attachmentError.value = '';
+    const files = Array.from(e.target.files);
+    const oversized = files.filter(f => f.size > maxFileSize);
+
+    if (oversized.length) {
+        attachmentError.value = `These files exceed the 10 MB limit: ${oversized.map(f => f.name).join(', ')}`;
+        commentForm.attachments = files.filter(f => f.size <= maxFileSize);
+    } else {
+        commentForm.attachments = files;
+    }
 }
 
 function removeFile(index) {
@@ -111,6 +123,9 @@ const statusColors = {
             <div class="mx-auto max-w-7xl sm:px-6 lg:px-8">
                 <div v-if="$page.props.flash?.success" class="mb-4 rounded-md bg-green-50 border border-green-200 p-4">
                     <p class="text-sm text-green-800">{{ $page.props.flash.success }}</p>
+                </div>
+                <div v-if="$page.props.flash?.warning" class="mb-4 rounded-md bg-yellow-50 border border-yellow-200 p-4">
+                    <p class="text-sm text-yellow-800">{{ $page.props.flash.warning }}</p>
                 </div>
                 <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
                     <!-- Main Content -->
@@ -213,7 +228,9 @@ const statusColors = {
                                 </div>
                                 <!-- File attachments -->
                                 <div class="mt-3">
-                                    <input ref="fileInput" type="file" multiple @change="handleFiles" class="text-sm text-gray-500 file:mr-3 file:rounded file:border-0 file:bg-gray-100 file:px-3 file:py-1.5 file:text-sm file:text-gray-700 hover:file:bg-gray-200" />
+                                    <input ref="fileInput" type="file" multiple @change="handleFiles" accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,.txt,.csv,.doc,.docx,.xls,.xlsx,.zip,.eml" class="text-sm text-gray-500 file:mr-3 file:rounded file:border-0 file:bg-gray-100 file:px-3 file:py-1.5 file:text-sm file:text-gray-700 hover:file:bg-gray-200" />
+                                    <p class="mt-1 text-xs text-gray-400">Max 10 MB per file. Images, PDF, Office docs, CSV, TXT, ZIP.</p>
+                                    <p v-if="attachmentError" class="mt-1 text-xs text-red-600">{{ attachmentError }}</p>
                                     <div v-if="commentForm.attachments.length" class="mt-2 flex flex-wrap gap-2">
                                         <span v-for="(file, i) in commentForm.attachments" :key="i" class="inline-flex items-center gap-1 rounded bg-gray-100 px-2 py-1 text-xs text-gray-700">
                                             {{ file.name }}

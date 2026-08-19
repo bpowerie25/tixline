@@ -6,17 +6,31 @@ use App\Models\Attachment;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class AttachmentService
 {
     public function storeUploadedFile(UploadedFile $file, Model $attachable): ?Attachment
     {
+        $originalName = $file->getClientOriginalName();
+
         if (! $this->isAllowedMime($file->getMimeType())) {
+            Log::warning('Attachment rejected: disallowed MIME type', [
+                'filename' => $originalName,
+                'mime' => $file->getMimeType(),
+            ]);
+
             return null;
         }
 
         if ($file->getSize() > config('support.attachments.max_size_bytes')) {
+            Log::warning('Attachment rejected: file too large', [
+                'filename' => $originalName,
+                'size' => $file->getSize(),
+                'max' => config('support.attachments.max_size_bytes'),
+            ]);
+
             return null;
         }
 
