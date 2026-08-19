@@ -36,7 +36,8 @@ class AttachmentService
 
         $disk = config('support.attachments.disk', 'local');
         $safeName = $this->sanitizeFilename($file->hashName());
-        $directory = 'attachments/'.$attachable->getMorphClass().'/'.$attachable->getKey();
+        $type = str_replace('\\', '-', strtolower($attachable->getMorphClass()));
+        $directory = 'attachments/'.$type.'/'.$attachable->getKey();
         $path = $file->storeAs($directory, $safeName, $disk);
 
         return $attachable->attachments()->create([
@@ -67,7 +68,8 @@ class AttachmentService
 
         $disk = config('support.attachments.disk', 'local');
         $safeName = Str::random(40).$this->safeExtension($mime);
-        $directory = 'attachments/'.$attachable->getMorphClass().'/'.$attachable->getKey();
+        $type = str_replace('\\', '-', strtolower($attachable->getMorphClass()));
+        $directory = 'attachments/'.$type.'/'.$attachable->getKey();
         $path = $directory.'/'.$safeName;
 
         Storage::disk($disk)->put($path, $content);
