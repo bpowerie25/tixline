@@ -92,6 +92,12 @@ class User extends Authenticatable
         }
 
         $teamIds = $this->teamIds();
+
+        // Internal agents with no teams assigned can see all tickets
+        if (empty($teamIds) && ! $this->is_external) {
+            return true;
+        }
+
         if ($ticket->team_id && in_array($ticket->team_id, $teamIds)) {
             return true;
         }
@@ -131,6 +137,11 @@ class User extends Authenticatable
         }
 
         $teamIds = $this->teamIds();
+
+        // Internal agents with no teams assigned can see all tickets
+        if (empty($teamIds) && ! $this->is_external) {
+            return Ticket::query();
+        }
 
         $query = Ticket::where(function ($q) use ($teamIds) {
             $q->where('assigned_to', $this->id);
