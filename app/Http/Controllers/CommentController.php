@@ -53,7 +53,8 @@ class CommentController extends Controller
                 $ticket->update(['status' => 'pending']);
             }
 
-            Mail::to($ticket->requester_email)->send(new TicketReply($ticket, $comment));
+            $tenant = app()->bound('tenant') ? app('tenant') : null;
+            Mail::to($ticket->requester_email)->send(new TicketReply($ticket, $comment, $tenant));
         }
 
         if ($closeTicket) {

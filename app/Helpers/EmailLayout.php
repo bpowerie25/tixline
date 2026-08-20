@@ -2,11 +2,14 @@
 
 namespace App\Helpers;
 
+use App\Models\Tenant;
+use App\Models\Ticket;
+
 class EmailLayout
 {
-    public static function portalUrl(): string
+    public static function portalUrl(?Tenant $tenant = null): string
     {
-        $tenant = app()->bound('tenant') ? app('tenant') : null;
+        $tenant ??= app()->bound('tenant') ? app('tenant') : null;
 
         if ($tenant?->domain) {
             $scheme = request()?->isSecure() ? 'https' : 'http';
@@ -17,9 +20,22 @@ class EmailLayout
         return url('/portal/login');
     }
 
-    public static function wrap(string $body, ?string $portalUrl = null): string
+    public static function portalTicketUrl(Ticket $ticket, ?Tenant $tenant = null): string
     {
-        $tenant = app()->bound('tenant') ? app('tenant') : null;
+        $tenant ??= app()->bound('tenant') ? app('tenant') : null;
+
+        if ($tenant?->domain) {
+            $scheme = request()?->isSecure() ? 'https' : 'http';
+
+            return "{$scheme}://{$tenant->domain}/portal/tickets/{$ticket->id}";
+        }
+
+        return url("/portal/tickets/{$ticket->id}");
+    }
+
+    public static function wrap(string $body, ?string $portalUrl = null, ?Tenant $tenant = null): string
+    {
+        $tenant ??= app()->bound('tenant') ? app('tenant') : null;
         $tenantName = e($tenant?->name ?? config('app.name', 'Support'));
         $primaryColor = $tenant?->primary_color ?? '#be123c';
         $logoUrl = $tenant?->logo_url;

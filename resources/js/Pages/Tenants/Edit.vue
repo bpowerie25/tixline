@@ -28,6 +28,7 @@ const form = useForm({
     portal_title: props.tenant?.portal_title || '',
     portal_welcome_text: props.tenant?.portal_welcome_text || '',
     support_email: props.tenant?.support_email || '',
+    reply_email_mode: props.tenant?.reply_email_mode || 'notification',
     is_active: props.tenant?.is_active ?? true,
 });
 
@@ -200,6 +201,21 @@ const previewStyle = computed(() => ({
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">Welcome Text</label>
                                 <textarea v-model="form.portal_welcome_text" rows="2" placeholder="How can we help you today?" class="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
+                            </div>
+                        </div>
+
+                        <!-- Email Settings -->
+                        <div class="bg-white shadow-sm sm:rounded-lg p-6 space-y-4">
+                            <h3 class="text-lg font-medium text-gray-900">Email Settings</h3>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Reply Notification Style</label>
+                                <p class="text-xs text-gray-500 mt-0.5 mb-2">
+                                    Controls what customers receive when an agent replies to their ticket.
+                                </p>
+                                <select v-model="form.reply_email_mode" class="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                    <option value="notification">Notification only — link to portal</option>
+                                    <option value="full">Full reply — include reply text and attachment links</option>
+                                </select>
                             </div>
                         </div>
 

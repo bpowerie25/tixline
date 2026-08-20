@@ -3,12 +3,14 @@
 namespace Tests\Unit;
 
 use App\Services\SpamFilter;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Tests\TestCase;
 
 class SpamFilterTest extends TestCase
 {
+    use RefreshDatabase;
     protected SpamFilter $filter;
 
     protected function setUp(): void

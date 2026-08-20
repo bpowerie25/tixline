@@ -173,8 +173,10 @@ class WorkflowEngineTest extends TestCase
     public function test_round_robin_distributes_across_team(): void
     {
         $team = Team::create(['name' => 'Support', 'slug' => 'support']);
-        $agent1 = User::factory()->create(['team_id' => $team->id]);
-        $agent2 = User::factory()->create(['team_id' => $team->id]);
+        $agent1 = User::factory()->create();
+        $agent1->teams()->attach($team);
+        $agent2 = User::factory()->create();
+        $agent2->teams()->attach($team);
 
         Workflow::create([
             'name' => 'Round robin',
