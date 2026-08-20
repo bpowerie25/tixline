@@ -38,7 +38,18 @@ class AttachmentService
         $safeName = $this->sanitizeFilename($file->hashName());
         $type = str_replace('\\', '-', strtolower($attachable->getMorphClass()));
         $directory = 'attachments/'.$type.'/'.$attachable->getKey();
-        $path = $file->storeAs($directory, $safeName, $disk);
+
+        try {
+            $path = $file->storeAs($directory, $safeName, $disk);
+        } catch (\Throwable $e) {
+            Log::error('Attachment storage failed', [
+                'filename' => $originalName,
+                'directory' => $directory,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
 
         return $attachable->attachments()->create([
             'filename' => $safeName,
@@ -72,7 +83,16 @@ class AttachmentService
         $directory = 'attachments/'.$type.'/'.$attachable->getKey();
         $path = $directory.'/'.$safeName;
 
-        Storage::disk($disk)->put($path, $content);
+        try {
+            Storage::disk($disk)->put($path, $content);
+        } catch (\Throwable $e) {
+            Log::error('Webhook attachment storage failed', [
+                'directory' => $directory,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
 
         $originalName = $this->sanitizeOriginalFilename($attachmentData['filename'] ?? 'attachment');
 
