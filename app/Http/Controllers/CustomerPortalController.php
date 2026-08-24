@@ -84,8 +84,6 @@ class CustomerPortalController extends Controller
             'organization' => 'nullable|string|max:255',
         ]);
 
-        $validated['password'] = Hash::make($validated['password']);
-
         $customer = Customer::create($validated);
 
         Auth::guard('customer')->login($customer);

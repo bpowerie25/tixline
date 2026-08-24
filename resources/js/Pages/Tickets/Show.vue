@@ -11,6 +11,7 @@ const props = defineProps({
     agents: Array,
     labels: Array,
     cannedResponses: Array,
+    hasCustomerAccount: Boolean,
 });
 
 const showCannedPicker = ref(false);
@@ -88,6 +89,17 @@ function resolveAndClose() {
     router.put(route('tickets.update', props.ticket.id), {
         status: 'closed',
     }, { preserveScroll: true });
+}
+
+const resetSending = ref(false);
+
+function sendPasswordReset() {
+    if (!confirm('Send a password reset email to ' + props.ticket.requester_email + '?')) return;
+    resetSending.value = true;
+    router.post(route('tickets.send-password-reset', props.ticket.id), {}, {
+        preserveScroll: true,
+        onFinish: () => resetSending.value = false,
+    });
 }
 
 const priorityColors = {
@@ -365,6 +377,20 @@ const statusColors = {
                                     <dd class="text-gray-900 text-right">{{ value || '—' }}</dd>
                                 </div>
                             </dl>
+                        </div>
+
+                        <div class="overflow-hidden bg-white shadow-sm sm:rounded-lg p-6">
+                            <h3 class="text-sm font-medium text-gray-500 mb-3">Requester</h3>
+                            <p class="text-sm text-gray-900 font-medium">{{ ticket.requester_name }}</p>
+                            <p class="text-sm text-gray-500">{{ ticket.requester_email }}</p>
+                            <button
+                                v-if="hasCustomerAccount"
+                                @click="sendPasswordReset"
+                                :disabled="resetSending"
+                                class="mt-3 w-full rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                            >
+                                {{ resetSending ? 'Sending...' : 'Send Password Reset' }}
+                            </button>
                         </div>
 
                         <div class="overflow-hidden bg-white shadow-sm sm:rounded-lg p-6">

@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\CustomerPasswordReset;
 use App\Models\CannedResponse;
+use App\Models\Customer;
 use App\Models\Label;
 use App\Models\SpamFilterEntry;
 use App\Models\Team;
@@ -12,6 +14,10 @@ use App\Services\ActivityLogger;
 use App\Services\SpamLearner;
 use App\Services\WorkflowEngine;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 
 class TicketController extends Controller
@@ -69,12 +75,17 @@ class TicketController extends Controller
                 ->orWhere('user_id', auth()->id());
         })->orderBy('name')->get(['id', 'name', 'shortcode', 'body']);
 
+        $hasCustomerAccount = Customer::withoutGlobalScopes()
+            ->where('email', $ticket->requester_email)
+            ->exists();
+
         return Inertia::render('Tickets/Show', [
             'ticket' => $ticket,
             'teams' => Team::all(),
             'agents' => User::all(['id', 'name']),
             'labels' => Label::all(),
             'cannedResponses' => $cannedResponses,
+            'hasCustomerAccount' => $hasCustomerAccount,
         ]);
     }
 
@@ -287,5 +298,30 @@ class TicketController extends Controller
         }
 
         return back();
+    }
+
+    public function sendPasswordReset(Ticket $ticket)
+    {
+        $customer = Customer::withoutGlobalScopes()
+            ->where('email', $ticket->requester_email)
+            ->first();
+
+        if (! $customer) {
+            return back()->with('warning', 'No customer account found for this requester.');
+        }
+
+        $token = Str::random(64);
+
+        DB::table('customer_password_resets')->where('email', $customer->email)->delete();
+        DB::table('customer_password_resets')->insert([
+            'email' => $customer->email,
+            'token' => Hash::make($token),
+            'created_at' => now(),
+        ]);
+
+        $resetUrl = url("/portal/reset-password/{$token}?email=" . urlencode($customer->email));
+        Mail::to($customer->email)->send(new CustomerPasswordReset($resetUrl));
+
+        return back()->with('success', "Password reset email sent to {$customer->email}.");
     }
 }
