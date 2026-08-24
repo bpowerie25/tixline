@@ -20,6 +20,19 @@ class EmailLayout
         return url('/portal/login');
     }
 
+    public static function agentTicketUrl(Ticket $ticket, ?Tenant $tenant = null): string
+    {
+        $tenant ??= app()->bound('tenant') ? app('tenant') : null;
+
+        if ($tenant?->domain) {
+            $scheme = request()?->isSecure() ? 'https' : 'http';
+
+            return "{$scheme}://{$tenant->domain}/tickets/{$ticket->id}";
+        }
+
+        return url("/tickets/{$ticket->id}");
+    }
+
     public static function portalTicketUrl(Ticket $ticket, ?Tenant $tenant = null): string
     {
         $tenant ??= app()->bound('tenant') ? app('tenant') : null;
