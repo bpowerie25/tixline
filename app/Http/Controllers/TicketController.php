@@ -79,6 +79,12 @@ class TicketController extends Controller
             ->where('email', $ticket->requester_email)
             ->exists();
 
+        $requesterTickets = Ticket::where('requester_email', $ticket->requester_email)
+            ->where('id', '!=', $ticket->id)
+            ->latest()
+            ->limit(10)
+            ->get(['id', 'reference', 'subject', 'status', 'created_at']);
+
         return Inertia::render('Tickets/Show', [
             'ticket' => $ticket,
             'teams' => Team::all(),
@@ -86,6 +92,7 @@ class TicketController extends Controller
             'labels' => Label::all(),
             'cannedResponses' => $cannedResponses,
             'hasCustomerAccount' => $hasCustomerAccount,
+            'requesterTickets' => $requesterTickets,
         ]);
     }
 

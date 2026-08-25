@@ -12,6 +12,7 @@ const props = defineProps({
     labels: Array,
     cannedResponses: Array,
     hasCustomerAccount: Boolean,
+    requesterTickets: Array,
 });
 
 const showCannedPicker = ref(false);
@@ -391,6 +392,33 @@ const statusColors = {
                             >
                                 {{ resetSending ? 'Sending...' : 'Send Password Reset' }}
                             </button>
+                        </div>
+
+                        <!-- Requester History -->
+                        <div v-if="requesterTickets.length" class="overflow-hidden bg-white shadow-sm sm:rounded-lg p-6">
+                            <h3 class="text-sm font-medium text-gray-500 mb-3">Requester History</h3>
+                            <ul class="space-y-2">
+                                <li v-for="rt in requesterTickets" :key="rt.id">
+                                    <Link :href="route('tickets.show', rt.id)" class="block text-sm hover:bg-gray-50 -mx-2 px-2 py-1 rounded">
+                                        <div class="flex items-center justify-between gap-2">
+                                            <span class="text-gray-500 shrink-0">{{ rt.reference }}</span>
+                                            <span
+                                                class="shrink-0 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
+                                                :class="{
+                                                    'bg-green-100 text-green-800': rt.status === 'open',
+                                                    'bg-yellow-100 text-yellow-800': rt.status === 'pending',
+                                                    'bg-blue-100 text-blue-800': rt.status === 'resolved',
+                                                    'bg-gray-100 text-gray-800': rt.status === 'closed',
+                                                }"
+                                            >
+                                                {{ rt.status }}
+                                            </span>
+                                        </div>
+                                        <p class="text-gray-700 truncate">{{ rt.subject }}</p>
+                                        <p class="text-xs text-gray-400">{{ new Date(rt.created_at).toLocaleDateString() }}</p>
+                                    </Link>
+                                </li>
+                            </ul>
                         </div>
 
                         <div class="overflow-hidden bg-white shadow-sm sm:rounded-lg p-6">
