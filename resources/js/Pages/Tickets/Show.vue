@@ -395,9 +395,10 @@ const statusColors = {
                         </div>
 
                         <!-- Requester History -->
-                        <div v-if="requesterTickets.length" class="overflow-hidden bg-white shadow-sm sm:rounded-lg p-6">
+                        <div class="overflow-hidden bg-white shadow-sm sm:rounded-lg p-6">
                             <h3 class="text-sm font-medium text-gray-500 mb-3">Requester History</h3>
-                            <ul class="space-y-2">
+                            <p v-if="!requesterTickets.length" class="text-sm text-gray-400">No previous tickets</p>
+                            <ul v-else class="space-y-2">
                                 <li v-for="rt in requesterTickets" :key="rt.id">
                                     <Link :href="route('tickets.show', rt.id)" class="block text-sm hover:bg-gray-50 -mx-2 px-2 py-1 rounded">
                                         <div class="flex items-center justify-between gap-2">
