@@ -147,6 +147,24 @@ const activeTab = ref('general');
                         </p>
                     </div>
 
+                    <!-- Requester History -->
+                    <div class="bg-white shadow-sm sm:rounded-lg p-6">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Requester History</h3>
+                        <p class="text-gray-600 mb-3">
+                            When viewing a ticket, the sidebar shows the requester's previous tickets under <strong>Requester History</strong>. This lets you see what the customer has contacted about before without leaving the current ticket.
+                        </p>
+                        <ul class="list-disc list-inside text-gray-600 space-y-1">
+                            <li>Up to 10 recent tickets are shown, each with a reference number, subject, status badge, and date.</li>
+                            <li>Click any ticket in the list to open it. The back arrow will return you to the ticket you came from.</li>
+                            <li>If the requester has no other tickets, the panel shows <strong>No previous tickets</strong>.</li>
+                        </ul>
+
+                        <h4 class="font-medium text-gray-800 mt-4 mb-2">Requester Profile</h4>
+                        <p class="text-gray-600">
+                            Click the requester's <strong>name</strong> in the sidebar to open their full profile page. This shows all tickets from that requester in a searchable, paginated list &mdash; useful for reviewing a customer's complete support history.
+                        </p>
+                    </div>
+
                     <!-- Reassigning Tickets -->
                     <div class="bg-white shadow-sm sm:rounded-lg p-6">
                         <h3 class="text-lg font-semibold text-gray-900 mb-4">Reassigning Tickets</h3>
