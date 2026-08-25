@@ -275,6 +275,9 @@ const activeTab = ref('general');
                     <!-- Roles -->
                     <div class="bg-white shadow-sm sm:rounded-lg p-6">
                         <h3 class="text-lg font-semibold text-gray-900 mb-4">Roles &amp; Permissions</h3>
+                        <p class="text-gray-600 mb-3">
+                            There are four built-in roles. Admins can also create <strong>custom roles</strong> with any combination of permissions via the <strong>Roles</strong> page.
+                        </p>
                         <div class="overflow-x-auto">
                             <table class="w-full text-sm text-left">
                                 <thead class="bg-gray-50">
@@ -286,11 +289,11 @@ const activeTab = ref('general');
                                 <tbody class="divide-y divide-gray-200">
                                     <tr>
                                         <td class="px-4 py-2 font-medium text-gray-900">Agent</td>
-                                        <td class="px-4 py-2 text-gray-600">View &amp; reply to assigned/team tickets, use canned responses</td>
+                                        <td class="px-4 py-2 text-gray-600">View &amp; reply to assigned/team tickets, assign tickets, use canned responses</td>
                                     </tr>
                                     <tr>
                                         <td class="px-4 py-2 font-medium text-gray-900">Team Lead</td>
-                                        <td class="px-4 py-2 text-gray-600">Everything agents can do, plus Reports and Knowledge Base management</td>
+                                        <td class="px-4 py-2 text-gray-600">Everything agents can do, plus reports (including custom reports), Knowledge Base management, bulk actions, and ticket deletion</td>
                                     </tr>
                                     <tr>
                                         <td class="px-4 py-2 font-medium text-gray-900">Group Manager</td>
@@ -298,11 +301,66 @@ const activeTab = ref('general');
                                     </tr>
                                     <tr>
                                         <td class="px-4 py-2 font-medium text-gray-900">Admin</td>
-                                        <td class="px-4 py-2 text-gray-600">Full access: teams, labels, workflows, forms, SLA policies, mail settings, departments</td>
+                                        <td class="px-4 py-2 text-gray-600">Full access: teams, agents, roles, labels, workflows, forms, SLA policies, mail settings, departments, activity logs, tenant settings</td>
                                     </tr>
                                 </tbody>
                             </table>
                         </div>
+                        <div class="mt-4 rounded-md bg-blue-50 p-4">
+                            <p class="text-sm text-blue-700">
+                                <strong>Tip:</strong> If a team (e.g. QA) needs access to reports but the default Agent role doesn't include it, create a custom role with the permissions they need. Go to <strong>Roles &gt; Create Role</strong>, tick the relevant permissions, then assign the new role to those users.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- External Agents -->
+                    <div class="bg-white shadow-sm sm:rounded-lg p-6">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">External Agents</h3>
+                        <p class="text-gray-600 mb-3">
+                            An agent can be marked as <strong>external</strong> in the agent settings. External agents have restricted ticket visibility compared to internal agents:
+                        </p>
+                        <ul class="list-disc list-inside text-gray-600 space-y-1">
+                            <li>They can only see tickets that are <strong>directly assigned to them</strong> or <strong>assigned to their teams</strong>.</li>
+                            <li>They cannot see tickets across other teams, even if their role would normally allow it.</li>
+                        </ul>
+                        <p class="text-gray-600 mt-3">
+                            This is useful for contractors, part-time staff, or third-party agents who should only see tickets relevant to their specific teams.
+                        </p>
+                    </div>
+
+                    <!-- Announcement Banner -->
+                    <div class="bg-white shadow-sm sm:rounded-lg p-6">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Announcement Banner</h3>
+                        <p class="text-gray-600 mb-3">
+                            Admins can display a notice banner to customers on the portal and ticket submission pages. This is useful for communicating service disruptions, holiday closures, or expected delays.
+                        </p>
+                        <ul class="list-disc list-inside text-gray-600 space-y-1">
+                            <li>Go to the <strong>Tenant settings</strong> and find the <strong>Announcement Banner</strong> section.</li>
+                            <li>Toggle <strong>Show announcement</strong> on and enter your message.</li>
+                            <li>The banner appears on the public ticket submission page and the customer portal.</li>
+                            <li>Toggle it off again when it's no longer needed.</li>
+                        </ul>
+                    </div>
+
+                    <!-- Reports -->
+                    <div class="bg-white shadow-sm sm:rounded-lg p-6">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Reports</h3>
+                        <p class="text-gray-600 mb-3">
+                            The <strong>Reports</strong> page provides an overview of ticket volume, response times, agent performance, and SLA compliance. Access requires the <strong>View Reports</strong> permission (Team Leads and above by default).
+                        </p>
+
+                        <h4 class="font-medium text-gray-800 mt-4 mb-2">Custom Reports</h4>
+                        <p class="text-gray-600 mb-3">
+                            Custom reports let you build your own dashboards with configurable widgets. Access requires the <strong>Manage Custom Reports</strong> permission.
+                        </p>
+                        <ul class="list-disc list-inside text-gray-600 space-y-1">
+                            <li>Create a report and add widgets for metrics like tickets by status, priority, team, agent performance, SLA compliance, and more.</li>
+                            <li>Widgets support different chart types (bar, line, table, number).</li>
+                            <li>Each widget can be filtered by date range, team, agent, status, priority, or labels.</li>
+                            <li>Drag and resize widgets to arrange your layout.</li>
+                            <li>Mark a report as <strong>shared</strong> to make it visible to other users with reports access.</li>
+                            <li>Export report data to CSV.</li>
+                        </ul>
                     </div>
 
                     <!-- Tips -->
