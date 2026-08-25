@@ -4,9 +4,10 @@ import { computed } from 'vue';
 const props = defineProps({
     labels: Array,
     values: Array,
+    colorMap: Object,
 });
 
-const colors = ['#6366f1', '#ec4899', '#f59e0b', '#10b981', '#06b6d4', '#8b5cf6', '#ef4444', '#f97316', '#22c55e', '#0ea5e9'];
+const defaultColors = ['#6366f1', '#ec4899', '#f59e0b', '#10b981', '#06b6d4', '#8b5cf6', '#ef4444', '#f97316', '#22c55e', '#0ea5e9'];
 
 const maxValue = computed(() => Math.max(...(props.values || []), 1));
 
@@ -16,7 +17,7 @@ const bars = computed(() => {
         label,
         value: props.values[i] || 0,
         pct: ((props.values[i] || 0) / maxValue.value) * 100,
-        color: colors[i % colors.length],
+        color: props.colorMap?.[label] || defaultColors[i % defaultColors.length],
     }));
 });
 </script>

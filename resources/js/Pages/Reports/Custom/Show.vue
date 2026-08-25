@@ -80,9 +80,10 @@ function addWidget(widgetType) {
 }
 
 function getDefaultChartType(widgetType) {
-    if (['avg_response_time', 'avg_resolution_time', 'sla_compliance'].includes(widgetType)) return 'number';
+    if (['avg_response_time', 'avg_resolution_time', 'avg_resolution_time_business'].includes(widgetType)) return 'number';
     if (['agent_performance', 'ticket_list'].includes(widgetType)) return 'table';
     if (widgetType === 'ticket_volume') return 'line';
+    if (widgetType === 'sla_compliance') return 'pie';
     return 'bar';
 }
 
@@ -97,6 +98,7 @@ function getDefaultTitle(widgetType) {
         ticket_volume: 'Ticket Volume Over Time',
         avg_response_time: 'Avg Response Time',
         avg_resolution_time: 'Avg Resolution Time',
+        avg_resolution_time_business: 'Avg Resolution Time (Business Hours)',
         sla_compliance: 'SLA Compliance',
         agent_performance: 'Agent Performance',
         ticket_list: 'Ticket List',
@@ -238,6 +240,7 @@ function saveTitle() {
         <WidgetConfigurator
             :show="!!configuringWidget"
             :widget="configuringWidget"
+            :widget-data="configuringWidget ? dataForWidget(configuringWidget.id) : null"
             :widget-types="widgetTypes"
             :teams="teams"
             :agents="agents"
