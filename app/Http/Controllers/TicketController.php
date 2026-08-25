@@ -79,7 +79,8 @@ class TicketController extends Controller
             ->where('email', $ticket->requester_email)
             ->exists();
 
-        $requesterTickets = Ticket::where('requester_email', $ticket->requester_email)
+        $requesterTickets = auth()->user()->visibleTicketsQuery()
+            ->where('requester_email', $ticket->requester_email)
             ->where('id', '!=', $ticket->id)
             ->latest()
             ->limit(10)
@@ -93,6 +94,23 @@ class TicketController extends Controller
             'cannedResponses' => $cannedResponses,
             'hasCustomerAccount' => $hasCustomerAccount,
             'requesterTickets' => $requesterTickets,
+        ]);
+    }
+
+    public function requester(string $email)
+    {
+        $tickets = auth()->user()->visibleTicketsQuery()
+            ->where('requester_email', $email)
+            ->with(['assignee', 'team'])
+            ->latest()
+            ->paginate(25);
+
+        $requesterName = $tickets->first()?->requester_name ?? $email;
+
+        return Inertia::render('Tickets/Requester', [
+            'email' => $email,
+            'requesterName' => $requesterName,
+            'tickets' => $tickets,
         ]);
     }
 

@@ -97,6 +97,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/tickets/bulk', [TicketController::class, 'bulk'])->name('tickets.bulk');
     Route::post('/tickets/{ticket}/comments', [CommentController::class, 'store'])->name('tickets.comments.store');
     Route::post('/tickets/{ticket}/send-password-reset', [TicketController::class, 'sendPasswordReset'])->name('tickets.send-password-reset');
+    Route::get('/requester/{email}', [TicketController::class, 'requester'])->where('email', '.*')->name('tickets.requester');
 
     // Canned Responses — all agents can view and use
     Route::resource('canned-responses', CannedResponseController::class)->except(['create', 'show', 'edit']);

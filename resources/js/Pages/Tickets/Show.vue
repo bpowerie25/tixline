@@ -2,8 +2,10 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import SandboxedHtml from '@/Components/SandboxedHtml.vue';
 import SlaBadge from '@/Components/SlaBadge.vue';
-import { Head, Link, useForm, router } from '@inertiajs/vue3';
+import { Head, Link, useForm, router, usePage } from '@inertiajs/vue3';
 import { ref } from 'vue';
+
+const fromTicket = usePage().url.includes('from=') ? new URLSearchParams(usePage().url.split('?')[1]).get('from') : null;
 
 const props = defineProps({
     ticket: Object,
@@ -124,7 +126,7 @@ const statusColors = {
     <AuthenticatedLayout>
         <template #header>
             <div class="flex items-center gap-3">
-                <Link :href="route('tickets.index')" class="text-gray-400 hover:text-gray-600">
+                <Link :href="fromTicket ? route('tickets.show', fromTicket) : route('tickets.index')" class="text-gray-400 hover:text-gray-600">
                     <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
                 </Link>
                 <span class="font-mono text-gray-500">{{ ticket.reference }}</span>
@@ -382,7 +384,7 @@ const statusColors = {
 
                         <div class="overflow-hidden bg-white shadow-sm sm:rounded-lg p-6">
                             <h3 class="text-sm font-medium text-gray-500 mb-3">Requester</h3>
-                            <p class="text-sm text-gray-900 font-medium">{{ ticket.requester_name }}</p>
+                            <Link :href="route('tickets.requester', ticket.requester_email)" class="text-sm text-indigo-600 font-medium hover:text-indigo-800">{{ ticket.requester_name }}</Link>
                             <p class="text-sm text-gray-500">{{ ticket.requester_email }}</p>
                             <button
                                 v-if="hasCustomerAccount"
@@ -400,7 +402,7 @@ const statusColors = {
                             <p v-if="!requesterTickets.length" class="text-sm text-gray-400">No previous tickets</p>
                             <ul v-else class="space-y-2">
                                 <li v-for="rt in requesterTickets" :key="rt.id">
-                                    <Link :href="route('tickets.show', rt.id)" class="block text-sm hover:bg-gray-50 -mx-2 px-2 py-1 rounded">
+                                    <Link :href="route('tickets.show', rt.id) + '?from=' + ticket.id" class="block text-sm hover:bg-gray-50 -mx-2 px-2 py-1 rounded">
                                         <div class="flex items-center justify-between gap-2">
                                             <span class="text-gray-500 shrink-0">{{ rt.reference }}</span>
                                             <span
