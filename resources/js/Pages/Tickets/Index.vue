@@ -99,9 +99,14 @@ const statusColors = {
         <template #header>
             <div class="flex items-center justify-between">
                 <h2 class="text-xl font-semibold leading-tight text-gray-800">Tickets</h2>
-                <Link :href="route('tickets.create')" class="inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700">
-                    New Ticket
-                </Link>
+                <div class="flex items-center gap-3">
+                    <Link :href="route('tickets.my-reassignments')" class="text-sm text-gray-500 hover:text-gray-700">
+                        My Reassignments
+                    </Link>
+                    <Link :href="route('tickets.create')" class="inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700">
+                        New Ticket
+                    </Link>
+                </div>
             </div>
         </template>
 
@@ -110,6 +115,12 @@ const statusColors = {
                 <!-- Flash messages -->
                 <div v-if="$page.props.flash?.success" class="mb-4 rounded-md bg-green-50 border border-green-200 p-4">
                     <p class="text-sm text-green-800">{{ $page.props.flash.success }}</p>
+                </div>
+                <div v-if="$page.props.flash?.warning" class="mb-4 rounded-md bg-yellow-50 border border-yellow-200 p-4">
+                    <p class="text-sm text-yellow-800">
+                        {{ $page.props.flash.warning }}
+                        <Link :href="route('tickets.my-reassignments')" class="ml-1 font-medium underline hover:text-yellow-900">View My Reassignments</Link>
+                    </p>
                 </div>
 
                 <!-- Filters -->

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Mail\CustomerPasswordReset;
+use App\Models\ActivityLog;
 use App\Models\CannedResponse;
 use App\Models\Customer;
 use App\Models\Label;
@@ -114,6 +115,25 @@ class TicketController extends Controller
         ]);
     }
 
+    public function myReassignments()
+    {
+        $ticketIds = ActivityLog::where('user_id', auth()->id())
+            ->where('action', 'ticket_updated')
+            ->where('subject_type', 'App\\Models\\Ticket')
+            ->whereNotNull('properties->changes->team_id')
+            ->pluck('subject_id')
+            ->unique();
+
+        $tickets = Ticket::whereIn('id', $ticketIds)
+            ->with(['assignee', 'team'])
+            ->latest()
+            ->paginate(25);
+
+        return Inertia::render('Tickets/MyReassignments', [
+            'tickets' => $tickets,
+        ]);
+    }
+
     public function create()
     {
         return Inertia::render('Tickets/Create', [
@@ -210,6 +230,11 @@ class TicketController extends Controller
         }
         if (isset($validated['priority']) && $oldValues['priority'] != $fresh->priority) {
             $engine->run($fresh, 'ticket_priority_changed');
+        }
+
+        if (! auth()->user()->canSeeTicket($fresh)) {
+            return redirect()->route('tickets.index')
+                ->with('warning', "Ticket {$ticket->reference} has been reassigned. You no longer have access to view it.");
         }
 
         return back()->with('success', 'Ticket updated.');

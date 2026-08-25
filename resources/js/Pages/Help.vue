@@ -188,6 +188,16 @@ const activeTab = ref('general');
                             <li>Confirm to apply the change to all selected tickets.</li>
                         </ol>
 
+                        <h4 class="font-medium text-gray-800 mt-4 mb-2">What Happens After Reassignment</h4>
+                        <p class="text-gray-600 mb-3">
+                            When you reassign a ticket to a team you are not a member of, you will be redirected to the ticket list with a confirmation message. This is expected &mdash; the ticket is now with the other team and you no longer need direct access to it.
+                        </p>
+
+                        <h4 class="font-medium text-gray-800 mt-4 mb-2">My Reassignments</h4>
+                        <p class="text-gray-600 mb-3">
+                            To check the status of tickets you have reassigned, click <strong>My Reassignments</strong> on the Tickets page. This shows all tickets you have previously reassigned to another team, along with their current status, assigned team, and agent &mdash; so you can see whether they have been picked up or resolved without needing direct access.
+                        </p>
+
                         <div class="mt-4 rounded-md bg-yellow-50 p-4">
                             <p class="text-sm text-yellow-700">
                                 <strong>Note:</strong> If you receive a ticket that falls outside your team's responsibilities, please reassign it rather than leaving it unactioned. If you're unsure where it should go, reassign it to <strong>General Support</strong> and it will be routed from there.
@@ -524,6 +534,16 @@ const activeTab = ref('general');
                             <li>Drag to reorder fields within a form.</li>
                             <li>Forms can be activated or deactivated &mdash; only active forms appear on the submission page.</li>
                             <li>Custom field data is stored on each ticket and visible in the ticket detail view.</li>
+                        </ul>
+
+                        <h4 class="font-medium text-gray-800 mt-4 mb-2">Auto-assign to Team</h4>
+                        <p class="text-gray-600 mb-3">
+                            Each form can optionally be linked to a team. When a customer submits a ticket via that form, the ticket is automatically assigned to the linked team &mdash; no workflow or manual reassignment needed.
+                        </p>
+                        <ul class="list-disc list-inside text-gray-600 space-y-1">
+                            <li>Set the <strong>Auto-assign to Team</strong> dropdown when editing a form.</li>
+                            <li>Choose <strong>None</strong> to leave routing to workflows (default behaviour).</li>
+                            <li>Workflows can still override the form's team assignment if configured to do so.</li>
                         </ul>
                     </div>
 

@@ -5,6 +5,7 @@ import { computed } from 'vue';
 
 const props = defineProps({
     form: Object,
+    teams: Array,
 });
 
 const isNew = computed(() => !props.form?.id);
@@ -13,6 +14,7 @@ const formData = useForm({
     name: props.form?.name || '',
     description: props.form?.description || '',
     is_active: props.form?.is_active ?? true,
+    team_id: props.form?.team_id || null,
     fields: props.form?.fields ? JSON.parse(JSON.stringify(props.form.fields)) : [],
 });
 
@@ -121,6 +123,14 @@ function submit() {
                         <div class="mt-4">
                             <label class="block text-sm font-medium text-gray-700">Description</label>
                             <textarea v-model="formData.description" rows="2" class="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
+                        </div>
+                        <div class="mt-4">
+                            <label class="block text-sm font-medium text-gray-700">Auto-assign to Team</label>
+                            <select v-model="formData.team_id" class="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:w-1/2">
+                                <option :value="null">None (use workflow rules)</option>
+                                <option v-for="team in teams" :key="team.id" :value="team.id">{{ team.name }}</option>
+                            </select>
+                            <p class="mt-1 text-xs text-gray-500">If set, tickets submitted via this form will be automatically assigned to this team.</p>
                         </div>
                     </div>
 
