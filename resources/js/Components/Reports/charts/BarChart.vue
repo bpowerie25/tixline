@@ -25,7 +25,7 @@ const bars = computed(() => {
 <template>
     <div class="space-y-3">
         <div v-for="bar in bars" :key="bar.label" class="flex items-center gap-3">
-            <span class="w-24 text-sm text-gray-700 truncate" :title="bar.label">{{ bar.label }}</span>
+            <span class="w-36 text-sm text-gray-700 truncate" :title="bar.label">{{ bar.label }}</span>
             <div class="flex-1 h-6 bg-gray-100 rounded-full overflow-hidden">
                 <div
                     class="h-full rounded-full transition-all duration-300"
