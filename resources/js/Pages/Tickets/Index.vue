@@ -1,8 +1,13 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import SlaBadge from '@/Components/SlaBadge.vue';
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { ref, watch, computed } from 'vue';
+
+function ticketUrl(ticketId) {
+    const currentUrl = usePage().url;
+    return route('tickets.show', ticketId) + '?back=' + encodeURIComponent(currentUrl);
+}
 
 const props = defineProps({
     tickets: Object,
@@ -199,7 +204,7 @@ const statusColors = {
                                 @click.stop
                             />
                             <Link
-                                :href="route('tickets.show', ticket.id)"
+                                :href="ticketUrl(ticket.id)"
                                 class="flex flex-1 items-center justify-between min-w-0"
                             >
                                 <div class="min-w-0 flex-1">

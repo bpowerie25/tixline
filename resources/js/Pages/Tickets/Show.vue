@@ -5,7 +5,10 @@ import SlaBadge from '@/Components/SlaBadge.vue';
 import { Head, Link, useForm, router, usePage } from '@inertiajs/vue3';
 import { ref } from 'vue';
 
-const fromTicket = usePage().url.includes('from=') ? new URLSearchParams(usePage().url.split('?')[1]).get('from') : null;
+const pageUrl = usePage().url;
+const params = pageUrl.includes('?') ? new URLSearchParams(pageUrl.split('?')[1]) : new URLSearchParams();
+const fromTicket = params.get('from');
+const backUrl = params.get('back');
 
 const props = defineProps({
     ticket: Object,
@@ -126,7 +129,7 @@ const statusColors = {
     <AuthenticatedLayout>
         <template #header>
             <div class="flex items-center gap-3">
-                <Link :href="fromTicket ? route('tickets.show', fromTicket) : route('tickets.index')" class="text-gray-400 hover:text-gray-600">
+                <Link :href="fromTicket ? route('tickets.show', fromTicket) : (backUrl || route('tickets.index'))" class="text-gray-400 hover:text-gray-600">
                     <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
                 </Link>
                 <span class="font-mono text-gray-500">{{ ticket.reference }}</span>
