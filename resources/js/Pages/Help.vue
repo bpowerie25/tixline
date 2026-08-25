@@ -354,12 +354,23 @@ const activeTab = ref('general');
                             Custom reports let you build your own dashboards with configurable widgets. Access requires the <strong>Manage Custom Reports</strong> permission.
                         </p>
                         <ul class="list-disc list-inside text-gray-600 space-y-1">
-                            <li>Create a report and add widgets for metrics like tickets by status, priority, team, agent performance, SLA compliance, and more.</li>
-                            <li>Widgets support different chart types (bar, line, table, number).</li>
+                            <li>Create a report and add widgets for metrics like tickets by status, priority, team, agent performance, SLA compliance, average resolution time (including business hours), and more.</li>
+                            <li>Widgets support different chart types (bar, pie, line, table, number).</li>
                             <li>Each widget can be filtered by date range, team, agent, status, priority, or labels.</li>
                             <li>Drag and resize widgets to arrange your layout.</li>
                             <li>Mark a report as <strong>shared</strong> to make it visible to other users with reports access.</li>
                             <li>Export report data to CSV.</li>
+                        </ul>
+
+                        <h4 class="font-medium text-gray-800 mt-4 mb-2">Chart Colors</h4>
+                        <p class="text-gray-600 mb-3">
+                            Bar and pie chart widgets use meaningful default colors &mdash; for example, status charts use green for open, yellow for pending, blue for resolved, and gray for closed. Priority charts use blue for normal, orange for high, and red for urgent.
+                        </p>
+                        <ul class="list-disc list-inside text-gray-600 space-y-1">
+                            <li>To customise colors, click the <strong>configure</strong> (gear) icon on a bar or pie chart widget.</li>
+                            <li>A <strong>Colors</strong> section shows each label with a color swatch &mdash; click any swatch to pick a new color.</li>
+                            <li>Custom colors are saved per widget, so different widgets can use different color schemes.</li>
+                            <li>Click <strong>Reset to defaults</strong> to revert to the standard colors.</li>
                         </ul>
                     </div>
 
