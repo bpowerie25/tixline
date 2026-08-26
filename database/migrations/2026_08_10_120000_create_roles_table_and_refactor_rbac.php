@@ -42,15 +42,17 @@ return new class extends Migration
         if (Schema::hasTable('permissions')) {
             DB::table('permissions')->truncate();
 
-            // Ensure the table has the right columns
-            if (! Schema::hasColumn('permissions', 'group')) {
-                Schema::table('permissions', function (Blueprint $table) {
-                    $table->string('group')->after('display_name')->default('');
-                });
-            }
+            // Ensure the table has the right columns. display_name must be
+            // added first: group is positioned after it, and MySQL/MariaDB
+            // reject an "after" clause naming a column that does not exist yet.
             if (! Schema::hasColumn('permissions', 'display_name')) {
                 Schema::table('permissions', function (Blueprint $table) {
                     $table->string('display_name')->after('name')->default('');
+                });
+            }
+            if (! Schema::hasColumn('permissions', 'group')) {
+                Schema::table('permissions', function (Blueprint $table) {
+                    $table->string('group')->after('display_name')->default('');
                 });
             }
         } else {

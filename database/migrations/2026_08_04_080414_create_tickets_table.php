@@ -23,7 +23,10 @@ return new class extends Migration
             $table->enum('source', ['email', 'web', 'api'])->default('web');
             $table->foreignId('assigned_to')->nullable()->constrained('users')->nullOnDelete();
             $table->foreignId('team_id')->nullable()->constrained()->nullOnDelete();
-            $table->foreignId('form_id')->nullable()->constrained()->nullOnDelete();
+            // The foreign key is added by the create_forms_table migration,
+            // which runs later -- MySQL/MariaDB reject a constraint pointing at
+            // a table that does not exist yet.
+            $table->foreignId('form_id')->nullable();
             $table->json('custom_fields')->nullable();
             $table->timestamp('first_responded_at')->nullable();
             $table->timestamp('resolved_at')->nullable();

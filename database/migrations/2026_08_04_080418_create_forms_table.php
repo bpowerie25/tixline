@@ -19,6 +19,12 @@ return new class extends Migration
             $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
+
+        // Deferred from create_tickets_table: tickets.form_id could not be
+        // constrained there because this table did not exist yet.
+        Schema::table('tickets', function (Blueprint $table) {
+            $table->foreign('form_id')->references('id')->on('forms')->nullOnDelete();
+        });
     }
 
     /**
@@ -26,6 +32,10 @@ return new class extends Migration
      */
     public function down(): void
     {
+        Schema::table('tickets', function (Blueprint $table) {
+            $table->dropForeign(['form_id']);
+        });
+
         Schema::dropIfExists('forms');
     }
 };
