@@ -123,7 +123,7 @@ class WorkflowEngine
             'source' => $ticket->source,
             'team_id' => (string) $ticket->team_id,
             'assigned_to' => (string) $ticket->assigned_to,
-            default => $ticket->custom_fields[$field] ?? '',
+            default => ($ticket->custom_fields ?? [])[$field] ?? '',
         };
 
         return match ($operator) {

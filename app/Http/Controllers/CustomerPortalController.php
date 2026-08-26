@@ -192,7 +192,7 @@ class CustomerPortalController extends Controller
             'source' => 'web',
         ]);
 
-        $engine->run($ticket, 'ticket_created');
+        $engine->run($ticket->fresh(), 'ticket_created');
 
         return redirect()->route('portal.ticket', $ticket)
             ->with('success', 'Ticket created.');
