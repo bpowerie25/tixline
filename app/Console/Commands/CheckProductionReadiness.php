@@ -23,7 +23,10 @@ class CheckProductionReadiness extends Command
                 ['warning', 'error', 'critical', 'alert', 'emergency'],
             )],
             ['MAIL_MAILER must not be log (writes personal data)', fn () => config('mail.default') !== 'log'],
-            ['INBOUND_WEBHOOK_SECRET must be set', fn () => ! empty(config('support.inbound.webhook_secret'))],
+            // Either inbound mechanism is acceptable, but an unauthenticated
+            // inbound endpoint would let anyone inject tickets.
+            ['An inbound webhook secret or Mailgun signing key must be set', fn () => ! empty(config('support.inbound.webhook_secret'))
+                || ! empty(config('support.inbound.mailgun.signing_key'))],
             ['APP_URL must not be localhost', fn () => ! str_contains(config('app.url', 'http://localhost'), 'localhost')],
             ['APP_KEY must be set', fn () => ! empty(config('app.key'))],
             ['QUEUE_CONNECTION should not be sync', fn () => config('queue.default') !== 'sync'],

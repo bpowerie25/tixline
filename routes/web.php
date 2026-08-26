@@ -12,6 +12,7 @@ use App\Http\Controllers\CustomerPortalController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\FormController;
 use App\Http\Controllers\InboundEmailController;
+use App\Http\Controllers\MailgunInboundController;
 use App\Http\Controllers\KbController;
 use App\Http\Controllers\LabelController;
 use App\Http\Controllers\ProfileController;
@@ -46,10 +47,18 @@ Route::get('/cookie-policy', function () {
 Route::get('/submit', [PublicTicketController::class, 'create'])->name('submit.create');
 Route::post('/submit', [PublicTicketController::class, 'store'])->middleware('throttle:10,1')->name('submit.store');
 
-// Inbound email webhook
+// Inbound email webhook (generic: HMAC over timestamp.body)
 Route::post('/inbound/email', [InboundEmailController::class, 'webhook'])
     ->name('inbound.email')
     ->middleware('throttle:120,1')
+    ->withoutMiddleware([VerifyCsrfToken::class]);
+
+// Inbound email webhook (Mailgun route forwarding). Verifies Mailgun's own
+// signature and resolves the tenant from the recipient address, so it is safe
+// to expose on the platform domain rather than per-tenant subdomains.
+Route::post('/inbound/mailgun', MailgunInboundController::class)
+    ->name('inbound.mailgun')
+    ->middleware('throttle:300,1')
     ->withoutMiddleware([VerifyCsrfToken::class]);
 
 // Public Knowledge Base

@@ -116,6 +116,27 @@ class Ticket extends Model
         return $this->hasMany(Comment::class);
     }
 
+    /**
+     * RFC 5322 Message-IDs seen on this ticket, in both directions. Used to
+     * thread replies whose subject line no longer carries the reference.
+     */
+    public function messages(): HasMany
+    {
+        return $this->hasMany(TicketMessage::class);
+    }
+
+    /**
+     * The Message-ID of the most recent message received from the customer,
+     * which an outgoing reply should point at with In-Reply-To.
+     */
+    public function lastInboundMessageId(): ?string
+    {
+        return $this->messages()
+            ->where('direction', 'inbound')
+            ->latest('id')
+            ->value('message_id');
+    }
+
     public function labels(): BelongsToMany
     {
         return $this->belongsToMany(Label::class);

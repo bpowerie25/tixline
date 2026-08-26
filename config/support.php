@@ -30,6 +30,37 @@ return [
         |
         */
         'require_auth_results' => (bool) env('INBOUND_REQUIRE_AUTH_RESULTS', true),
+
+        /*
+        |----------------------------------------------------------------------
+        | Platform inbound domain
+        |----------------------------------------------------------------------
+        |
+        | Every tenant receives mail at {slug}@{inbound_domain}, and the local
+        | part is what identifies the tenant. A dedicated domain is used rather
+        | than addresses on tenant subdomains: that would need wildcard MX on
+        | *.{base_domain}, which mail providers register per-domain and handle
+        | poorly, and it would collide with the MX for your own company mail.
+        |
+        | A "+tag" suffix is ignored, so acme+billing@ still routes to acme.
+        |
+        */
+        'domain' => env('INBOUND_DOMAIN'),
+
+        /*
+        |----------------------------------------------------------------------
+        | Mailgun inbound route
+        |----------------------------------------------------------------------
+        |
+        | Mailgun signs forwarded messages with the HTTP webhook signing key
+        | from the control panel -- NOT the sending API key. Requests whose
+        | signature does not verify are rejected before any parsing happens.
+        |
+        */
+        'mailgun' => [
+            'signing_key' => env('MAILGUN_WEBHOOK_SIGNING_KEY'),
+            'tolerance_seconds' => (int) env('MAILGUN_WEBHOOK_TOLERANCE', 300),
+        ],
     ],
 
     'attachments' => [

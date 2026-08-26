@@ -9,6 +9,8 @@ use App\Models\Customer;
 use App\Models\Team;
 use App\Models\Tenant;
 use App\Models\Ticket;
+use App\Models\TicketMessage;
+use App\Support\TenantContext;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
@@ -23,6 +25,8 @@ class InboundEmailProcessor
 
     public function process(InboundMessage $message): array
     {
+        $tenant = $this->requireTenant();
+
         $subject = $message->subject ?: '(No Subject)';
         $fromName = $message->fromName ?: $message->fromEmail;
 
@@ -44,6 +48,8 @@ class InboundEmailProcessor
 
             $this->processAttachments($message, $comment);
 
+            TicketMessage::remember($existingTicket, $message->messageId, 'inbound');
+
             if (in_array($existingTicket->status, ['pending', 'resolved', 'closed'])) {
                 $existingTicket->update(['status' => 'open']);
             }
@@ -64,10 +70,12 @@ class InboundEmailProcessor
             'requester_name' => $fromName,
             'requester_email' => $message->fromEmail,
             'source' => 'email',
-            'tenant_id' => app()->bound('tenant') ? app('tenant')->id : Tenant::first()?->id,
+            'tenant_id' => $tenant?->id ?? Tenant::first()?->id,
         ]);
 
         $this->processAttachments($message, $ticket);
+
+        TicketMessage::remember($ticket, $message->messageId, 'inbound');
 
         $this->workflowEngine->run($ticket->fresh(), 'ticket_created');
 
@@ -99,6 +107,31 @@ class InboundEmailProcessor
             'ticket_id' => $ticket->id,
             'reference' => $ticket->fresh()->reference,
         ];
+    }
+
+    /**
+     * Resolve the tenant this message belongs to, refusing to guess.
+     *
+     * Every query in this class -- thread matching, customer lookup, the
+     * default team -- is tenant-scoped through a global scope that only
+     * applies when a tenant is bound. Processing mail with nothing bound used
+     * to fall back to Tenant::first(), which searched across all tenants and
+     * filed the resulting ticket into whichever tenant happened to be oldest.
+     * Callers must establish the context with TenantContext::run() instead.
+     */
+    protected function requireTenant(): ?Tenant
+    {
+        $tenant = TenantContext::current();
+
+        if (! $tenant && config('support.multi_tenant')) {
+            throw new \RuntimeException(
+                'Inbound email cannot be processed without a tenant context. The caller must '
+                .'establish it with TenantContext::run(); otherwise the message would be matched '
+                .'against, and filed into, an arbitrary tenant.'
+            );
+        }
+
+        return $tenant;
     }
 
     protected function notifyAgentOrTeam(Ticket $ticket): void
@@ -140,6 +173,13 @@ class InboundEmailProcessor
 
     protected function findExistingTicket(string $fromEmail, string $subject, InboundMessage $message): ?Ticket
     {
+        // Header-based threading first: In-Reply-To and References are set by
+        // the replying mail client and survive subject edits and localised
+        // "Re:"/"AW:"/"R:" prefixes, which the subject match below does not.
+        if ($ticket = $this->findByReferences($message)) {
+            return $ticket;
+        }
+
         if (preg_match('/\[TKT-(\d+)\]/', $subject, $matches)) {
             $ticket = Ticket::where('reference', 'TKT-'.$matches[1])
                 ->whereIn('status', ['open', 'pending', 'resolved', 'closed'])
@@ -166,6 +206,44 @@ class InboundEmailProcessor
             ->where('subject', $cleanSubject)
             ->whereIn('status', ['open', 'pending'])
             ->first();
+    }
+
+    /**
+     * Find the ticket a reply belongs to from its threading headers.
+     *
+     * In-Reply-To names the immediate parent; References carries the whole
+     * chain, so it is walked newest-first. Both are matched against the
+     * Message-IDs we have recorded for this tenant, which means a reply can
+     * only ever resolve to a ticket belonging to the tenant it was sent to.
+     */
+    protected function findByReferences(InboundMessage $message): ?Ticket
+    {
+        $candidates = [];
+
+        foreach (['in-reply-to', 'references'] as $header) {
+            $value = $message->headers[$header] ?? '';
+
+            if (! is_string($value) || trim($value) === '') {
+                continue;
+            }
+
+            preg_match_all('/<([^<>]+)>/', $value, $matches);
+
+            $ids = $matches[1] ?? [];
+
+            // References is oldest-first; the nearest ancestor is the best match.
+            $candidates = array_merge($candidates, $header === 'references' ? array_reverse($ids) : $ids);
+        }
+
+        foreach (array_unique($candidates) as $messageId) {
+            $record = TicketMessage::where('message_id', TicketMessage::normalise($messageId))->first();
+
+            if ($record && $record->ticket) {
+                return $record->ticket;
+            }
+        }
+
+        return null;
     }
 
     /**

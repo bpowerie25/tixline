@@ -4,7 +4,10 @@ namespace App\Jobs;
 
 use App\DTOs\InboundMessage;
 use App\Models\InboundEmail;
+use App\Models\Scopes\TenantScope;
+use App\Models\Tenant;
 use App\Services\InboundEmailProcessor;
+use App\Support\TenantContext;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -25,26 +28,36 @@ class ProcessInboundEmailJob implements ShouldQueue
 
     public function handle(InboundEmailProcessor $processor): void
     {
-        $record = InboundEmail::find($this->inboundEmailId);
+        // Queue workers have no request, so nothing binds a tenant for them.
+        // The record carries the tenant the message was routed to at receipt;
+        // without rebinding it here, processing would run unscoped and match
+        // against every tenant's tickets.
+        $record = InboundEmail::withoutGlobalScope(TenantScope::class)->find($this->inboundEmailId);
 
         if (! $record || $record->status !== 'pending') {
             return;
         }
 
-        $message = InboundMessage::fromWebhookPayload($record->payload);
+        $tenant = $record->tenant_id
+            ? Tenant::withoutGlobalScope(TenantScope::class)->find($record->tenant_id)
+            : null;
 
-        $result = $processor->process($message);
+        TenantContext::run($tenant, function () use ($processor, $record) {
+            $message = InboundMessage::fromWebhookPayload($record->payload);
 
-        $record->update([
-            'status' => $result['status'] === 'rejected' ? 'rejected' : 'processed',
-            'result' => json_encode($result),
-            'processed_at' => now(),
-        ]);
+            $result = $processor->process($message);
+
+            $record->update([
+                'status' => $result['status'] === 'rejected' ? 'rejected' : 'processed',
+                'result' => json_encode($result),
+                'processed_at' => now(),
+            ]);
+        });
     }
 
     public function failed(\Throwable $e): void
     {
-        $record = InboundEmail::find($this->inboundEmailId);
+        $record = InboundEmail::withoutGlobalScope(TenantScope::class)->find($this->inboundEmailId);
 
         if ($record) {
             $record->update([

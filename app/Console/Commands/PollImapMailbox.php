@@ -4,8 +4,11 @@ namespace App\Console\Commands;
 
 use App\DTOs\InboundMessage;
 use App\Models\InboundEmail;
+use App\Models\Tenant;
 use App\Models\MailConfiguration;
+use App\Models\Scopes\TenantScope;
 use App\Services\InboundEmailProcessor;
+use App\Support\TenantContext;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use Webklex\IMAP\Facades\Client;
@@ -17,16 +20,70 @@ class PollImapMailbox extends Command
 
     public function handle(InboundEmailProcessor $processor): int
     {
-        $config = MailConfiguration::first();
+        // Deliberately unscoped: this runs on the scheduler with no tenant
+        // bound, and every tenant with an IMAP mailbox needs polling. Each
+        // mailbox is then processed inside its own tenant context so the
+        // tickets it produces are scoped to the tenant that owns it.
+        $configurations = MailConfiguration::withoutGlobalScope(TenantScope::class)
+            ->where('inbound_method', 'imap')
+            ->get();
 
-        if (! $config || $config->inbound_method !== 'imap') {
+        if ($configurations->isEmpty()) {
             $this->info('IMAP polling is not configured or not enabled.');
 
             return self::SUCCESS;
         }
 
+        $failed = 0;
+
+        foreach ($configurations as $config) {
+            $tenant = $config->tenant_id
+                ? Tenant::withoutGlobalScope(TenantScope::class)->find($config->tenant_id)
+                : null;
+
+            if ($config->tenant_id && ! $tenant) {
+                $this->warn("Skipping mailbox {$config->imap_username}: tenant {$config->tenant_id} no longer exists.");
+
+                continue;
+            }
+
+            if ($tenant && ! $tenant->is_active) {
+                $this->line("Skipping mailbox for inactive tenant: {$tenant->slug}");
+
+                continue;
+            }
+
+            $label = $tenant?->slug ?? 'default';
+
+            try {
+                $status = TenantContext::run($tenant, fn () => $this->pollMailbox($config, $processor, $label));
+            } catch (\Throwable $e) {
+                Log::error('IMAP polling failed for tenant', [
+                    'tenant' => $label,
+                    'error' => $e->getMessage(),
+                ]);
+                $this->error("[{$label}] Polling failed: {$e->getMessage()}");
+                $failed++;
+
+                continue;
+            }
+
+            if ($status === self::FAILURE) {
+                $failed++;
+            }
+        }
+
+        return $failed > 0 ? self::FAILURE : self::SUCCESS;
+    }
+
+    /**
+     * Poll a single tenant's mailbox. Runs with that tenant bound, so every
+     * query the processor makes is scoped to it.
+     */
+    protected function pollMailbox(MailConfiguration $config, InboundEmailProcessor $processor, string $label): int
+    {
         if (! $config->imap_host || ! $config->imap_username || ! $config->imap_password) {
-            $this->error('IMAP credentials are incomplete.');
+            $this->error("[{$label}] IMAP credentials are incomplete.");
 
             return self::FAILURE;
         }
@@ -44,8 +101,8 @@ class PollImapMailbox extends Command
 
             $client->connect();
         } catch (\Throwable $e) {
-            $this->error('Failed to connect to IMAP: ' . $e->getMessage());
-            Log::error('IMAP connection failed', ['error' => $e->getMessage()]);
+            $this->error("[{$label}] Failed to connect to IMAP: " . $e->getMessage());
+            Log::error('IMAP connection failed', ['tenant' => $label, 'error' => $e->getMessage()]);
 
             return self::FAILURE;
         }
@@ -53,7 +110,7 @@ class PollImapMailbox extends Command
         $folder = $client->getFolder($config->imap_folder ?: 'INBOX');
 
         if (! $folder) {
-            $this->error("Folder '{$config->imap_folder}' not found.");
+            $this->error("[{$label}] Folder '{$config->imap_folder}' not found.");
             $client->disconnect();
 
             return self::FAILURE;
@@ -160,14 +217,15 @@ class PollImapMailbox extends Command
                 }
 
                 $processed++;
-                $this->line("Processed: {$inboundMessage->subject} ({$result['status']})");
+                $this->line("[{$label}] Processed: {$inboundMessage->subject} ({$result['status']})");
 
             } catch (\Throwable $e) {
                 Log::error('IMAP message processing failed', [
+                    'tenant' => $label,
                     'message_id' => $messageId,
                     'error' => $e->getMessage(),
                 ]);
-                $this->error("Failed: {$messageId} - {$e->getMessage()}");
+                $this->error("[{$label}] Failed: {$messageId} - {$e->getMessage()}");
 
                 // Still mark as seen to avoid reprocessing failures
                 $message->setFlag('Seen');
@@ -176,7 +234,7 @@ class PollImapMailbox extends Command
 
         $client->disconnect();
 
-        $this->info("Done. Processed: {$processed}, Skipped: {$skipped}");
+        $this->info("[{$label}] Done. Processed: {$processed}, Skipped: {$skipped}");
 
         return self::SUCCESS;
     }
