@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Ticket;
+use App\Rules\TenantScoped;
 use App\Services\WorkflowEngine;
 use Illuminate\Http\Request;
 
@@ -53,10 +54,10 @@ class TicketApiController extends Controller
             'requester_name' => 'required|string|max:255',
             'requester_email' => 'required|email|max:255',
             'priority' => 'in:low,normal,high,urgent',
-            'team_id' => 'nullable|exists:teams,id',
-            'assigned_to' => 'nullable|exists:users,id',
+            'team_id' => ['nullable', TenantScoped::exists('teams')],
+            'assigned_to' => ['nullable', TenantScoped::exists('users')],
             'labels' => 'nullable|array',
-            'labels.*' => 'exists:labels,id',
+            'labels.*' => [TenantScoped::exists('labels')],
             'custom_fields' => 'nullable|array',
         ]);
 
@@ -81,10 +82,10 @@ class TicketApiController extends Controller
             'subject' => 'sometimes|string|max:255',
             'status' => 'sometimes|in:open,pending,resolved,closed',
             'priority' => 'sometimes|in:low,normal,high,urgent',
-            'team_id' => 'nullable|exists:teams,id',
-            'assigned_to' => 'nullable|exists:users,id',
+            'team_id' => ['nullable', TenantScoped::exists('teams')],
+            'assigned_to' => ['nullable', TenantScoped::exists('users')],
             'labels' => 'nullable|array',
-            'labels.*' => 'exists:labels,id',
+            'labels.*' => [TenantScoped::exists('labels')],
         ]);
 
         if (isset($validated['status']) && $validated['status'] === 'resolved' && ! $ticket->resolved_at) {

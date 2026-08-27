@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Department;
 use App\Models\User;
+use App\Rules\TenantScoped;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -25,7 +26,7 @@ class DepartmentController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'manager_id' => 'nullable|exists:users,id',
+            'manager_id' => ['nullable', TenantScoped::exists('users')],
         ]);
 
         $validated['slug'] = Str::slug($validated['name']);
@@ -40,7 +41,7 @@ class DepartmentController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'manager_id' => 'nullable|exists:users,id',
+            'manager_id' => ['nullable', TenantScoped::exists('users')],
         ]);
 
         $validated['slug'] = Str::slug($validated['name']);

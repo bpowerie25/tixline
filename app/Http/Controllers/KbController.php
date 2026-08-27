@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\KbArticle;
 use App\Models\KbCategory;
+use App\Rules\TenantScoped;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -41,7 +42,7 @@ class KbController extends Controller
     {
         $validated = $request->validate([
             'title' => 'required|string|max:255',
-            'category_id' => 'required|exists:kb_categories,id',
+            'category_id' => ['required', TenantScoped::exists('kb_categories')],
             'excerpt' => 'nullable|string|max:500',
             'body' => 'required|string',
             'status' => 'in:draft,published',
@@ -68,7 +69,7 @@ class KbController extends Controller
     {
         $validated = $request->validate([
             'title' => 'required|string|max:255',
-            'category_id' => 'required|exists:kb_categories,id',
+            'category_id' => ['required', TenantScoped::exists('kb_categories')],
             'excerpt' => 'nullable|string|max:500',
             'body' => 'required|string',
             'status' => 'in:draft,published',

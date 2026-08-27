@@ -8,6 +8,7 @@ use App\Models\SpamFilterEntry;
 use App\Models\Team;
 use App\Models\Ticket;
 use App\Models\User;
+use App\Rules\TenantScoped;
 use App\Services\ActivityLogger;
 use App\Services\SpamLearner;
 use App\Services\WorkflowEngine;
@@ -95,10 +96,10 @@ class TicketController extends Controller
             'requester_name' => 'required|string|max:255',
             'requester_email' => 'required|email|max:255',
             'priority' => 'in:low,normal,high,urgent',
-            'team_id' => 'nullable|exists:teams,id',
-            'assigned_to' => 'nullable|exists:users,id',
+            'team_id' => ['nullable', TenantScoped::exists('teams')],
+            'assigned_to' => ['nullable', TenantScoped::exists('users')],
             'labels' => 'nullable|array',
-            'labels.*' => 'exists:labels,id',
+            'labels.*' => [TenantScoped::exists('labels')],
             'custom_fields' => 'nullable|array',
         ]);
 
@@ -128,10 +129,10 @@ class TicketController extends Controller
             'subject' => 'sometimes|string|max:255',
             'status' => 'sometimes|in:open,pending,resolved,closed',
             'priority' => 'sometimes|in:low,normal,high,urgent',
-            'team_id' => 'nullable|exists:teams,id',
-            'assigned_to' => 'nullable|exists:users,id',
+            'team_id' => ['nullable', TenantScoped::exists('teams')],
+            'assigned_to' => ['nullable', TenantScoped::exists('users')],
             'labels' => 'nullable|array',
-            'labels.*' => 'exists:labels,id',
+            'labels.*' => [TenantScoped::exists('labels')],
         ]);
 
         if (isset($validated['status']) && in_array($validated['status'], ['resolved', 'closed']) && ! $ticket->resolved_at) {
@@ -191,7 +192,7 @@ class TicketController extends Controller
     {
         $validated = $request->validate([
             'ids' => 'required|array|min:1',
-            'ids.*' => 'integer|exists:tickets,id',
+            'ids.*' => ['integer', TenantScoped::exists('tickets')],
             'action' => 'required|in:close,resolve,delete,spam',
         ]);
 
@@ -250,7 +251,7 @@ class TicketController extends Controller
 
                 Ticket::whereIn('id', $validated['ids'])->delete();
 
-                return back()->with('success', "{$count} tickets deleted, " . $emails->count() . " sender(s) blocklisted, and spam patterns learned.");
+                return back()->with('success', "{$count} tickets deleted, ".$emails->count().' sender(s) blocklisted, and spam patterns learned.');
         }
 
         return back();

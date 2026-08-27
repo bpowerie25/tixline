@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Team;
 use App\Models\User;
+use App\Rules\TenantScoped;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -58,7 +59,7 @@ class TeamController extends Controller
     public function addMember(Request $request, Team $team)
     {
         $validated = $request->validate([
-            'user_id' => 'required|exists:users,id',
+            'user_id' => ['required', TenantScoped::exists('users')],
         ]);
 
         $team->members()->syncWithoutDetaching([$validated['user_id']]);

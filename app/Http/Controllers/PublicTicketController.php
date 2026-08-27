@@ -6,6 +6,7 @@ use App\Mail\CustomerAccountCreated;
 use App\Models\Customer;
 use App\Models\Form;
 use App\Models\Ticket;
+use App\Rules\TenantScoped;
 use App\Services\WorkflowEngine;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
@@ -44,7 +45,7 @@ class PublicTicketController extends Controller
             'body' => 'nullable|string',
             'requester_name' => 'required|string|max:255',
             'requester_email' => 'required|email|max:255',
-            'form_id' => 'nullable|exists:forms,id',
+            'form_id' => ['nullable', TenantScoped::exists('forms')],
             'custom_fields' => 'nullable|array',
         ]);
 

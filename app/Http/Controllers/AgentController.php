@@ -6,6 +6,7 @@ use App\Models\ActivityLog;
 use App\Models\Role;
 use App\Models\Team;
 use App\Models\User;
+use App\Rules\TenantScoped;
 use App\Services\ActivityLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
@@ -43,7 +44,7 @@ class AgentController extends Controller
             'password' => 'required|string|min:8',
             'role_id' => 'required|exists:roles,id',
             'team_ids' => 'nullable|array',
-            'team_ids.*' => 'exists:teams,id',
+            'team_ids.*' => [TenantScoped::exists('teams')],
         ]);
 
         $teamIds = $validated['team_ids'] ?? [];
@@ -61,11 +62,11 @@ class AgentController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|email|max:255|unique:users,email,' . $agent->id,
+            'email' => 'required|email|max:255|unique:users,email,'.$agent->id,
             'password' => 'nullable|string|min:8',
             'role_id' => 'required|exists:roles,id',
             'team_ids' => 'nullable|array',
-            'team_ids.*' => 'exists:teams,id',
+            'team_ids.*' => [TenantScoped::exists('teams')],
         ]);
 
         if (empty($validated['password'])) {
@@ -86,18 +87,18 @@ class AgentController extends Controller
     public function sendInvite(User $agent)
     {
         $token = Password::broker()->createToken($agent);
-        $resetUrl = url(route('password.reset', $token, false)) . '?email=' . urlencode($agent->email);
+        $resetUrl = url(route('password.reset', $token, false)).'?email='.urlencode($agent->email);
 
         Mail::raw(
             "Hi {$agent->name},\n\n"
-            . "You've been added as an agent on " . config('app.name') . ".\n\n"
-            . "Please set your password by clicking the link below:\n"
-            . "{$resetUrl}\n\n"
-            . "This link will expire in 60 minutes.\n\n"
-            . "Regards,\n" . config('app.name'),
+            ."You've been added as an agent on ".config('app.name').".\n\n"
+            ."Please set your password by clicking the link below:\n"
+            ."{$resetUrl}\n\n"
+            ."This link will expire in 60 minutes.\n\n"
+            ."Regards,\n".config('app.name'),
             function ($message) use ($agent) {
                 $message->to($agent->email)
-                    ->subject('You\'ve been invited to ' . config('app.name'));
+                    ->subject('You\'ve been invited to '.config('app.name'));
             }
         );
 
