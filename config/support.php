@@ -4,6 +4,22 @@ return [
 
     'multi_tenant' => (bool) env('MULTI_TENANT', false),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Optional features
+    |--------------------------------------------------------------------------
+    |
+    | byo_mail exposes the per-tenant SMTP/IMAP settings screen. It only works
+    | where MailConfigServiceProvider runs, which is boot-time and process-wide
+    | -- fine for a single-tenant install, meaningless for the hosted product,
+    | where every tenant receives mail at {slug}@{inbound domain}. The cloud
+    | turns it off rather than showing a screen that silently does nothing.
+    |
+    */
+    'features' => [
+        'byo_mail' => (bool) env('SUPPORT_BYO_MAIL', true),
+    ],
+
     'base_domain' => env('TENANT_BASE_DOMAIN'),
 
     'inbound' => [

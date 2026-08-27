@@ -44,6 +44,9 @@ class HandleInertiaRequests extends Middleware
                 ...(new Ziggy)->toArray(),
                 'location' => $request->url(),
             ],
+            'features' => [
+                'byo_mail' => (bool) config('support.features.byo_mail'),
+            ],
             ...$this->additionalSharedProps($request),
         ];
     }

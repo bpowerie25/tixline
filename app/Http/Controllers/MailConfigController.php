@@ -10,6 +10,15 @@ use Inertia\Inertia;
 
 class MailConfigController extends Controller
 {
+    public function __construct()
+    {
+        // MailConfigServiceProvider applies these settings once per process at
+        // boot, so per-tenant SMTP cannot work in a multi-tenant deployment.
+        // Rather than leave a settings screen that saves and does nothing,
+        // the hosted product switches the feature off entirely.
+        abort_unless(config('support.features.byo_mail'), 404);
+    }
+
     public function index()
     {
         $config = MailConfiguration::first();
@@ -91,9 +100,9 @@ class MailConfigController extends Controller
                     ->subject('Tixline Mail Configuration Test');
             });
 
-            return back()->with('success', 'Test email sent to ' . $request->test_email);
+            return back()->with('success', 'Test email sent to '.$request->test_email);
         } catch (\Throwable $e) {
-            return back()->with('error', 'Failed to send test email: ' . $e->getMessage());
+            return back()->with('error', 'Failed to send test email: '.$e->getMessage());
         }
     }
 
@@ -103,9 +112,9 @@ class MailConfigController extends Controller
             Artisan::call('support:poll-imap');
             $output = Artisan::output();
 
-            return back()->with('success', 'IMAP poll completed: ' . trim($output));
+            return back()->with('success', 'IMAP poll completed: '.trim($output));
         } catch (\Throwable $e) {
-            return back()->with('error', 'IMAP poll failed: ' . $e->getMessage());
+            return back()->with('error', 'IMAP poll failed: '.$e->getMessage());
         }
     }
 }

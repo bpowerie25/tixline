@@ -34,6 +34,11 @@ class PermissionTest extends TestCase
     {
         parent::setUp();
 
+        // visibleTicketsQuery() short-circuits to every ticket unless this is
+        // on. Production sets MULTI_TENANT=true; without it here the positive
+        // assertions below pass for the wrong reason and the negative one fails.
+        config(['support.multi_tenant' => true]);
+
         $this->department = Department::create(['name' => 'Support', 'slug' => 'support']);
 
         $this->teamA = Team::create(['name' => 'Tier 1', 'slug' => 'tier-1', 'department_id' => $this->department->id]);

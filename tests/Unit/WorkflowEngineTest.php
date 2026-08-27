@@ -173,8 +173,12 @@ class WorkflowEngineTest extends TestCase
     public function test_round_robin_distributes_across_team(): void
     {
         $team = Team::create(['name' => 'Support', 'slug' => 'support']);
-        $agent1 = User::factory()->create(['team_id' => $team->id]);
-        $agent2 = User::factory()->create(['team_id' => $team->id]);
+        $agent1 = User::factory()->create();
+        $agent2 = User::factory()->create();
+
+        // Membership lives in the team_user pivot, which is what
+        // Team::members() and User::teamIds() both read.
+        $team->members()->attach([$agent1->id, $agent2->id]);
 
         Workflow::create([
             'name' => 'Round robin',

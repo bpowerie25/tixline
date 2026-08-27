@@ -3,12 +3,17 @@
 namespace Tests\Unit;
 
 use App\Services\SpamFilter;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Tests\TestCase;
 
 class SpamFilterTest extends TestCase
 {
+    // The filter reads the spam_filters and spam_corpus tables, so these need
+    // a schema despite living under Unit.
+    use RefreshDatabase;
+
     protected SpamFilter $filter;
 
     protected function setUp(): void
