@@ -87,6 +87,7 @@ class InboundEmailProcessor
                 'name' => $fromName,
                 'email' => $message->fromEmail,
                 'password' => $temporaryPassword,
+                'tenant_id' => app()->bound('tenant') ? app('tenant')->id : Tenant::first()?->id,
             ]);
 
             Mail::to($customer->email)->send(

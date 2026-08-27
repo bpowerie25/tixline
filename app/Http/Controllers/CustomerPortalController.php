@@ -33,8 +33,14 @@ class CustomerPortalController extends Controller
 
         $this->ensureCustomerLoginNotRateLimited($request);
 
-        if (Auth::guard('customer')->attempt($credentials, $request->boolean('remember'))) {
+        // Look up without tenant scope so customers with missing tenant_id can still log in
+        $customer = Customer::withoutGlobalScopes()
+            ->where('email', $credentials['email'])
+            ->first();
+
+        if ($customer && Hash::check($credentials['password'], $customer->password)) {
             RateLimiter::clear($this->customerThrottleKey($request));
+            Auth::guard('customer')->login($customer, $request->boolean('remember'));
             $request->session()->regenerate();
 
             return redirect()->route('portal.tickets');
@@ -207,7 +213,7 @@ class CustomerPortalController extends Controller
     {
         $request->validate(['email' => 'required|email']);
 
-        $customer = Customer::where('email', $request->email)->first();
+        $customer = Customer::withoutGlobalScopes()->where('email', $request->email)->first();
 
         if ($customer) {
             $token = Str::random(64);
@@ -258,7 +264,7 @@ class CustomerPortalController extends Controller
             return back()->with('error', 'This reset link has expired. Please request a new one.');
         }
 
-        Customer::where('email', $request->email)->update([
+        Customer::withoutGlobalScopes()->where('email', $request->email)->update([
             'password' => Hash::make($request->password),
         ]);
 

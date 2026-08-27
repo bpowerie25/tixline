@@ -25,6 +25,11 @@ class PollImapMailbox extends Command
             return self::SUCCESS;
         }
 
+        // Bind tenant context so scoped models (Customer, Ticket, etc.) are created correctly
+        if ($config->tenant_id && $config->tenant) {
+            app()->instance('tenant', $config->tenant);
+        }
+
         if (! $config->imap_host || ! $config->imap_username || ! $config->imap_password) {
             $this->error('IMAP credentials are incomplete.');
 
@@ -117,7 +122,7 @@ class PollImapMailbox extends Command
                     if (! empty($fromValues)) {
                         $firstFrom = reset($fromValues);
                         $fromEmail = is_object($firstFrom) ? ($firstFrom->mail ?? (string) $firstFrom) : (string) $firstFrom;
-                        $fromName = is_object($firstFrom) ? ($firstFrom->personal ?? '') : '';
+                        $fromName = is_object($firstFrom) ? mb_decode_mimeheader($firstFrom->personal ?? '') : '';
                     }
                 }
 
