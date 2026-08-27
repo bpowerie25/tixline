@@ -1,10 +1,11 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Head, useForm, router } from '@inertiajs/vue3';
+import { Head, Link, useForm, router } from '@inertiajs/vue3';
 import { ref } from 'vue';
 
 const props = defineProps({
     policies: Array,
+    hasBusinessHours: Boolean,
 });
 
 const showForm = ref(false);
@@ -16,6 +17,7 @@ const form = useForm({
     priority: 'normal',
     first_response_hours: 4,
     resolution_hours: 24,
+    use_business_hours: true,
     is_active: true,
 });
 
@@ -34,6 +36,7 @@ function openEdit(policy) {
     form.priority = policy.priority;
     form.first_response_hours = policy.first_response_hours;
     form.resolution_hours = policy.resolution_hours;
+    form.use_business_hours = policy.use_business_hours;
     form.is_active = policy.is_active;
     showForm.value = true;
 }
@@ -86,6 +89,15 @@ function formatHours(hours) {
 
         <div class="py-12">
             <div class="mx-auto max-w-4xl sm:px-6 lg:px-8">
+                <div v-if="!hasBusinessHours" class="mb-6 rounded-md bg-amber-50 border border-amber-200 p-4">
+                    <p class="text-sm text-amber-800">
+                        No business hours are configured, so these targets count around the clock —
+                        nights, weekends and holidays included.
+                        <Link :href="route('business-hours.index')" class="font-medium underline">Set your opening hours</Link>
+                        to have them count working time instead.
+                    </p>
+                </div>
+
                 <div v-if="showForm" class="mb-6 overflow-hidden bg-white shadow-sm sm:rounded-lg p-6">
                     <h3 class="text-lg font-medium mb-4">{{ editing ? 'Edit' : 'Create' }} SLA Policy</h3>
                     <form @submit.prevent="submit" class="space-y-4">
@@ -119,6 +131,16 @@ function formatHours(hours) {
                                 <input v-model.number="form.resolution_hours" type="number" min="1" required class="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
                             </div>
                         </div>
+                        <label class="flex items-start gap-2">
+                            <input v-model="form.use_business_hours" type="checkbox" class="mt-0.5 rounded text-indigo-600" />
+                            <span class="text-sm text-gray-700">
+                                Count business hours only
+                                <span class="block text-gray-500">
+                                    Targets consume working time rather than wall-clock time, so a ticket
+                                    raised on Friday evening is not breached over the weekend.
+                                </span>
+                            </span>
+                        </label>
                         <label class="flex items-center gap-2">
                             <input v-model="form.is_active" type="checkbox" class="rounded text-indigo-600" />
                             <span class="text-sm text-gray-700">Active</span>
@@ -148,7 +170,8 @@ function formatHours(hours) {
                                     </div>
                                     <div class="text-sm text-gray-500">
                                         First response: {{ formatHours(policy.first_response_hours) }} &middot;
-                                        Resolution: {{ formatHours(policy.resolution_hours) }}
+                                        Resolution: {{ formatHours(policy.resolution_hours) }} &middot;
+                                        {{ policy.use_business_hours ? 'business hours' : 'around the clock' }}
                                     </div>
                                 </div>
                             </div>

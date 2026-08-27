@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Role;
 use App\Models\Ticket;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -17,7 +18,7 @@ class ApiTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->user = User::factory()->create(['role_id' => \App\Models\Role::where('name', \App\Models\Role::ADMIN)->first()->id]);
+        $this->user = User::factory()->create(['role_id' => Role::where('name', Role::ADMIN)->first()->id]);
     }
 
     public function test_api_requires_auth(): void
@@ -27,7 +28,7 @@ class ApiTest extends TestCase
 
     public function test_list_tickets(): void
     {
-        Sanctum::actingAs($this->user);
+        Sanctum::actingAs($this->user, ['*']);
         Ticket::create(['subject' => 'Test', 'requester_name' => 'A', 'requester_email' => 'a@test.com']);
 
         $this->getJson('/api/v1/tickets')
@@ -37,7 +38,7 @@ class ApiTest extends TestCase
 
     public function test_create_ticket_via_api(): void
     {
-        Sanctum::actingAs($this->user);
+        Sanctum::actingAs($this->user, ['*']);
 
         $this->postJson('/api/v1/tickets', [
             'subject' => 'API ticket',
@@ -51,7 +52,7 @@ class ApiTest extends TestCase
 
     public function test_show_ticket_via_api(): void
     {
-        Sanctum::actingAs($this->user);
+        Sanctum::actingAs($this->user, ['*']);
         $ticket = Ticket::create(['subject' => 'Test', 'requester_name' => 'A', 'requester_email' => 'a@test.com']);
 
         $this->getJson("/api/v1/tickets/{$ticket->id}")
@@ -61,7 +62,7 @@ class ApiTest extends TestCase
 
     public function test_update_ticket_via_api(): void
     {
-        Sanctum::actingAs($this->user);
+        Sanctum::actingAs($this->user, ['*']);
         $ticket = Ticket::create(['subject' => 'Test', 'requester_name' => 'A', 'requester_email' => 'a@test.com']);
 
         $this->putJson("/api/v1/tickets/{$ticket->id}", [
@@ -74,7 +75,7 @@ class ApiTest extends TestCase
 
     public function test_add_comment_via_api(): void
     {
-        Sanctum::actingAs($this->user);
+        Sanctum::actingAs($this->user, ['*']);
         $ticket = Ticket::create(['subject' => 'Test', 'requester_name' => 'A', 'requester_email' => 'a@test.com']);
 
         $this->postJson("/api/v1/tickets/{$ticket->id}/comments", [
@@ -86,7 +87,7 @@ class ApiTest extends TestCase
 
     public function test_filter_tickets_by_status(): void
     {
-        Sanctum::actingAs($this->user);
+        Sanctum::actingAs($this->user, ['*']);
         Ticket::create(['subject' => 'Open', 'requester_name' => 'A', 'requester_email' => 'a@test.com', 'status' => 'open']);
         Ticket::create(['subject' => 'Closed', 'requester_name' => 'B', 'requester_email' => 'b@test.com', 'status' => 'closed']);
 
@@ -97,7 +98,7 @@ class ApiTest extends TestCase
 
     public function test_api_validation(): void
     {
-        Sanctum::actingAs($this->user);
+        Sanctum::actingAs($this->user, ['*']);
 
         $this->postJson('/api/v1/tickets', [])
             ->assertStatus(422)

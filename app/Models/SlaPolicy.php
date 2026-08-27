@@ -11,13 +11,14 @@ class SlaPolicy extends Model
 
     protected $fillable = [
         'name', 'description', 'priority', 'first_response_hours',
-        'resolution_hours', 'is_active', 'tenant_id',
+        'resolution_hours', 'use_business_hours', 'is_active', 'tenant_id',
     ];
 
     protected function casts(): array
     {
         return [
             'is_active' => 'boolean',
+            'use_business_hours' => 'boolean',
         ];
     }
 

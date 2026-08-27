@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\BelongsToTenant;
+use App\Services\BusinessHoursCalculator;
 use App\Services\HtmlSanitizer;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -18,7 +19,7 @@ class Ticket extends Model
         'reference', 'subject', 'body', 'requester_name', 'requester_email',
         'status', 'priority', 'source', 'assigned_to', 'team_id', 'form_id', 'tenant_id',
         'custom_fields', 'first_responded_at', 'resolved_at',
-        'sla_response_due_at', 'sla_resolution_due_at',
+        'sla_response_due_at', 'sla_resolution_due_at', 'sla_warning_at',
     ];
 
     protected $hidden = ['body'];
@@ -33,6 +34,7 @@ class Ticket extends Model
             'resolved_at' => 'datetime',
             'sla_response_due_at' => 'datetime',
             'sla_resolution_due_at' => 'datetime',
+            'sla_warning_at' => 'datetime',
         ];
     }
 
@@ -47,14 +49,32 @@ class Ticket extends Model
 
             $sla = SlaPolicy::forPriority($ticket->priority);
             if ($sla) {
-                $updates['sla_response_due_at'] = $ticket->created_at->addHours($sla->first_response_hours);
-                $updates['sla_resolution_due_at'] = $ticket->created_at->addHours($sla->resolution_hours);
+                $clock = $ticket->slaClockFor($sla);
+
+                $updates['sla_response_due_at'] = $clock->dueAt($ticket->created_at, $sla->first_response_hours);
+                $updates['sla_resolution_due_at'] = $clock->dueAt($ticket->created_at, $sla->resolution_hours);
+
+                // Warn at 75% of the resolution budget. Stored rather than
+                // derived so reading sla_status costs no queries.
+                $updates['sla_warning_at'] = $clock->dueAt($ticket->created_at, $sla->resolution_hours * 0.75);
             }
 
             if (! empty($updates)) {
                 $ticket->updateQuietly($updates);
             }
         });
+    }
+
+    /**
+     * The clock this ticket's SLA deadlines run on. Policies opt out of
+     * business hours individually, and a tenant with no schedule configured
+     * falls back to round-the-clock.
+     */
+    public function slaClockFor(?SlaPolicy $policy): BusinessHoursCalculator
+    {
+        return BusinessHoursCalculator::for(
+            $policy?->use_business_hours ? BusinessHours::forTenant($this->tenant_id) : null,
+        );
     }
 
     public function getSanitizedBodyAttribute(): string
@@ -80,13 +100,9 @@ class Ticket extends Model
             return 'breached';
         }
 
-        // Warning at 75% of time elapsed
-        if ($this->sla_resolution_due_at) {
-            $total = $this->created_at->diffInMinutes($this->sla_resolution_due_at);
-            $elapsed = $this->created_at->diffInMinutes($now);
-            if ($total > 0 && ($elapsed / $total) >= 0.75) {
-                return 'warning';
-            }
+        // Warning at 75% of the resolution budget, business hours included
+        if ($this->sla_warning_at && $now->gte($this->sla_warning_at)) {
+            return 'warning';
         }
 
         if ($this->sla_response_due_at || $this->sla_resolution_due_at) {

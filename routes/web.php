@@ -2,31 +2,32 @@
 
 use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\AgentController;
-use App\Http\Controllers\InboundEmailReviewController;
-use App\Http\Controllers\SpamFilterController;
-use App\Http\Controllers\MailConfigController;
+use App\Http\Controllers\ApiKeyController;
 use App\Http\Controllers\AttachmentController;
+use App\Http\Controllers\BusinessHoursController;
 use App\Http\Controllers\CannedResponseController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\CustomerPortalController;
+use App\Http\Controllers\CustomReportController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\FormController;
 use App\Http\Controllers\InboundEmailController;
-use App\Http\Controllers\MailgunInboundController;
+use App\Http\Controllers\InboundEmailReviewController;
 use App\Http\Controllers\KbController;
 use App\Http\Controllers\LabelController;
+use App\Http\Controllers\MailConfigController;
+use App\Http\Controllers\MailgunInboundController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PublicTicketController;
-use App\Http\Controllers\CustomReportController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SlaPolicyController;
+use App\Http\Controllers\SpamFilterController;
 use App\Http\Controllers\TeamController;
 use App\Http\Controllers\TenantController;
 use App\Http\Controllers\TicketController;
 use App\Http\Controllers\WorkflowController;
 use App\Models\Ticket;
-use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -155,6 +156,17 @@ Route::middleware('auth')->group(function () {
     // SLA Policies
     Route::middleware('permission:sla-policies.manage')->group(function () {
         Route::resource('sla-policies', SlaPolicyController::class)->except(['create', 'show', 'edit']);
+
+        Route::get('/settings/business-hours', [BusinessHoursController::class, 'index'])->name('business-hours.index');
+        Route::post('/settings/business-hours', [BusinessHoursController::class, 'store'])->name('business-hours.store');
+        Route::delete('/settings/business-hours', [BusinessHoursController::class, 'destroy'])->name('business-hours.destroy');
+    });
+
+    // API Keys
+    Route::middleware(['permission:api-keys.manage', 'plan:api_access'])->group(function () {
+        Route::get('/settings/api-keys', [ApiKeyController::class, 'index'])->name('api-keys.index');
+        Route::post('/settings/api-keys', [ApiKeyController::class, 'store'])->name('api-keys.store');
+        Route::delete('/settings/api-keys/{apiKey}', [ApiKeyController::class, 'destroy'])->name('api-keys.destroy');
     });
 
     // Tenants (Skinning)

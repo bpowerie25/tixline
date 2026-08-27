@@ -19,7 +19,7 @@ const hasAnySettingsPermission = computed(() => canAny([
     'teams.manage', 'labels.manage', 'workflows.manage', 'forms.manage',
     'agents.manage', 'canned-responses.manage', 'sla-policies.manage',
     'tenants.manage', 'mail.manage', 'inbound-emails.view', 'spam-filters.manage',
-    'departments.manage', 'roles.manage', 'activity-logs.view',
+    'departments.manage', 'roles.manage', 'activity-logs.view', 'api-keys.manage',
 ]));
 </script>
 
@@ -73,7 +73,7 @@ const hasAnySettingsPermission = computed(() => canAny([
                                         <template #trigger>
                                             <button class="inline-flex items-center border-b-2 px-1 pt-1 text-sm font-medium leading-5 transition duration-150 ease-in-out focus:outline-none"
                                                 :class="[
-                                                    route().current('teams.*') || route().current('labels.*') || route().current('workflows.*') || route().current('forms.*') || route().current('canned-responses.*') || route().current('sla-policies.*') || route().current('tenants.*') || route().current('departments.*') || route().current('agents.*') || route().current('mail-config.*') || route().current('roles.*') || route().current('activity-logs.*')
+                                                    route().current('teams.*') || route().current('labels.*') || route().current('workflows.*') || route().current('forms.*') || route().current('canned-responses.*') || route().current('sla-policies.*') || route().current('business-hours.*') || route().current('api-keys.*') || route().current('tenants.*') || route().current('departments.*') || route().current('agents.*') || route().current('mail-config.*') || route().current('roles.*') || route().current('activity-logs.*')
                                                         ? 'border-indigo-400 text-gray-900 focus:border-indigo-700'
                                                         : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
                                                 ]"
@@ -92,10 +92,12 @@ const hasAnySettingsPermission = computed(() => canAny([
                                             <DropdownLink v-if="can('forms.manage')" :href="route('forms.index')">Forms</DropdownLink>
                                             <DropdownLink v-if="can('canned-responses.manage')" :href="route('canned-responses.index')">Canned Responses</DropdownLink>
                                             <DropdownLink v-if="can('sla-policies.manage')" :href="route('sla-policies.index')">SLA Policies</DropdownLink>
+                                            <DropdownLink v-if="can('sla-policies.manage')" :href="route('business-hours.index')">Business Hours</DropdownLink>
+                                            <DropdownLink v-if="can('api-keys.manage')" :href="route('api-keys.index')">API Keys</DropdownLink>
                                             <DropdownLink v-if="can('tenants.manage')" :href="route('tenants.index')">Tenants</DropdownLink>
                                             <DropdownLink v-if="can('departments.manage')" :href="route('departments.index')">Departments</DropdownLink>
                                             <DropdownLink v-if="can('roles.manage')" :href="route('roles.index')">Roles</DropdownLink>
-                                            <DropdownLink v-if="can('mail.manage')" :href="route('mail-config.index')">Mail</DropdownLink>
+                                            <DropdownLink v-if="can('mail.manage') && $page.props.features?.byo_mail" :href="route('mail-config.index')">Mail</DropdownLink>
                                             <DropdownLink v-if="can('inbound-emails.view')" :href="route('inbound-emails.index')">Inbound Emails</DropdownLink>
                                             <DropdownLink v-if="can('spam-filters.manage')" :href="route('spam-filters.index')">Spam Filters</DropdownLink>
                                             <DropdownLink v-if="can('activity-logs.view')" :href="route('activity-logs.index')">Activity Logs</DropdownLink>
@@ -219,10 +221,12 @@ const hasAnySettingsPermission = computed(() => canAny([
                             <ResponsiveNavLink v-if="can('forms.manage')" :href="route('forms.index')" :active="route().current('forms.*')">Forms</ResponsiveNavLink>
                             <ResponsiveNavLink v-if="can('canned-responses.manage')" :href="route('canned-responses.index')" :active="route().current('canned-responses.*')">Canned Responses</ResponsiveNavLink>
                             <ResponsiveNavLink v-if="can('sla-policies.manage')" :href="route('sla-policies.index')" :active="route().current('sla-policies.*')">SLA Policies</ResponsiveNavLink>
+                            <ResponsiveNavLink v-if="can('sla-policies.manage')" :href="route('business-hours.index')" :active="route().current('business-hours.*')">Business Hours</ResponsiveNavLink>
+                            <ResponsiveNavLink v-if="can('api-keys.manage')" :href="route('api-keys.index')" :active="route().current('api-keys.*')">API Keys</ResponsiveNavLink>
                             <ResponsiveNavLink v-if="can('tenants.manage')" :href="route('tenants.index')" :active="route().current('tenants.*')">Tenants</ResponsiveNavLink>
                             <ResponsiveNavLink v-if="can('departments.manage')" :href="route('departments.index')" :active="route().current('departments.*')">Departments</ResponsiveNavLink>
                             <ResponsiveNavLink v-if="can('roles.manage')" :href="route('roles.index')" :active="route().current('roles.*')">Roles</ResponsiveNavLink>
-                            <ResponsiveNavLink v-if="can('mail.manage')" :href="route('mail-config.index')" :active="route().current('mail-config.*')">Mail</ResponsiveNavLink>
+                            <ResponsiveNavLink v-if="can('mail.manage') && $page.props.features?.byo_mail" :href="route('mail-config.index')" :active="route().current('mail-config.*')">Mail</ResponsiveNavLink>
                             <ResponsiveNavLink v-if="can('inbound-emails.view')" :href="route('inbound-emails.index')" :active="route().current('inbound-emails.*')">Inbound Emails</ResponsiveNavLink>
                             <ResponsiveNavLink v-if="can('spam-filters.manage')" :href="route('spam-filters.index')" :active="route().current('spam-filters.*')">Spam Filters</ResponsiveNavLink>
                             <ResponsiveNavLink v-if="can('activity-logs.view')" :href="route('activity-logs.index')" :active="route().current('activity-logs.*')">Activity Logs</ResponsiveNavLink>

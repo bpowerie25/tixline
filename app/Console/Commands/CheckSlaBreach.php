@@ -43,18 +43,17 @@ class CheckSlaBreach extends Command
             $this->line("  SLA resolution breached: {$ticket->reference}");
         }
 
-        // SLA warning — 75% of time elapsed (fire once)
+        // SLA warning — 75% of the resolution budget consumed (fire once).
+        // sla_warning_at is stamped at creation off the same business-hours
+        // clock as the deadlines, so this is a plain comparison rather than a
+        // per-ticket recalculation.
         $atRisk = Ticket::whereIn('status', ['open', 'pending'])
             ->whereNotNull('sla_resolution_due_at')
             ->where('sla_resolution_due_at', '>', $now)
+            ->whereNotNull('sla_warning_at')
+            ->where('sla_warning_at', '<=', $now)
             ->where('sla_warning_fired', false)
-            ->get()
-            ->filter(function ($ticket) use ($now) {
-                $total = $ticket->created_at->diffInMinutes($ticket->sla_resolution_due_at);
-                $elapsed = $ticket->created_at->diffInMinutes($now);
-
-                return $total > 0 && ($elapsed / $total) >= 0.75;
-            });
+            ->get();
 
         foreach ($atRisk as $ticket) {
             $engine->run($ticket, 'sla_warning');

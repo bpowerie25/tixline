@@ -48,9 +48,13 @@ return [
     | considered expired. This will override any values set in the token's
     | "expires_at" attribute, but first-party sessions are not affected.
     |
+    | Left unset so the per-key expiry chosen in Settings -> API Keys is the
+    | one that applies. A global value overrides it, which would silently kill
+    | every integration key on the same clock regardless of what the UI said.
+    |
     */
 
-    'expiration' => (int) env('SANCTUM_EXPIRATION', 43200),
+    'expiration' => env('SANCTUM_EXPIRATION') === null ? null : (int) env('SANCTUM_EXPIRATION'),
 
     /*
     |--------------------------------------------------------------------------

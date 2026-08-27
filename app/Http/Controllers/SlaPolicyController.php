@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\BusinessHours;
 use App\Models\SlaPolicy;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -12,6 +13,7 @@ class SlaPolicyController extends Controller
     {
         return Inertia::render('SLA/Index', [
             'policies' => SlaPolicy::orderByRaw("CASE priority WHEN 'urgent' THEN 1 WHEN 'high' THEN 2 WHEN 'normal' THEN 3 WHEN 'low' THEN 4 END")->get(),
+            'hasBusinessHours' => BusinessHours::first() !== null,
         ]);
     }
 
@@ -23,6 +25,7 @@ class SlaPolicyController extends Controller
             'priority' => 'required|in:low,normal,high,urgent|unique:sla_policies,priority',
             'first_response_hours' => 'required|integer|min:1',
             'resolution_hours' => 'required|integer|min:1',
+            'use_business_hours' => 'boolean',
             'is_active' => 'boolean',
         ]);
 
@@ -38,6 +41,7 @@ class SlaPolicyController extends Controller
             'description' => 'nullable|string',
             'first_response_hours' => 'required|integer|min:1',
             'resolution_hours' => 'required|integer|min:1',
+            'use_business_hours' => 'boolean',
             'is_active' => 'boolean',
         ]);
 

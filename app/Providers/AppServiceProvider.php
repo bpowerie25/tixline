@@ -5,11 +5,13 @@ namespace App\Providers;
 use App\Contracts\PlanGate;
 use App\Listeners\AddMailLoopPreventionHeaders;
 use App\Listeners\RecordOutboundMessageId;
+use App\Models\ApiKey;
 use App\Services\NullPlanGate;
 use Illuminate\Mail\Events\MessageSending;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
+use Laravel\Sanctum\Sanctum;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -27,6 +29,9 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Vite::prefetch(concurrency: 3);
+
+        // API keys are Sanctum tokens with a tenant attached.
+        Sanctum::usePersonalAccessTokenModel(ApiKey::class);
 
         Event::listen(MessageSending::class, AddMailLoopPreventionHeaders::class);
         Event::listen(MessageSending::class, RecordOutboundMessageId::class);

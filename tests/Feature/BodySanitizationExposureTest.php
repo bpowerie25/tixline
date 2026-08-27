@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Models\Customer;
+use App\Models\Role;
 use App\Models\Ticket;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -16,7 +18,7 @@ class BodySanitizationExposureTest extends TestCase
 
     public function test_agent_ticket_show_contains_sanitized_body_not_raw(): void
     {
-        $agent = User::factory()->create(['role_id' => \App\Models\Role::where('name', \App\Models\Role::ADMIN)->first()->id]);
+        $agent = User::factory()->create(['role_id' => Role::where('name', Role::ADMIN)->first()->id]);
 
         $ticket = Ticket::create([
             'subject' => 'Test',
@@ -40,7 +42,7 @@ class BodySanitizationExposureTest extends TestCase
 
     public function test_agent_ticket_index_does_not_expose_raw_body(): void
     {
-        $agent = User::factory()->create(['role_id' => \App\Models\Role::where('name', \App\Models\Role::ADMIN)->first()->id]);
+        $agent = User::factory()->create(['role_id' => Role::where('name', Role::ADMIN)->first()->id]);
 
         Ticket::create([
             'subject' => 'Test',
@@ -61,7 +63,7 @@ class BodySanitizationExposureTest extends TestCase
 
     public function test_portal_ticket_detail_does_not_expose_raw_body(): void
     {
-        $customer = \App\Models\Customer::create([
+        $customer = Customer::create([
             'name' => 'Jane',
             'email' => 'jane@example.com',
             'password' => bcrypt('password'),
@@ -94,7 +96,7 @@ class BodySanitizationExposureTest extends TestCase
 
     public function test_comment_body_hidden_in_ticket_show(): void
     {
-        $agent = User::factory()->create(['role_id' => \App\Models\Role::where('name', \App\Models\Role::ADMIN)->first()->id]);
+        $agent = User::factory()->create(['role_id' => Role::where('name', Role::ADMIN)->first()->id]);
 
         $ticket = Ticket::create([
             'subject' => 'Test',
@@ -120,8 +122,8 @@ class BodySanitizationExposureTest extends TestCase
 
     public function test_api_show_deliberately_exposes_raw_body(): void
     {
-        $user = User::factory()->create(['role_id' => \App\Models\Role::where('name', \App\Models\Role::ADMIN)->first()->id]);
-        Sanctum::actingAs($user);
+        $user = User::factory()->create(['role_id' => Role::where('name', Role::ADMIN)->first()->id]);
+        Sanctum::actingAs($user, ['*']);
 
         $ticket = Ticket::create([
             'subject' => 'API Test',

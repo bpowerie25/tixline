@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Customer;
+use App\Models\Role;
 use App\Models\Tenant;
 use App\Models\Ticket;
 use App\Models\User;
@@ -29,8 +30,8 @@ class TenantIsolationTest extends TestCase
         $this->tenantA = Tenant::create(['name' => 'Acme', 'slug' => 'acme']);
         $this->tenantB = Tenant::create(['name' => 'Globex', 'slug' => 'globex']);
 
-        $this->agentA = User::factory()->create(['role_id' => \App\Models\Role::where('name', \App\Models\Role::AGENT)->first()->id, 'tenant_id' => $this->tenantA->id]);
-        $this->agentB = User::factory()->create(['role_id' => \App\Models\Role::where('name', \App\Models\Role::AGENT)->first()->id, 'tenant_id' => $this->tenantB->id]);
+        $this->agentA = User::factory()->create(['role_id' => Role::where('name', Role::AGENT)->first()->id, 'tenant_id' => $this->tenantA->id]);
+        $this->agentB = User::factory()->create(['role_id' => Role::where('name', Role::AGENT)->first()->id, 'tenant_id' => $this->tenantB->id]);
     }
 
     protected function setTenant(Tenant $tenant): void
@@ -75,7 +76,7 @@ class TenantIsolationTest extends TestCase
         Ticket::create(['subject' => 'Globex API', 'requester_name' => 'B', 'requester_email' => 'b@globex.com', 'tenant_id' => $this->tenantB->id]);
 
         $this->setTenant($this->tenantA);
-        Sanctum::actingAs($this->agentA);
+        Sanctum::actingAs($this->agentA, ['*']);
         $response = $this->getJson('/api/v1/tickets');
         $response->assertOk()->assertJsonCount(1, 'data');
     }
