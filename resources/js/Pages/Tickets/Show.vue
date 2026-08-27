@@ -18,6 +18,7 @@ const props = defineProps({
     cannedResponses: Array,
     hasCustomerAccount: Boolean,
     requesterTickets: Array,
+    duplicates: Array,
 });
 
 const showCannedPicker = ref(false);
@@ -97,6 +98,39 @@ function resolveAndClose() {
     }, { preserveScroll: true });
 }
 
+// Duplicate marking
+const showDuplicateModal = ref(false);
+const duplicateSearch = ref('');
+const duplicateResults = ref([]);
+const duplicateSearching = ref(false);
+let duplicateDebounce;
+
+function searchForDuplicate() {
+    clearTimeout(duplicateDebounce);
+    if (duplicateSearch.value.length < 2) {
+        duplicateResults.value = [];
+        return;
+    }
+    duplicateDebounce = setTimeout(async () => {
+        duplicateSearching.value = true;
+        try {
+            const response = await fetch(route('tickets.search') + '?q=' + encodeURIComponent(duplicateSearch.value));
+            const data = await response.json();
+            duplicateResults.value = data.filter(t => t.id !== props.ticket.id);
+        } catch (e) {
+            duplicateResults.value = [];
+        }
+        duplicateSearching.value = false;
+    }, 300);
+}
+
+function markAsDuplicate(originalId) {
+    if (!confirm('Mark this ticket as a duplicate? It will be closed.')) return;
+    router.post(route('tickets.mark-duplicate', props.ticket.id), {
+        duplicate_of: originalId,
+    }, { preserveScroll: true, onSuccess: () => { showDuplicateModal.value = false; } });
+}
+
 const resetSending = ref(false);
 
 function sendPasswordReset() {
@@ -148,6 +182,16 @@ const statusColors = {
                 <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
                     <!-- Main Content -->
                     <div class="lg:col-span-2 space-y-6">
+                        <!-- Duplicate Banner -->
+                        <div v-if="ticket.duplicate_of" class="rounded-md bg-purple-50 border border-purple-200 p-4">
+                            <p class="text-sm text-purple-800">
+                                This ticket is a duplicate of
+                                <Link :href="route('tickets.show', ticket.duplicate_of.id)" class="font-medium underline hover:text-purple-900">
+                                    {{ ticket.duplicate_of.reference }} — {{ ticket.duplicate_of.subject }}
+                                </Link>
+                            </p>
+                        </div>
+
                         <!-- Original Message -->
                         <div class="overflow-hidden bg-white shadow-sm sm:rounded-lg">
                             <div class="border-b border-gray-200 px-6 py-4">
@@ -425,6 +469,73 @@ const statusColors = {
                                     </Link>
                                 </li>
                             </ul>
+                        </div>
+
+                        <!-- Duplicates -->
+                        <div v-if="duplicates?.length" class="overflow-hidden bg-white shadow-sm sm:rounded-lg p-6">
+                            <h3 class="text-sm font-medium text-gray-500 mb-3">Duplicates</h3>
+                            <ul class="space-y-2">
+                                <li v-for="dup in duplicates" :key="dup.id">
+                                    <Link :href="route('tickets.show', dup.id)" class="block text-sm hover:bg-gray-50 -mx-2 px-2 py-1 rounded">
+                                        <div class="flex items-center justify-between gap-2">
+                                            <span class="text-gray-500">{{ dup.reference }}</span>
+                                            <span class="inline-flex rounded-full bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-700">duplicate</span>
+                                        </div>
+                                        <p class="text-gray-700 truncate">{{ dup.subject }}</p>
+                                    </Link>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <!-- Mark as Duplicate -->
+                        <div v-if="!ticket.duplicate_of && ticket.status !== 'closed'" class="overflow-hidden bg-white shadow-sm sm:rounded-lg p-6">
+                            <button
+                                v-if="!showDuplicateModal"
+                                @click="showDuplicateModal = true"
+                                class="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                            >
+                                Mark as Duplicate
+                            </button>
+                            <div v-else>
+                                <h3 class="text-sm font-medium text-gray-500 mb-3">Mark as Duplicate</h3>
+                                <input
+                                    v-model="duplicateSearch"
+                                    @input="searchForDuplicate"
+                                    type="text"
+                                    placeholder="Search by reference or subject..."
+                                    class="w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                />
+                                <p v-if="duplicateSearching" class="mt-2 text-xs text-gray-400">Searching...</p>
+                                <ul v-if="duplicateResults.length" class="mt-2 divide-y divide-gray-100 rounded border border-gray-200 max-h-48 overflow-y-auto">
+                                    <li
+                                        v-for="result in duplicateResults"
+                                        :key="result.id"
+                                        @click="markAsDuplicate(result.id)"
+                                        class="px-3 py-2 cursor-pointer hover:bg-gray-50"
+                                    >
+                                        <div class="flex items-center justify-between gap-2">
+                                            <span class="text-xs font-mono text-gray-500">{{ result.reference }}</span>
+                                            <span
+                                                class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium"
+                                                :class="{
+                                                    'bg-green-100 text-green-700': result.status === 'open',
+                                                    'bg-yellow-100 text-yellow-700': result.status === 'pending',
+                                                    'bg-blue-100 text-blue-700': result.status === 'resolved',
+                                                    'bg-gray-100 text-gray-700': result.status === 'closed',
+                                                }"
+                                            >{{ result.status }}</span>
+                                        </div>
+                                        <p class="text-sm text-gray-700 truncate">{{ result.subject }}</p>
+                                    </li>
+                                </ul>
+                                <p v-else-if="duplicateSearch.length >= 2 && !duplicateSearching" class="mt-2 text-xs text-gray-400">No matching tickets found.</p>
+                                <button
+                                    @click="showDuplicateModal = false; duplicateSearch = ''; duplicateResults = [];"
+                                    class="mt-3 w-full rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                                >
+                                    Cancel
+                                </button>
+                            </div>
                         </div>
 
                         <div class="overflow-hidden bg-white shadow-sm sm:rounded-lg p-6">

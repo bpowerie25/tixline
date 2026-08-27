@@ -9,7 +9,7 @@ class Customer extends Authenticatable
 {
     use BelongsToTenant;
 
-    protected $fillable = ['name', 'email', 'password', 'organization', 'tenant_id'];
+    protected $fillable = ['name', 'email', 'password', 'organization', 'tenant_id', 'last_login_at'];
 
     protected $hidden = ['password', 'remember_token'];
 
@@ -17,6 +17,7 @@ class Customer extends Authenticatable
     {
         return [
             'password' => 'hashed',
+            'last_login_at' => 'datetime',
         ];
     }
 

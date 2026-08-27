@@ -67,7 +67,7 @@ class TicketController extends Controller
     {
         $this->authorize('view', $ticket);
 
-        $ticket->load(['assignee', 'team', 'labels', 'form.fields', 'attachments', 'comments' => function ($q) {
+        $ticket->load(['assignee', 'team', 'labels', 'form.fields', 'attachments', 'duplicateOf:id,reference,subject', 'comments' => function ($q) {
             $q->with(['user', 'attachments'])->oldest();
         }]);
 
@@ -87,6 +87,8 @@ class TicketController extends Controller
             ->limit(10)
             ->get(['id', 'reference', 'subject', 'status', 'created_at']);
 
+        $duplicates = $ticket->duplicates()->get(['id', 'reference', 'subject', 'status']);
+
         return Inertia::render('Tickets/Show', [
             'ticket' => $ticket,
             'teams' => Team::all(),
@@ -95,6 +97,7 @@ class TicketController extends Controller
             'cannedResponses' => $cannedResponses,
             'hasCustomerAccount' => $hasCustomerAccount,
             'requesterTickets' => $requesterTickets,
+            'duplicates' => $duplicates,
         ]);
     }
 
@@ -373,5 +376,58 @@ class TicketController extends Controller
         Mail::to($customer->email)->send(new CustomerPasswordReset($resetUrl));
 
         return back()->with('success', "Password reset email sent to {$customer->email}.");
+    }
+
+    public function markDuplicate(Request $request, Ticket $ticket)
+    {
+        $this->authorize('update', $ticket);
+
+        $validated = $request->validate([
+            'duplicate_of' => 'required|exists:tickets,id',
+        ]);
+
+        if ($validated['duplicate_of'] == $ticket->id) {
+            return back()->withErrors(['duplicate_of' => 'A ticket cannot be a duplicate of itself.']);
+        }
+
+        $original = Ticket::find($validated['duplicate_of']);
+
+        if ($original->duplicate_of) {
+            return back()->withErrors(['duplicate_of' => 'The target ticket is itself a duplicate. Please select the original ticket.']);
+        }
+
+        $ticket->update([
+            'duplicate_of' => $validated['duplicate_of'],
+            'status' => 'closed',
+            'resolved_at' => $ticket->resolved_at ?? now(),
+        ]);
+
+        $ticket->comments()->create([
+            'body' => "This ticket was marked as a duplicate of <a href=\"" . route('tickets.show', $original->id) . "\">{$original->reference}</a>.",
+            'type' => 'system',
+            'is_internal' => false,
+        ]);
+
+        ActivityLogger::log('ticket_marked_duplicate', "Marked {$ticket->reference} as duplicate of {$original->reference}", $ticket, [
+            'duplicate_of' => $original->id,
+        ]);
+
+        return back()->with('success', "Ticket marked as duplicate of {$original->reference} and closed.");
+    }
+
+    public function searchTickets(Request $request)
+    {
+        $search = $request->validate(['q' => 'required|string|min:2'])['q'];
+
+        $tickets = $request->user()->visibleTicketsQuery()
+            ->where(function ($q) use ($search) {
+                $q->where('reference', 'like', "%{$search}%")
+                    ->orWhere('subject', 'like', "%{$search}%");
+            })
+            ->whereNull('duplicate_of')
+            ->limit(10)
+            ->get(['id', 'reference', 'subject', 'status']);
+
+        return response()->json($tickets);
     }
 }

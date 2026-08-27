@@ -8,6 +8,7 @@ use App\Http\Controllers\MailConfigController;
 use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\CannedResponseController;
 use App\Http\Controllers\CommentController;
+use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\CustomerPortalController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\FormController;
@@ -97,6 +98,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/tickets/bulk', [TicketController::class, 'bulk'])->name('tickets.bulk');
     Route::post('/tickets/{ticket}/comments', [CommentController::class, 'store'])->name('tickets.comments.store');
     Route::post('/tickets/{ticket}/send-password-reset', [TicketController::class, 'sendPasswordReset'])->name('tickets.send-password-reset');
+    Route::post('/tickets/{ticket}/mark-duplicate', [TicketController::class, 'markDuplicate'])->name('tickets.mark-duplicate');
+    Route::get('/api/tickets/search', [TicketController::class, 'searchTickets'])->name('tickets.search');
     Route::get('/requester/{email}', [TicketController::class, 'requester'])->where('email', '.*')->name('tickets.requester');
     Route::get('/my-reassignments', [TicketController::class, 'myReassignments'])->name('tickets.my-reassignments');
 
@@ -202,6 +205,12 @@ Route::middleware('auth')->group(function () {
         Route::post('/roles', [RoleController::class, 'store'])->name('roles.store');
         Route::put('/roles/{role}', [RoleController::class, 'update'])->name('roles.update');
         Route::delete('/roles/{role}', [RoleController::class, 'destroy'])->name('roles.destroy');
+    });
+
+    // Requesters
+    Route::middleware('permission:customers.view')->group(function () {
+        Route::get('/customers', [CustomerController::class, 'index'])->name('customers.index');
+        Route::get('/customers/{customer}', [CustomerController::class, 'show'])->name('customers.show');
     });
 
     // Knowledge Base Admin

@@ -41,6 +41,7 @@ class CustomerPortalController extends Controller
         if ($customer && Hash::check($credentials['password'], $customer->password)) {
             RateLimiter::clear($this->customerThrottleKey($request));
             Auth::guard('customer')->login($customer, $request->boolean('remember'));
+            $customer->update(['last_login_at' => now()]);
             $request->session()->regenerate();
 
             return redirect()->route('portal.tickets');
@@ -93,6 +94,7 @@ class CustomerPortalController extends Controller
         $customer = Customer::create($validated);
 
         Auth::guard('customer')->login($customer);
+        $customer->update(['last_login_at' => now()]);
 
         return redirect()->route('portal.tickets');
     }
