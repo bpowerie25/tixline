@@ -129,8 +129,8 @@ class CustomerPortalController extends Controller
         $ticket = Ticket::where('requester_email', $customer->email)
             ->findOrFail($ticket);
 
-        $ticket->load(['team:id,name', 'comments' => function ($q) {
-            $q->where('is_internal', false)->with('user:id,name')->oldest();
+        $ticket->load(['team:id,name', 'attachments', 'comments' => function ($q) {
+            $q->where('is_internal', false)->with(['user:id,name', 'attachments'])->oldest();
         }]);
 
         return Inertia::render('Portal/TicketDetail', [

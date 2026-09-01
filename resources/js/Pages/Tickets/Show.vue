@@ -142,6 +142,16 @@ function sendPasswordReset() {
     });
 }
 
+const previewImage = ref(null);
+
+function openPreview(attachment) {
+    previewImage.value = attachment;
+}
+
+function closePreview() {
+    previewImage.value = null;
+}
+
 const priorityColors = {
     low: 'bg-gray-100 text-gray-700',
     normal: 'bg-blue-100 text-blue-700',
@@ -235,16 +245,25 @@ const statusColors = {
                                 <SandboxedHtml :html="comment.sanitized_body" />
                             </div>
                             <div v-if="comment.attachments?.length" class="px-6 pb-4 flex flex-wrap gap-2">
-                                <a
-                                    v-for="att in comment.attachments"
-                                    :key="att.id"
-                                    :href="route('attachments.download', att.id)"
-                                    target="_blank"
-                                    class="inline-flex items-center gap-1.5 rounded border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs text-gray-700 hover:bg-gray-100"
-                                >
-                                    <svg class="h-3.5 w-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
-                                    {{ att.original_filename }}
-                                </a>
+                                <template v-for="att in comment.attachments" :key="att.id">
+                                    <button
+                                        v-if="att.is_image"
+                                        @click="openPreview(att)"
+                                        class="inline-flex items-center gap-1.5 rounded border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs text-gray-700 hover:bg-gray-100"
+                                    >
+                                        <svg class="h-3.5 w-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                        {{ att.original_filename }}
+                                    </button>
+                                    <a
+                                        v-else
+                                        :href="route('attachments.download', att.id)"
+                                        target="_blank"
+                                        class="inline-flex items-center gap-1.5 rounded border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs text-gray-700 hover:bg-gray-100"
+                                    >
+                                        <svg class="h-3.5 w-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
+                                        {{ att.original_filename }}
+                                    </a>
+                                </template>
                             </div>
                         </div>
 
@@ -560,6 +579,20 @@ const statusColors = {
                             </dl>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+        <!-- Image Preview Modal -->
+        <div v-if="previewImage" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60" @click.self="closePreview">
+            <div class="relative max-w-4xl max-h-[90vh] mx-4">
+                <button @click="closePreview" class="absolute -top-10 right-0 text-white hover:text-gray-300 text-sm flex items-center gap-1">
+                    Close
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+                <img :src="route('attachments.preview', previewImage.id)" :alt="previewImage.original_filename" class="max-w-full max-h-[85vh] rounded-lg shadow-2xl" />
+                <div class="mt-2 flex items-center justify-between text-sm text-white/80">
+                    <span>{{ previewImage.original_filename }}</span>
+                    <a :href="route('attachments.download', previewImage.id)" class="hover:text-white underline">Download</a>
                 </div>
             </div>
         </div>

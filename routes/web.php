@@ -82,6 +82,8 @@ Route::get('/dashboard', function () {
 // Attachment download — requires auth (agent, customer, or sanctum)
 Route::get('/attachments/{attachment}/download', [AttachmentController::class, 'download'])
     ->name('attachments.download');
+Route::get('/attachments/{attachment}/preview', [AttachmentController::class, 'preview'])
+    ->name('attachments.preview');
 
 // Authenticated routes
 Route::middleware('auth')->group(function () {
