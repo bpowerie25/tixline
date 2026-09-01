@@ -139,22 +139,34 @@ class CustomerPortalController extends Controller
         ]);
     }
 
-    public function replyToTicket(Request $request, int $ticket)
+    public function replyToTicket(Request $request, int $ticket, \App\Services\AttachmentService $attachmentService)
     {
         $customer = Auth::guard('customer')->user();
 
         $ticket = Ticket::where('requester_email', $customer->email)
             ->findOrFail($ticket);
 
-        $validated = $request->validate([
+        $request->validate([
             'body' => 'required|string',
+            'attachments' => 'nullable|array|max:5',
+            'attachments.*' => 'file|max:10240',
         ]);
 
-        $ticket->comments()->create([
-            'body' => $validated['body'],
+        $comment = $ticket->comments()->create([
+            'body' => $request->input('body'),
             'type' => 'reply',
             'is_internal' => false,
         ]);
+
+        $failedAttachments = [];
+        if ($request->hasFile('attachments')) {
+            foreach ($request->file('attachments') as $file) {
+                $attachment = $attachmentService->storeUploadedFile($file, $comment);
+                if (! $attachment) {
+                    $failedAttachments[] = $file->getClientOriginalName();
+                }
+            }
+        }
 
         if (in_array($ticket->status, ['pending', 'resolved', 'closed'])) {
             $ticket->update(['status' => 'open']);
@@ -178,6 +190,14 @@ class CustomerPortalController extends Controller
                         ->subject("[{$ticket->reference}] New reply: {$ticket->subject}");
                 }
             );
+        }
+
+        if (! empty($failedAttachments)) {
+            $names = implode(', ', $failedAttachments);
+
+            return back()
+                ->with('success', 'Reply sent.')
+                ->with('warning', "Some attachments could not be saved (unsupported file type or too large): {$names}");
         }
 
         return back()->with('success', 'Reply sent.');

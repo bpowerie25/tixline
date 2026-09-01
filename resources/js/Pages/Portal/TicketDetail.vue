@@ -10,12 +10,39 @@ const props = defineProps({
 
 const replyForm = useForm({
     body: '',
+    attachments: [],
 });
+
+const fileInput = ref(null);
+const maxFileSize = 10 * 1024 * 1024;
+const attachmentError = ref('');
+
+function handleFiles(e) {
+    attachmentError.value = '';
+    const files = Array.from(e.target.files);
+    const oversized = files.filter(f => f.size > maxFileSize);
+
+    if (oversized.length) {
+        attachmentError.value = `These files exceed the 10 MB limit: ${oversized.map(f => f.name).join(', ')}`;
+        replyForm.attachments = files.filter(f => f.size <= maxFileSize);
+    } else {
+        replyForm.attachments = files;
+    }
+}
+
+function removeFile(index) {
+    replyForm.attachments.splice(index, 1);
+    if (fileInput.value) fileInput.value.value = '';
+}
 
 function submitReply() {
     replyForm.post(route('portal.ticket.reply', props.ticket.id), {
         preserveScroll: true,
-        onSuccess: () => replyForm.reset(),
+        forceFormData: true,
+        onSuccess: () => {
+            replyForm.reset();
+            if (fileInput.value) fileInput.value.value = '';
+        },
     });
 }
 
@@ -54,6 +81,12 @@ const statusColors = {
         </nav>
 
         <div class="mx-auto max-w-4xl px-4 py-8 space-y-6">
+            <div v-if="$page.props.flash?.success" class="rounded-md bg-green-50 border border-green-200 p-4">
+                <p class="text-sm text-green-800">{{ $page.props.flash.success }}</p>
+            </div>
+            <div v-if="$page.props.flash?.warning" class="rounded-md bg-yellow-50 border border-yellow-200 p-4">
+                <p class="text-sm text-yellow-800">{{ $page.props.flash.warning }}</p>
+            </div>
             <!-- Ticket header -->
             <div class="overflow-hidden bg-white shadow-sm sm:rounded-lg p-6">
                 <div class="flex items-start justify-between">
@@ -136,6 +169,17 @@ const statusColors = {
                         placeholder="Write a reply..."
                         class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                     />
+                    <div class="mt-3">
+                        <input ref="fileInput" type="file" multiple @change="handleFiles" accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,.txt,.csv,.doc,.docx,.xls,.xlsx,.zip,.eml" class="text-sm text-gray-500 file:mr-3 file:rounded file:border-0 file:bg-gray-100 file:px-3 file:py-1.5 file:text-sm file:text-gray-700 hover:file:bg-gray-200" />
+                        <p class="mt-1 text-xs text-gray-400">Max 10 MB per file. Images, PDF, Office docs, CSV, TXT, ZIP.</p>
+                        <p v-if="attachmentError" class="mt-1 text-xs text-red-600">{{ attachmentError }}</p>
+                        <div v-if="replyForm.attachments.length" class="mt-2 flex flex-wrap gap-2">
+                            <span v-for="(file, i) in replyForm.attachments" :key="i" class="inline-flex items-center gap-1 rounded bg-gray-100 px-2 py-1 text-xs text-gray-700">
+                                {{ file.name }}
+                                <button type="button" @click="removeFile(i)" class="text-gray-400 hover:text-red-500">&times;</button>
+                            </span>
+                        </div>
+                    </div>
                     <div class="mt-3 flex justify-end">
                         <button type="submit" :disabled="replyForm.processing || !replyForm.body" class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50">
                             Send Reply
