@@ -28,7 +28,6 @@ use App\Http\Controllers\TenantController;
 use App\Http\Controllers\TicketController;
 use App\Http\Controllers\WorkflowController;
 use App\Models\Ticket;
-use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -49,18 +48,17 @@ Route::get('/submit', [PublicTicketController::class, 'create'])->name('submit.c
 Route::post('/submit', [PublicTicketController::class, 'store'])->middleware('throttle:10,1')->name('submit.store');
 
 // Inbound email webhook (generic: HMAC over timestamp.body)
+// CSRF exemption lives in bootstrap/app.php, not here -- see the note there.
 Route::post('/inbound/email', [InboundEmailController::class, 'webhook'])
     ->name('inbound.email')
-    ->middleware('throttle:120,1')
-    ->withoutMiddleware([VerifyCsrfToken::class]);
+    ->middleware('throttle:120,1');
 
 // Inbound email webhook (Mailgun route forwarding). Verifies Mailgun's own
 // signature and resolves the tenant from the recipient address, so it is safe
 // to expose on the platform domain rather than per-tenant subdomains.
 Route::post('/inbound/mailgun', MailgunInboundController::class)
     ->name('inbound.mailgun')
-    ->middleware('throttle:300,1')
-    ->withoutMiddleware([VerifyCsrfToken::class]);
+    ->middleware('throttle:300,1');
 
 // Public Knowledge Base
 Route::prefix('kb')->name('kb.')->group(function () {

@@ -22,6 +22,21 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Webhooks cannot carry a CSRF token, so their URIs are exempted here.
+        //
+        // This is deliberately not done with withoutMiddleware() at the route.
+        // The web group registers PreventRequestForgery, while the routes
+        // excluded Illuminate\Foundation\Http\Middleware\VerifyCsrfToken --
+        // a deprecated subclass under a different name, so the exclusion
+        // matched nothing and every webhook was answered with a 419. Nothing
+        // caught it: the middleware short-circuits on runningUnitTests(), so
+        // the feature tests posted to these routes and passed while the real
+        // endpoints rejected every delivery.
+        $middleware->validateCsrfTokens(except: [
+            'inbound/email',
+            'inbound/mailgun',
+        ]);
+
         // Ahead of the group's SubstituteBindings, so route model binding is
         // already tenant-scoped. See ResolveApiTenant.
         $middleware->api(prepend: [
