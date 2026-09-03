@@ -14,19 +14,73 @@ class TenantController extends Controller
     public function index()
     {
         return Inertia::render('Tenants/Index', [
-            'tenants' => Tenant::withCount('users', 'tickets')->get(),
+            'tenants' => $this->visibleTenants()->withCount('users', 'tickets')->get(),
         ]);
     }
 
     public function create()
     {
+        $this->assertMayManageTenants();
+
         return Inertia::render('Tenants/Edit', [
             'tenant' => null,
         ]);
     }
 
+    /**
+     * Whether this install lets one admin administer more than one tenant.
+     *
+     * Self-hosted, yes: the tenants screen is the skinning feature, and the
+     * only admin is the person who owns the server. Hosted, emphatically not
+     * -- every one of these routes is reachable by any customer's own admin,
+     * because tenants.manage is the permission the hosted app also uses for
+     * self-service account deletion.
+     */
+    protected function isOperator(): bool
+    {
+        return ! config('support.multi_tenant');
+    }
+
+    /**
+     * A tenant record has no tenant_id -- it is the tenant -- so nothing
+     * scopes these bindings. Without this check a customer's admin could
+     * read, rename and delete any other customer's account by changing the
+     * id in the URL, and did: verified before this was added.
+     */
+    protected function assertOwnTenant(Tenant $tenant): void
+    {
+        if ($this->isOperator()) {
+            return;
+        }
+
+        $current = app()->bound('tenant') ? app('tenant') : null;
+
+        abort_if($current === null || $tenant->id !== $current->id, 404);
+    }
+
+    protected function assertMayManageTenants(): void
+    {
+        // Hosted tenants come from registration, which provisions a plan, an
+        // admin and an inbound address with them. One made here would have
+        // none of that.
+        abort_unless($this->isOperator(), 403, 'Tenants are created by registration.');
+    }
+
+    protected function visibleTenants()
+    {
+        if ($this->isOperator()) {
+            return Tenant::query();
+        }
+
+        $current = app()->bound('tenant') ? app('tenant') : null;
+
+        return Tenant::whereKey($current?->id ?? 0);
+    }
+
     public function show(Tenant $tenant)
     {
+        $this->assertOwnTenant($tenant);
+
         return Inertia::render('Tenants/Edit', [
             'tenant' => $tenant,
         ]);
@@ -34,6 +88,8 @@ class TenantController extends Controller
 
     public function store(Request $request)
     {
+        $this->assertMayManageTenants();
+
         $validated = $request->validate($this->validationRules());
 
         $validated['slug'] = Str::slug($validated['name']);
@@ -49,6 +105,8 @@ class TenantController extends Controller
 
     public function update(Request $request, Tenant $tenant)
     {
+        $this->assertOwnTenant($tenant);
+
         $validated = $request->validate($this->validationRules($tenant->id));
 
         $validated['slug'] = Str::slug($validated['name']);
@@ -115,6 +173,8 @@ class TenantController extends Controller
 
     public function destroy(Tenant $tenant)
     {
+        $this->assertOwnTenant($tenant);
+
         $tenant->delete();
 
         return back()->with('success', 'Tenant deleted.');
