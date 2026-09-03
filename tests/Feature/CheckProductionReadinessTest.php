@@ -61,7 +61,12 @@ class CheckProductionReadinessTest extends TestCase
             'app.key' => 'base64:'.base64_encode(random_bytes(32)),
             'session.secure' => true,
             'mail.default' => 'array',
+            // The check accepts either credential, so clearing one proves
+            // nothing unless the other is cleared too. Left set, this test
+            // passed only where no Mailgun key happened to be configured --
+            // it failed the moment the suite was pointed at the cloud app.
             'support.inbound.webhook_secret' => '',
+            'support.inbound.mailgun.signing_key' => '',
             'queue.default' => 'database',
             'logging.channels.single.level' => 'warning',
         ]);
