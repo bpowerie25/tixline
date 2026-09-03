@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Permission;
 use App\Models\Role;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Unique;
 use Inertia\Inertia;
 
 class RoleController extends Controller
@@ -28,7 +30,7 @@ class RoleController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255|unique:roles,name|regex:/^[a-z0-9_]+$/',
+            'name' => ['required', 'string', 'max:255', 'regex:/^[a-z0-9_]+$/', $this->uniqueName()],
             'display_name' => 'required|string|max:255',
             'description' => 'nullable|string|max:500',
             'permissions' => 'nullable|array',
@@ -49,6 +51,16 @@ class RoleController extends Controller
 
     public function update(Request $request, Role $role)
     {
+        if (! $role->isEditableByTenant()) {
+            // The system roles are a single shared row each. Editing one here
+            // rewrote permissions for every tenant on the platform: granting
+            // the agent role everything handed an unrelated customer's agents
+            // roles.manage along with it.
+            return back()->with('error',
+                'The built-in roles are shared across the platform and cannot be changed. '
+                .'Create a custom role instead.');
+        }
+
         $rules = [
             'display_name' => 'required|string|max:255',
             'description' => 'nullable|string|max:500',
@@ -58,7 +70,7 @@ class RoleController extends Controller
 
         // Allow slug change only for non-system roles
         if (! $role->is_system) {
-            $rules['name'] = 'required|string|max:255|unique:roles,name,' . $role->id . '|regex:/^[a-z0-9_]+$/';
+            $rules['name'] = ['required', 'string', 'max:255', 'regex:/^[a-z0-9_]+$/', $this->uniqueName($role->id)];
         }
 
         $validated = $request->validate($rules);
@@ -76,6 +88,18 @@ class RoleController extends Controller
         $role->permissions()->sync($validated['permissions'] ?? []);
 
         return back()->with('success', 'Role updated.');
+    }
+
+    /**
+     * Unique within the tenant rather than globally: two tenants may each
+     * want a role called "supervisor" and neither should block the other.
+     */
+    protected function uniqueName(?int $ignoreId = null): Unique
+    {
+        $rule = Rule::unique('roles', 'name')
+            ->where('tenant_id', app()->bound('tenant') ? app('tenant')->id : null);
+
+        return $ignoreId ? $rule->ignore($ignoreId) : $rule;
     }
 
     public function destroy(Role $role)
