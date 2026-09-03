@@ -2,8 +2,13 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import SandboxedHtml from '@/Components/SandboxedHtml.vue';
 import SlaBadge from '@/Components/SlaBadge.vue';
-import { Head, Link, useForm, router } from '@inertiajs/vue3';
+import { Head, Link, useForm, router, usePage } from '@inertiajs/vue3';
 import { ref } from 'vue';
+
+const pageUrl = usePage().url;
+const params = pageUrl.includes('?') ? new URLSearchParams(pageUrl.split('?')[1]) : new URLSearchParams();
+const fromTicket = params.get('from');
+const backUrl = params.get('back');
 
 const props = defineProps({
     ticket: Object,
@@ -11,6 +16,9 @@ const props = defineProps({
     agents: Array,
     labels: Array,
     cannedResponses: Array,
+    hasCustomerAccount: Boolean,
+    requesterTickets: Array,
+    duplicates: Array,
 });
 
 const showCannedPicker = ref(false);
@@ -34,8 +42,20 @@ const commentForm = useForm({
 
 const fileInput = ref(null);
 
+const maxFileSize = 10 * 1024 * 1024; // 10MB
+const attachmentError = ref('');
+
 function handleFiles(e) {
-    commentForm.attachments = Array.from(e.target.files);
+    attachmentError.value = '';
+    const files = Array.from(e.target.files);
+    const oversized = files.filter(f => f.size > maxFileSize);
+
+    if (oversized.length) {
+        attachmentError.value = `These files exceed the 10 MB limit: ${oversized.map(f => f.name).join(', ')}`;
+        commentForm.attachments = files.filter(f => f.size <= maxFileSize);
+    } else {
+        commentForm.attachments = files;
+    }
 }
 
 function removeFile(index) {
@@ -78,6 +98,60 @@ function resolveAndClose() {
     }, { preserveScroll: true });
 }
 
+// Duplicate marking
+const showDuplicateModal = ref(false);
+const duplicateSearch = ref('');
+const duplicateResults = ref([]);
+const duplicateSearching = ref(false);
+let duplicateDebounce;
+
+function searchForDuplicate() {
+    clearTimeout(duplicateDebounce);
+    if (duplicateSearch.value.length < 2) {
+        duplicateResults.value = [];
+        return;
+    }
+    duplicateDebounce = setTimeout(async () => {
+        duplicateSearching.value = true;
+        try {
+            const response = await fetch(route('tickets.search') + '?q=' + encodeURIComponent(duplicateSearch.value));
+            const data = await response.json();
+            duplicateResults.value = data.filter(t => t.id !== props.ticket.id);
+        } catch (e) {
+            duplicateResults.value = [];
+        }
+        duplicateSearching.value = false;
+    }, 300);
+}
+
+function markAsDuplicate(originalId) {
+    if (!confirm('Mark this ticket as a duplicate? It will be closed.')) return;
+    router.post(route('tickets.mark-duplicate', props.ticket.id), {
+        duplicate_of: originalId,
+    }, { preserveScroll: true, onSuccess: () => { showDuplicateModal.value = false; } });
+}
+
+const resetSending = ref(false);
+
+function sendPasswordReset() {
+    if (!confirm('Send a password reset email to ' + props.ticket.requester_email + '?')) return;
+    resetSending.value = true;
+    router.post(route('tickets.send-password-reset', props.ticket.id), {}, {
+        preserveScroll: true,
+        onFinish: () => resetSending.value = false,
+    });
+}
+
+const previewImage = ref(null);
+
+function openPreview(attachment) {
+    previewImage.value = attachment;
+}
+
+function closePreview() {
+    previewImage.value = null;
+}
+
 const priorityColors = {
     low: 'bg-gray-100 text-gray-700',
     normal: 'bg-blue-100 text-blue-700',
@@ -99,7 +173,7 @@ const statusColors = {
     <AuthenticatedLayout>
         <template #header>
             <div class="flex items-center gap-3">
-                <Link :href="route('tickets.index')" class="text-gray-400 hover:text-gray-600">
+                <Link :href="fromTicket ? route('tickets.show', fromTicket) : (backUrl || route('tickets.index'))" class="text-gray-400 hover:text-gray-600">
                     <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
                 </Link>
                 <span class="font-mono text-gray-500">{{ ticket.reference }}</span>
@@ -112,9 +186,22 @@ const statusColors = {
                 <div v-if="$page.props.flash?.success" class="mb-4 rounded-md bg-green-50 border border-green-200 p-4">
                     <p class="text-sm text-green-800">{{ $page.props.flash.success }}</p>
                 </div>
+                <div v-if="$page.props.flash?.warning" class="mb-4 rounded-md bg-yellow-50 border border-yellow-200 p-4">
+                    <p class="text-sm text-yellow-800">{{ $page.props.flash.warning }}</p>
+                </div>
                 <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
                     <!-- Main Content -->
                     <div class="lg:col-span-2 space-y-6">
+                        <!-- Duplicate Banner -->
+                        <div v-if="ticket.duplicate_of" class="rounded-md bg-purple-50 border border-purple-200 p-4">
+                            <p class="text-sm text-purple-800">
+                                This ticket is a duplicate of
+                                <Link :href="route('tickets.show', ticket.duplicate_of.id)" class="font-medium underline hover:text-purple-900">
+                                    {{ ticket.duplicate_of.reference }} — {{ ticket.duplicate_of.subject }}
+                                </Link>
+                            </p>
+                        </div>
+
                         <!-- Original Message -->
                         <div class="overflow-hidden bg-white shadow-sm sm:rounded-lg">
                             <div class="border-b border-gray-200 px-6 py-4">
@@ -158,16 +245,25 @@ const statusColors = {
                                 <SandboxedHtml :html="comment.sanitized_body" />
                             </div>
                             <div v-if="comment.attachments?.length" class="px-6 pb-4 flex flex-wrap gap-2">
-                                <a
-                                    v-for="att in comment.attachments"
-                                    :key="att.id"
-                                    :href="route('attachments.download', att.id)"
-                                    target="_blank"
-                                    class="inline-flex items-center gap-1.5 rounded border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs text-gray-700 hover:bg-gray-100"
-                                >
-                                    <svg class="h-3.5 w-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
-                                    {{ att.original_filename }}
-                                </a>
+                                <template v-for="att in comment.attachments" :key="att.id">
+                                    <button
+                                        v-if="att.is_image"
+                                        @click="openPreview(att)"
+                                        class="inline-flex items-center gap-1.5 rounded border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs text-gray-700 hover:bg-gray-100"
+                                    >
+                                        <svg class="h-3.5 w-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                        {{ att.original_filename }}
+                                    </button>
+                                    <a
+                                        v-else
+                                        :href="route('attachments.download', att.id)"
+                                        target="_blank"
+                                        class="inline-flex items-center gap-1.5 rounded border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs text-gray-700 hover:bg-gray-100"
+                                    >
+                                        <svg class="h-3.5 w-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
+                                        {{ att.original_filename }}
+                                    </a>
+                                </template>
                             </div>
                         </div>
 
@@ -213,7 +309,9 @@ const statusColors = {
                                 </div>
                                 <!-- File attachments -->
                                 <div class="mt-3">
-                                    <input ref="fileInput" type="file" multiple @change="handleFiles" class="text-sm text-gray-500 file:mr-3 file:rounded file:border-0 file:bg-gray-100 file:px-3 file:py-1.5 file:text-sm file:text-gray-700 hover:file:bg-gray-200" />
+                                    <input ref="fileInput" type="file" multiple @change="handleFiles" accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,.txt,.csv,.doc,.docx,.xls,.xlsx,.zip,.eml" class="text-sm text-gray-500 file:mr-3 file:rounded file:border-0 file:bg-gray-100 file:px-3 file:py-1.5 file:text-sm file:text-gray-700 hover:file:bg-gray-200" />
+                                    <p class="mt-1 text-xs text-gray-400">Max 10 MB per file. Images, PDF, Office docs, CSV, TXT, ZIP.</p>
+                                    <p v-if="attachmentError" class="mt-1 text-xs text-red-600">{{ attachmentError }}</p>
                                     <div v-if="commentForm.attachments.length" class="mt-2 flex flex-wrap gap-2">
                                         <span v-for="(file, i) in commentForm.attachments" :key="i" class="inline-flex items-center gap-1 rounded bg-gray-100 px-2 py-1 text-xs text-gray-700">
                                             {{ file.name }}
@@ -351,6 +449,115 @@ const statusColors = {
                         </div>
 
                         <div class="overflow-hidden bg-white shadow-sm sm:rounded-lg p-6">
+                            <h3 class="text-sm font-medium text-gray-500 mb-3">Requester</h3>
+                            <Link :href="route('tickets.requester', ticket.requester_email)" class="text-sm text-indigo-600 font-medium hover:text-indigo-800">{{ ticket.requester_name }}</Link>
+                            <p class="text-sm text-gray-500">{{ ticket.requester_email }}</p>
+                            <button
+                                v-if="hasCustomerAccount"
+                                @click="sendPasswordReset"
+                                :disabled="resetSending"
+                                class="mt-3 w-full rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                            >
+                                {{ resetSending ? 'Sending...' : 'Send Password Reset' }}
+                            </button>
+                        </div>
+
+                        <!-- Requester History -->
+                        <div class="overflow-hidden bg-white shadow-sm sm:rounded-lg p-6">
+                            <h3 class="text-sm font-medium text-gray-500 mb-3">Requester History</h3>
+                            <p v-if="!requesterTickets.length" class="text-sm text-gray-400">No previous tickets</p>
+                            <ul v-else class="space-y-2">
+                                <li v-for="rt in requesterTickets" :key="rt.id">
+                                    <Link :href="route('tickets.show', rt.id) + '?from=' + ticket.id" class="block text-sm hover:bg-gray-50 -mx-2 px-2 py-1 rounded">
+                                        <div class="flex items-center justify-between gap-2">
+                                            <span class="text-gray-500 shrink-0">{{ rt.reference }}</span>
+                                            <span
+                                                class="shrink-0 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
+                                                :class="{
+                                                    'bg-green-100 text-green-800': rt.status === 'open',
+                                                    'bg-yellow-100 text-yellow-800': rt.status === 'pending',
+                                                    'bg-blue-100 text-blue-800': rt.status === 'resolved',
+                                                    'bg-gray-100 text-gray-800': rt.status === 'closed',
+                                                }"
+                                            >
+                                                {{ rt.status }}
+                                            </span>
+                                        </div>
+                                        <p class="text-gray-700 truncate">{{ rt.subject }}</p>
+                                        <p class="text-xs text-gray-400">{{ new Date(rt.created_at).toLocaleDateString() }}</p>
+                                    </Link>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <!-- Duplicates -->
+                        <div v-if="duplicates?.length" class="overflow-hidden bg-white shadow-sm sm:rounded-lg p-6">
+                            <h3 class="text-sm font-medium text-gray-500 mb-3">Duplicates</h3>
+                            <ul class="space-y-2">
+                                <li v-for="dup in duplicates" :key="dup.id">
+                                    <Link :href="route('tickets.show', dup.id)" class="block text-sm hover:bg-gray-50 -mx-2 px-2 py-1 rounded">
+                                        <div class="flex items-center justify-between gap-2">
+                                            <span class="text-gray-500">{{ dup.reference }}</span>
+                                            <span class="inline-flex rounded-full bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-700">duplicate</span>
+                                        </div>
+                                        <p class="text-gray-700 truncate">{{ dup.subject }}</p>
+                                    </Link>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <!-- Mark as Duplicate -->
+                        <div v-if="!ticket.duplicate_of && ticket.status !== 'closed'" class="overflow-hidden bg-white shadow-sm sm:rounded-lg p-6">
+                            <button
+                                v-if="!showDuplicateModal"
+                                @click="showDuplicateModal = true"
+                                class="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                            >
+                                Mark as Duplicate
+                            </button>
+                            <div v-else>
+                                <h3 class="text-sm font-medium text-gray-500 mb-3">Mark as Duplicate</h3>
+                                <input
+                                    v-model="duplicateSearch"
+                                    @input="searchForDuplicate"
+                                    type="text"
+                                    placeholder="Search by reference or subject..."
+                                    class="w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                />
+                                <p v-if="duplicateSearching" class="mt-2 text-xs text-gray-400">Searching...</p>
+                                <ul v-if="duplicateResults.length" class="mt-2 divide-y divide-gray-100 rounded border border-gray-200 max-h-48 overflow-y-auto">
+                                    <li
+                                        v-for="result in duplicateResults"
+                                        :key="result.id"
+                                        @click="markAsDuplicate(result.id)"
+                                        class="px-3 py-2 cursor-pointer hover:bg-gray-50"
+                                    >
+                                        <div class="flex items-center justify-between gap-2">
+                                            <span class="text-xs font-mono text-gray-500">{{ result.reference }}</span>
+                                            <span
+                                                class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium"
+                                                :class="{
+                                                    'bg-green-100 text-green-700': result.status === 'open',
+                                                    'bg-yellow-100 text-yellow-700': result.status === 'pending',
+                                                    'bg-blue-100 text-blue-700': result.status === 'resolved',
+                                                    'bg-gray-100 text-gray-700': result.status === 'closed',
+                                                }"
+                                            >{{ result.status }}</span>
+                                        </div>
+                                        <p class="text-sm text-gray-700 truncate">{{ result.subject }}</p>
+                                    </li>
+                                </ul>
+                                <p v-else-if="duplicateSearch.length >= 2 && !duplicateSearching" class="mt-2 text-xs text-gray-400">No matching tickets found.</p>
+                                <button
+                                    @click="showDuplicateModal = false; duplicateSearch = ''; duplicateResults = [];"
+                                    class="mt-3 w-full rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="overflow-hidden bg-white shadow-sm sm:rounded-lg p-6">
                             <h3 class="text-sm font-medium text-gray-500 mb-3">Info</h3>
                             <dl class="space-y-2 text-sm">
                                 <div class="flex justify-between">
@@ -372,6 +579,20 @@ const statusColors = {
                             </dl>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+        <!-- Image Preview Modal -->
+        <div v-if="previewImage" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60" @click.self="closePreview">
+            <div class="relative max-w-4xl max-h-[90vh] mx-4">
+                <button @click="closePreview" class="absolute -top-10 right-0 text-white hover:text-gray-300 text-sm flex items-center gap-1">
+                    Close
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+                <img :src="route('attachments.preview', previewImage.id)" :alt="previewImage.original_filename" class="max-w-full max-h-[85vh] rounded-lg shadow-2xl" />
+                <div class="mt-2 flex items-center justify-between text-sm text-white/80">
+                    <span>{{ previewImage.original_filename }}</span>
+                    <a :href="route('attachments.download', previewImage.id)" class="hover:text-white underline">Download</a>
                 </div>
             </div>
         </div>

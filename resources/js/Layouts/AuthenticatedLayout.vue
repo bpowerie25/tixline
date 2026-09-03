@@ -54,6 +54,9 @@ const hasAnySettingsPermission = computed(() => canAny([
                                 <NavLink :href="route('tickets.index')" :active="route().current('tickets.*')">
                                     Tickets
                                 </NavLink>
+                                <NavLink v-if="can('customers.view')" :href="route('customers.index')" :active="route().current('customers.*')">
+                                    Requesters
+                                </NavLink>
                                 <NavLink v-if="can('reports.view')" :href="route('reports.index')" :active="route().current('reports.*')">
                                     Reports
                                 </NavLink>
@@ -207,6 +210,7 @@ const hasAnySettingsPermission = computed(() => canAny([
                     <div class="space-y-1 pb-3 pt-2">
                         <ResponsiveNavLink :href="route('dashboard')" :active="route().current('dashboard')">Dashboard</ResponsiveNavLink>
                         <ResponsiveNavLink :href="route('tickets.index')" :active="route().current('tickets.*')">Tickets</ResponsiveNavLink>
+                        <ResponsiveNavLink v-if="can('customers.view')" :href="route('customers.index')" :active="route().current('customers.*')">Requesters</ResponsiveNavLink>
                         <ResponsiveNavLink v-if="can('reports.view')" :href="route('reports.index')" :active="route().current('reports.*')">Reports</ResponsiveNavLink>
                         <ResponsiveNavLink v-if="can('reports.custom.manage')" :href="route('custom-reports.index')" :active="route().current('custom-reports.*')">Custom Reports</ResponsiveNavLink>
                         <ResponsiveNavLink v-if="can('kb.admin.view')" :href="route('kb.admin.index')" :active="route().current('kb.admin.*')">Knowledge Base</ResponsiveNavLink>

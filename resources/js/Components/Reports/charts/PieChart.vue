@@ -4,9 +4,14 @@ import { computed } from 'vue';
 const props = defineProps({
     labels: Array,
     values: Array,
+    colorMap: Object,
 });
 
-const colors = ['#6366f1', '#ec4899', '#f59e0b', '#10b981', '#06b6d4', '#8b5cf6', '#ef4444', '#f97316', '#22c55e', '#0ea5e9'];
+const defaultColors = ['#6366f1', '#ec4899', '#f59e0b', '#10b981', '#06b6d4', '#8b5cf6', '#ef4444', '#f97316', '#22c55e', '#0ea5e9'];
+
+function colorFor(label, index) {
+    return props.colorMap?.[label] || defaultColors[index % defaultColors.length];
+}
 
 const total = computed(() => (props.values || []).reduce((a, b) => a + b, 0) || 1);
 
@@ -17,7 +22,7 @@ const gradient = computed(() => {
     props.values.forEach((val, i) => {
         const start = cumulative;
         cumulative += (val / total.value) * 100;
-        stops.push(`${colors[i % colors.length]} ${start}% ${cumulative}%`);
+        stops.push(`${colorFor(props.labels[i], i)} ${start}% ${cumulative}%`);
     });
     return `conic-gradient(${stops.join(', ')})`;
 });
@@ -27,7 +32,7 @@ const legend = computed(() => {
     return props.labels.map((label, i) => ({
         label,
         value: props.values[i] || 0,
-        color: colors[i % colors.length],
+        color: colorFor(label, i),
         pct: Math.round(((props.values[i] || 0) / total.value) * 100),
     }));
 });

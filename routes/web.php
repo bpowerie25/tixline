@@ -7,6 +7,7 @@ use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\BusinessHoursController;
 use App\Http\Controllers\CannedResponseController;
 use App\Http\Controllers\CommentController;
+use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\CustomerPortalController;
 use App\Http\Controllers\CustomReportController;
 use App\Http\Controllers\DepartmentController;
@@ -89,6 +90,8 @@ Route::get('/dashboard', function () {
 // Attachment download — requires auth (agent, customer, or sanctum)
 Route::get('/attachments/{attachment}/download', [AttachmentController::class, 'download'])
     ->name('attachments.download');
+Route::get('/attachments/{attachment}/preview', [AttachmentController::class, 'preview'])
+    ->name('attachments.preview');
 
 // Authenticated routes
 Route::middleware('auth')->group(function () {
@@ -104,6 +107,11 @@ Route::middleware('auth')->group(function () {
     Route::resource('tickets', TicketController::class);
     Route::post('/tickets/bulk', [TicketController::class, 'bulk'])->name('tickets.bulk');
     Route::post('/tickets/{ticket}/comments', [CommentController::class, 'store'])->name('tickets.comments.store');
+    Route::post('/tickets/{ticket}/send-password-reset', [TicketController::class, 'sendPasswordReset'])->name('tickets.send-password-reset');
+    Route::post('/tickets/{ticket}/mark-duplicate', [TicketController::class, 'markDuplicate'])->name('tickets.mark-duplicate');
+    Route::get('/api/tickets/search', [TicketController::class, 'searchTickets'])->name('tickets.search');
+    Route::get('/requester/{email}', [TicketController::class, 'requester'])->where('email', '.*')->name('tickets.requester');
+    Route::get('/my-reassignments', [TicketController::class, 'myReassignments'])->name('tickets.my-reassignments');
 
     // Canned Responses — all agents can view and use
     Route::resource('canned-responses', CannedResponseController::class)->except(['create', 'show', 'edit']);
@@ -218,6 +226,12 @@ Route::middleware('auth')->group(function () {
         Route::post('/roles', [RoleController::class, 'store'])->name('roles.store');
         Route::put('/roles/{role}', [RoleController::class, 'update'])->name('roles.update');
         Route::delete('/roles/{role}', [RoleController::class, 'destroy'])->name('roles.destroy');
+    });
+
+    // Requesters
+    Route::middleware('permission:customers.view')->group(function () {
+        Route::get('/customers', [CustomerController::class, 'index'])->name('customers.index');
+        Route::get('/customers/{customer}', [CustomerController::class, 'show'])->name('customers.show');
     });
 
     // Knowledge Base Admin

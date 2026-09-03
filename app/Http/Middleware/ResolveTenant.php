@@ -32,6 +32,8 @@ class ResolveTenant
                 'font_family' => $tenant->font_family,
                 'portal_title' => $tenant->portal_title,
                 'portal_welcome_text' => $tenant->portal_welcome_text,
+                'announcement_enabled' => $tenant->announcement_enabled,
+                'announcement_text' => $tenant->announcement_text,
                 'css_variables' => $tenant->cssVariables(),
             ]);
         } else {

@@ -23,7 +23,7 @@ class InboundMessage
         return new self(
             messageId: $payload['message_id'] ?? '',
             fromEmail: $payload['from_email'] ?? '',
-            fromName: $payload['from_name'] ?? $payload['from_email'] ?? '',
+            fromName: mb_decode_mimeheader($payload['from_name'] ?? $payload['from_email'] ?? ''),
             subject: $payload['subject'] ?? '',
             body: $payload['body'] ?? '',
             headers: $headers,
@@ -48,7 +48,7 @@ class InboundMessage
             $fromEmail = $m[1];
         }
         if (preg_match('/^"?([^"<]+)"?\s*</', $from, $m)) {
-            $fromName = trim($m[1]);
+            $fromName = mb_decode_mimeheader(trim($m[1]));
         }
 
         $subject = $headers['subject'] ?? '(No Subject)';

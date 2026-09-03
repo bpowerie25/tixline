@@ -50,6 +50,14 @@ class PublicTicketController extends Controller
         ]);
 
         $validated['source'] = 'web';
+
+        if (! empty($validated['form_id'])) {
+            $form = Form::find($validated['form_id']);
+            if ($form?->team_id) {
+                $validated['team_id'] = $form->team_id;
+            }
+        }
+
         $ticket = Ticket::create($validated);
 
         $engine->run($ticket->fresh(), 'ticket_created');

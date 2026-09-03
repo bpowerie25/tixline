@@ -28,6 +28,9 @@ const form = useForm({
     portal_title: props.tenant?.portal_title || '',
     portal_welcome_text: props.tenant?.portal_welcome_text || '',
     support_email: props.tenant?.support_email || '',
+    reply_email_mode: props.tenant?.reply_email_mode || 'notification',
+    announcement_enabled: props.tenant?.announcement_enabled ?? false,
+    announcement_text: props.tenant?.announcement_text || '',
     is_active: props.tenant?.is_active ?? true,
 });
 
@@ -116,7 +119,7 @@ const previewStyle = computed(() => ({
                                     <label class="block text-sm font-medium text-gray-700">Support Email</label>
                                     <input v-model="form.support_email" type="email" class="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
                                 </div>
-                                <div class="flex items-end">
+                                <div class="flex items-end gap-6">
                                     <label class="flex items-center gap-2">
                                         <input v-model="form.is_active" type="checkbox" class="rounded text-indigo-600" />
                                         <span class="text-sm font-medium text-gray-700">Active</span>
@@ -200,6 +203,35 @@ const previewStyle = computed(() => ({
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">Welcome Text</label>
                                 <textarea v-model="form.portal_welcome_text" rows="2" placeholder="How can we help you today?" class="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
+                            </div>
+                        </div>
+
+                        <!-- Email Settings -->
+                        <div class="bg-white shadow-sm sm:rounded-lg p-6 space-y-4">
+                            <h3 class="text-lg font-medium text-gray-900">Email Settings</h3>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Reply Notification Style</label>
+                                <p class="text-xs text-gray-500 mt-0.5 mb-2">
+                                    Controls what customers receive when an agent replies to their ticket.
+                                </p>
+                                <select v-model="form.reply_email_mode" class="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                    <option value="notification">Notification only — link to portal</option>
+                                    <option value="full">Full reply — include reply text and attachment links</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Announcement Banner -->
+                        <div class="bg-white shadow-sm sm:rounded-lg p-6 space-y-4">
+                            <h3 class="text-lg font-medium text-gray-900">Announcement Banner</h3>
+                            <p class="text-sm text-gray-500">Display a notice to customers on the portal and ticket submission pages.</p>
+                            <label class="flex items-center gap-2">
+                                <input v-model="form.announcement_enabled" type="checkbox" class="rounded text-indigo-600" />
+                                <span class="text-sm font-medium text-gray-700">Show announcement</span>
+                            </label>
+                            <div v-if="form.announcement_enabled">
+                                <label class="block text-sm font-medium text-gray-700">Announcement Text</label>
+                                <textarea v-model="form.announcement_text" rows="3" placeholder="Due to Annual Leave there may be a delay in you receiving a reply to your ticket." class="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
                             </div>
                         </div>
 

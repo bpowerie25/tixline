@@ -8,6 +8,7 @@ use App\Models\Ticket;
 use App\Models\User;
 use App\Models\Workflow;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
@@ -122,7 +123,7 @@ class WorkflowEngine
             'source' => $ticket->source,
             'team_id' => (string) $ticket->team_id,
             'assigned_to' => (string) $ticket->assigned_to,
-            default => $ticket->custom_fields[$field] ?? '',
+            default => ($ticket->custom_fields ?? [])[$field] ?? '',
         };
 
         return match ($operator) {
@@ -214,7 +215,8 @@ class WorkflowEngine
 
         $template = $action['template'] ?? "Ticket [{$ticket->reference}] {$ticket->subject} has been assigned to your team.";
         $recipients = $team->members->pluck('email')->toArray();
-        $html = EmailLayout::wrap("<p>{$template}</p>");
+        $body = $this->buildAssignmentEmailBody($ticket, $template);
+        $html = EmailLayout::wrap($body);
 
         Mail::html($html, function ($message) use ($recipients, $ticket) {
             $message->to($recipients)
@@ -259,7 +261,8 @@ class WorkflowEngine
         }
 
         $template = $action['template'] ?? "You have been assigned ticket [{$ticket->reference}] {$ticket->subject}";
-        $html = EmailLayout::wrap("<p>{$template}</p>");
+        $body = $this->buildAssignmentEmailBody($ticket, $template);
+        $html = EmailLayout::wrap($body);
 
         Mail::html($html, function ($message) use ($agent, $ticket) {
             $message->to($agent->email)
@@ -278,7 +281,8 @@ class WorkflowEngine
 
         $template = $action['template'] ?? "Ticket [{$ticket->reference}] {$ticket->subject} has been assigned to your team.";
         $recipients = $team->members->pluck('email')->toArray();
-        $html = EmailLayout::wrap("<p>{$template}</p>");
+        $body = $this->buildAssignmentEmailBody($ticket, $template);
+        $html = EmailLayout::wrap($body);
 
         Mail::html($html, function ($message) use ($recipients, $ticket) {
             $message->to($recipients)
@@ -331,6 +335,26 @@ class WorkflowEngine
         } catch (\Exception $e) {
             Log::warning('Workflow webhook failed', ['url' => $url, 'error' => $e->getMessage()]);
         }
+    }
+
+    protected function buildAssignmentEmailBody(Ticket $ticket, string $template): string
+    {
+        $html = "<p>{$template}</p>";
+
+        $teamName = $ticket->team ? e($ticket->team->name) : null;
+        if ($teamName) {
+            $html .= "<p style=\"margin: 12px 0 0; color: #6b7280; font-size: 14px;\"><strong>Team:</strong> {$teamName}</p>";
+        }
+
+        if ($ticket->body) {
+            $synopsis = e(Str::limit(strip_tags($ticket->body), 300));
+            $html .= "<div style=\"margin: 16px 0 0; padding: 12px 16px; background: #f9fafb; border-left: 3px solid #d1d5db; border-radius: 4px; color: #374151; font-size: 14px;\">{$synopsis}</div>";
+        }
+
+        $ticketUrl = EmailLayout::agentTicketUrl($ticket);
+        $html .= "<p style=\"margin: 16px 0 0;\"><a href=\"{$ticketUrl}\" style=\"color: #be123c; font-weight: 600; text-decoration: none;\">View Ticket &rarr;</a></p>";
+
+        return $html;
     }
 
     /**

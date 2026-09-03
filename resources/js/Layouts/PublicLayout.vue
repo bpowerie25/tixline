@@ -61,6 +61,14 @@ function acceptCookies() {
             </div>
         </header>
 
+        <!-- Announcement Banner -->
+        <div v-if="tenant?.announcement_enabled && tenant?.announcement_text" class="border-b border-amber-200 bg-amber-50 px-6 py-3">
+            <div class="mx-auto max-w-6xl flex items-start gap-3">
+                <svg class="h-5 w-5 shrink-0 text-amber-500 mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 6a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 6zm0 9a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" /></svg>
+                <p class="text-sm text-amber-800">{{ tenant.announcement_text }}</p>
+            </div>
+        </div>
+
         <!-- Content -->
         <main class="flex-1">
             <slot />

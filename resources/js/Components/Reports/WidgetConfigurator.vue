@@ -6,6 +6,7 @@ import WidgetFilterPanel from './WidgetFilterPanel.vue';
 const props = defineProps({
     show: Boolean,
     widget: Object,
+    widgetData: Object,
     widgetTypes: { type: Array, default: () => [] },
     teams: { type: Array, default: () => [] },
     agents: { type: Array, default: () => [] },
@@ -29,6 +30,33 @@ watch(() => props.widget, (w) => {
         form.filters = w.filters ? JSON.parse(JSON.stringify(w.filters)) : {};
     }
 }, { immediate: true });
+
+const defaultColors = ['#6366f1', '#ec4899', '#f59e0b', '#10b981', '#06b6d4', '#8b5cf6', '#ef4444', '#f97316', '#22c55e', '#0ea5e9'];
+
+const colorLabels = computed(() => {
+    if (!props.widgetData?.labels) return [];
+    return props.widgetData.labels.map((label, i) => ({
+        label,
+        color: form.filters.color_overrides?.[label]
+            || props.widgetData.colorMap?.[label]
+            || defaultColors[i % defaultColors.length],
+    }));
+});
+
+const supportsColors = computed(() => {
+    return ['bar', 'pie'].includes(form.chart_type) && colorLabels.value.length > 0;
+});
+
+function setColorOverride(label, color) {
+    if (!form.filters.color_overrides) {
+        form.filters.color_overrides = {};
+    }
+    form.filters.color_overrides[label] = color;
+}
+
+function resetColors() {
+    delete form.filters.color_overrides;
+}
 
 const validChartTypes = computed(() => {
     const meta = props.widgetTypes.find(t => t.type === form.widget_type);
@@ -114,6 +142,39 @@ function save() {
                         :labels="labels"
                         @update:filters="form.filters = $event"
                     />
+                </div>
+
+                <!-- Colors -->
+                <div v-if="supportsColors" class="border-t border-gray-200 pt-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <h4 class="text-sm font-medium text-gray-700">Colors</h4>
+                        <button
+                            v-if="form.filters.color_overrides"
+                            type="button"
+                            @click="resetColors"
+                            class="text-xs text-gray-500 hover:text-gray-700"
+                        >
+                            Reset to defaults
+                        </button>
+                    </div>
+                    <div class="space-y-2">
+                        <div v-for="item in colorLabels" :key="item.label" class="flex items-center gap-3">
+                            <label :for="'color-' + item.label" class="relative shrink-0 cursor-pointer">
+                                <span
+                                    class="block w-8 h-8 rounded-md border border-gray-200 shadow-sm"
+                                    :style="{ backgroundColor: item.color }"
+                                />
+                                <input
+                                    :id="'color-' + item.label"
+                                    type="color"
+                                    :value="item.color"
+                                    @input="setColorOverride(item.label, $event.target.value)"
+                                    class="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
+                                />
+                            </label>
+                            <span class="text-sm text-gray-700 capitalize">{{ item.label }}</span>
+                        </div>
+                    </div>
                 </div>
             </div>
 

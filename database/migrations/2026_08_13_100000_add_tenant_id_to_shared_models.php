@@ -40,6 +40,17 @@ return new class extends Migration
                 });
             }
         }
+
+        // Backfill existing rows to the first tenant
+        $tenant = DB::table('tenants')->first();
+        if ($tenant) {
+            foreach ($tables as $table) {
+                DB::table($table)->whereNull('tenant_id')->update(['tenant_id' => $tenant->id]);
+            }
+            DB::table('users')->whereNull('tenant_id')->update(['tenant_id' => $tenant->id]);
+            DB::table('tickets')->whereNull('tenant_id')->update(['tenant_id' => $tenant->id]);
+            DB::table('roles')->whereNull('tenant_id')->update(['tenant_id' => $tenant->id]);
+        }
     }
 
     public function down(): void

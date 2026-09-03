@@ -174,7 +174,7 @@ class PollImapMailbox extends Command
                     if (! empty($fromValues)) {
                         $firstFrom = reset($fromValues);
                         $fromEmail = is_object($firstFrom) ? ($firstFrom->mail ?? (string) $firstFrom) : (string) $firstFrom;
-                        $fromName = is_object($firstFrom) ? ($firstFrom->personal ?? '') : '';
+                        $fromName = is_object($firstFrom) ? mb_decode_mimeheader($firstFrom->personal ?? '') : '';
                     }
                 }
 

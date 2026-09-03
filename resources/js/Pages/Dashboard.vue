@@ -81,6 +81,9 @@ const statusColors = {
                                 </div>
                             </div>
                             <div class="ml-4 flex items-center gap-2">
+                                <span class="text-xs text-gray-400 whitespace-nowrap">
+                                    {{ new Date(ticket.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) }}
+                                </span>
                                 <span :class="[statusColors[ticket.status], 'inline-flex rounded-full px-2 py-0.5 text-xs font-medium']">
                                     {{ ticket.status }}
                                 </span>

@@ -12,13 +12,16 @@ class Tenant extends Model
         'primary_color', 'secondary_color', 'accent_color',
         'header_bg_color', 'header_text_color', 'sidebar_bg_color',
         'custom_css', 'font_family', 'portal_title', 'portal_welcome_text',
-        'support_email', 'is_active',
+        'support_email', 'reply_email_mode',
+        'announcement_enabled', 'announcement_text',
+        'is_active',
     ];
 
     protected function casts(): array
     {
         return [
             'is_active' => 'boolean',
+            'announcement_enabled' => 'boolean',
         ];
     }
 

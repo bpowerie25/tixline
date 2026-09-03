@@ -232,13 +232,22 @@ class CustomReportController extends Controller
                 );
 
                 if (! empty($data)) {
-                    // Column headers from first row's keys
-                    $headers = array_keys(is_array(reset($data)) ? reset($data) : $data);
-                    fputcsv($handle, $headers);
-
-                    // Data rows
-                    foreach ($data as $row) {
-                        fputcsv($handle, is_array($row) ? array_values($row) : [$row]);
+                    if (isset($data['columns'], $data['rows'])) {
+                        // Table widget (ticket_list)
+                        fputcsv($handle, $data['columns']);
+                        foreach ($data['rows'] as $row) {
+                            fputcsv($handle, array_values($row));
+                        }
+                    } elseif (isset($data['labels'], $data['values'])) {
+                        // Chart widget (bar, pie, line)
+                        fputcsv($handle, ['Label', 'Value']);
+                        foreach ($data['labels'] as $i => $label) {
+                            fputcsv($handle, [$label, $data['values'][$i] ?? 0]);
+                        }
+                    } elseif (array_key_exists('value', $data)) {
+                        // Number widget (avg_response_time, etc.)
+                        fputcsv($handle, ['Value']);
+                        fputcsv($handle, [$data['value'] ?? '-']);
                     }
                 }
 

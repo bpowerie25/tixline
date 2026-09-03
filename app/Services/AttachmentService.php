@@ -6,24 +6,50 @@ use App\Models\Attachment;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class AttachmentService
 {
     public function storeUploadedFile(UploadedFile $file, Model $attachable): ?Attachment
     {
+        $originalName = $file->getClientOriginalName();
+
         if (! $this->isAllowedMime($file->getMimeType())) {
+            Log::warning('Attachment rejected: disallowed MIME type', [
+                'filename' => $originalName,
+                'mime' => $file->getMimeType(),
+            ]);
+
             return null;
         }
 
         if ($file->getSize() > config('support.attachments.max_size_bytes')) {
+            Log::warning('Attachment rejected: file too large', [
+                'filename' => $originalName,
+                'size' => $file->getSize(),
+                'max' => config('support.attachments.max_size_bytes'),
+            ]);
+
             return null;
         }
 
         $disk = config('support.attachments.disk', 'local');
         $safeName = $this->sanitizeFilename($file->hashName());
-        $directory = 'attachments/'.$attachable->getMorphClass().'/'.$attachable->getKey();
-        $path = $file->storeAs($directory, $safeName, $disk);
+        $type = str_replace('\\', '-', strtolower($attachable->getMorphClass()));
+        $directory = 'attachments/'.$type.'/'.$attachable->getKey();
+
+        try {
+            $path = $file->storeAs($directory, $safeName, $disk);
+        } catch (\Throwable $e) {
+            Log::error('Attachment storage failed', [
+                'filename' => $originalName,
+                'directory' => $directory,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
 
         return $attachable->attachments()->create([
             'filename' => $safeName,
@@ -53,10 +79,20 @@ class AttachmentService
 
         $disk = config('support.attachments.disk', 'local');
         $safeName = Str::random(40).$this->safeExtension($mime);
-        $directory = 'attachments/'.$attachable->getMorphClass().'/'.$attachable->getKey();
+        $type = str_replace('\\', '-', strtolower($attachable->getMorphClass()));
+        $directory = 'attachments/'.$type.'/'.$attachable->getKey();
         $path = $directory.'/'.$safeName;
 
-        Storage::disk($disk)->put($path, $content);
+        try {
+            Storage::disk($disk)->put($path, $content);
+        } catch (\Throwable $e) {
+            Log::error('Webhook attachment storage failed', [
+                'directory' => $directory,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
 
         $originalName = $this->sanitizeOriginalFilename($attachmentData['filename'] ?? 'attachment');
 

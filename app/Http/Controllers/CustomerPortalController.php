@@ -33,8 +33,15 @@ class CustomerPortalController extends Controller
 
         $this->ensureCustomerLoginNotRateLimited($request);
 
-        if (Auth::guard('customer')->attempt($credentials, $request->boolean('remember'))) {
+        // Look up without tenant scope so customers with missing tenant_id can still log in
+        $customer = Customer::withoutGlobalScopes()
+            ->where('email', $credentials['email'])
+            ->first();
+
+        if ($customer && Hash::check($credentials['password'], $customer->password)) {
             RateLimiter::clear($this->customerThrottleKey($request));
+            Auth::guard('customer')->login($customer, $request->boolean('remember'));
+            $customer->update(['last_login_at' => now()]);
             $request->session()->regenerate();
 
             return redirect()->route('portal.tickets');
@@ -84,11 +91,10 @@ class CustomerPortalController extends Controller
             'organization' => 'nullable|string|max:255',
         ]);
 
-        $validated['password'] = Hash::make($validated['password']);
-
         $customer = Customer::create($validated);
 
         Auth::guard('customer')->login($customer);
+        $customer->update(['last_login_at' => now()]);
 
         return redirect()->route('portal.tickets');
     }
@@ -123,8 +129,8 @@ class CustomerPortalController extends Controller
         $ticket = Ticket::where('requester_email', $customer->email)
             ->findOrFail($ticket);
 
-        $ticket->load(['team:id,name', 'comments' => function ($q) {
-            $q->where('is_internal', false)->with('user:id,name')->oldest();
+        $ticket->load(['team:id,name', 'attachments', 'comments' => function ($q) {
+            $q->where('is_internal', false)->with(['user:id,name', 'attachments'])->oldest();
         }]);
 
         return Inertia::render('Portal/TicketDetail', [
@@ -133,22 +139,34 @@ class CustomerPortalController extends Controller
         ]);
     }
 
-    public function replyToTicket(Request $request, int $ticket)
+    public function replyToTicket(Request $request, int $ticket, \App\Services\AttachmentService $attachmentService)
     {
         $customer = Auth::guard('customer')->user();
 
         $ticket = Ticket::where('requester_email', $customer->email)
             ->findOrFail($ticket);
 
-        $validated = $request->validate([
+        $request->validate([
             'body' => 'required|string',
+            'attachments' => 'nullable|array|max:5',
+            'attachments.*' => 'file|max:10240',
         ]);
 
-        $ticket->comments()->create([
-            'body' => $validated['body'],
+        $comment = $ticket->comments()->create([
+            'body' => $request->input('body'),
             'type' => 'reply',
             'is_internal' => false,
         ]);
+
+        $failedAttachments = [];
+        if ($request->hasFile('attachments')) {
+            foreach ($request->file('attachments') as $file) {
+                $attachment = $attachmentService->storeUploadedFile($file, $comment);
+                if (! $attachment) {
+                    $failedAttachments[] = $file->getClientOriginalName();
+                }
+            }
+        }
 
         if (in_array($ticket->status, ['pending', 'resolved', 'closed'])) {
             $ticket->update(['status' => 'open']);
@@ -174,6 +192,14 @@ class CustomerPortalController extends Controller
             );
         }
 
+        if (! empty($failedAttachments)) {
+            $names = implode(', ', $failedAttachments);
+
+            return back()
+                ->with('success', 'Reply sent.')
+                ->with('warning', "Some attachments could not be saved (unsupported file type or too large): {$names}");
+        }
+
         return back()->with('success', 'Reply sent.');
     }
 
@@ -194,7 +220,7 @@ class CustomerPortalController extends Controller
             'source' => 'web',
         ]);
 
-        $engine->run($ticket, 'ticket_created');
+        $engine->run($ticket->fresh(), 'ticket_created');
 
         return redirect()->route('portal.ticket', $ticket)
             ->with('success', 'Ticket created.');
@@ -209,7 +235,7 @@ class CustomerPortalController extends Controller
     {
         $request->validate(['email' => 'required|email']);
 
-        $customer = Customer::where('email', $request->email)->first();
+        $customer = Customer::withoutGlobalScopes()->where('email', $request->email)->first();
 
         if ($customer) {
             $token = Str::random(64);
@@ -260,7 +286,7 @@ class CustomerPortalController extends Controller
             return back()->with('error', 'This reset link has expired. Please request a new one.');
         }
 
-        Customer::where('email', $request->email)->update([
+        Customer::withoutGlobalScopes()->where('email', $request->email)->update([
             'password' => Hash::make($request->password),
         ]);
 

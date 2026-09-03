@@ -39,6 +39,34 @@ class AttachmentController extends Controller
         );
     }
 
+    public function preview(Request $request, Attachment $attachment): StreamedResponse
+    {
+        $this->authorizeAccess($request, $attachment);
+
+        // Only allow safe image types for inline preview
+        $safeTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        if (! in_array($attachment->mime_type, $safeTypes)) {
+            abort(403, 'Preview not available for this file type.');
+        }
+
+        $disk = config('support.attachments.disk', 'local');
+
+        if (! Storage::disk($disk)->exists($attachment->path)) {
+            abort(404);
+        }
+
+        return new StreamedResponse(function () use ($disk, $attachment) {
+            $stream = Storage::disk($disk)->readStream($attachment->path);
+            fpassthru($stream);
+            fclose($stream);
+        }, 200, [
+            'Content-Type' => $attachment->mime_type,
+            'Content-Disposition' => 'inline',
+            'X-Content-Type-Options' => 'nosniff',
+            'Cache-Control' => 'private, max-age=3600',
+        ]);
+    }
+
     protected function authorizeAccess(Request $request, Attachment $attachment): void
     {
         $attachable = $attachment->attachable;

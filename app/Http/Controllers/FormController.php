@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Form;
+use App\Models\Team;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -20,6 +21,7 @@ class FormController extends Controller
     {
         return Inertia::render('Forms/Show', [
             'form' => null,
+            'teams' => Team::all(['id', 'name']),
         ]);
     }
 
@@ -29,6 +31,7 @@ class FormController extends Controller
 
         return Inertia::render('Forms/Show', [
             'form' => $form,
+            'teams' => Team::all(['id', 'name']),
         ]);
     }
 
@@ -38,6 +41,7 @@ class FormController extends Controller
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'is_active' => 'boolean',
+            'team_id' => 'nullable|exists:teams,id',
             'fields' => 'nullable|array',
             'fields.*.name' => 'required|string',
             'fields.*.label' => 'required|string',
@@ -69,6 +73,7 @@ class FormController extends Controller
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'is_active' => 'boolean',
+            'team_id' => 'nullable|exists:teams,id',
             'fields' => 'nullable|array',
             'fields.*.id' => 'nullable|integer',
             'fields.*.name' => 'required|string',

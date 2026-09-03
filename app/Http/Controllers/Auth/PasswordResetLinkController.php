@@ -33,12 +33,21 @@ class PasswordResetLinkController extends Controller
             'email' => 'required|email',
         ]);
 
-        // We will send the password reset link to this user. Once we have attempted
-        // to send the link, we will examine the response then see the message we
-        // need to show to the user. Finally, we'll send out a proper response.
-        $status = Password::sendResetLink(
-            $request->only('email')
-        );
+        // Temporarily unbind the tenant so TenantScope doesn't filter
+        // the user lookup — the user may not belong to the resolved tenant,
+        // or no tenant may have resolved on this unauthenticated page.
+        $tenant = app()->bound('tenant') ? app('tenant') : null;
+        app()->forgetInstance('tenant');
+
+        try {
+            $status = Password::sendResetLink(
+                $request->only('email')
+            );
+        } finally {
+            if ($tenant) {
+                app()->instance('tenant', $tenant);
+            }
+        }
 
         if ($status == Password::RESET_LINK_SENT) {
             return back()->with('status', __($status));

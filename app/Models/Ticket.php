@@ -18,7 +18,7 @@ class Ticket extends Model
     protected $fillable = [
         'reference', 'subject', 'body', 'requester_name', 'requester_email',
         'status', 'priority', 'source', 'assigned_to', 'team_id', 'form_id', 'tenant_id',
-        'custom_fields', 'first_responded_at', 'resolved_at',
+        'custom_fields', 'first_responded_at', 'resolved_at', 'duplicate_of',
         'sla_response_due_at', 'sla_resolution_due_at', 'sla_warning_at',
     ];
 
@@ -29,9 +29,12 @@ class Ticket extends Model
     protected function casts(): array
     {
         return [
+            'assigned_to' => 'integer',
+            'team_id' => 'integer',
             'custom_fields' => 'array',
             'first_responded_at' => 'datetime',
             'resolved_at' => 'datetime',
+            'duplicate_of' => 'integer',
             'sla_response_due_at' => 'datetime',
             'sla_resolution_due_at' => 'datetime',
             'sla_warning_at' => 'datetime',
@@ -161,5 +164,15 @@ class Ticket extends Model
     public function attachments(): MorphMany
     {
         return $this->morphMany(Attachment::class, 'attachable');
+    }
+
+    public function duplicateOf(): BelongsTo
+    {
+        return $this->belongsTo(Ticket::class, 'duplicate_of');
+    }
+
+    public function duplicates(): HasMany
+    {
+        return $this->hasMany(Ticket::class, 'duplicate_of');
     }
 }

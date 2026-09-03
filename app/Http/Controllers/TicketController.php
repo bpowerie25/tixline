@@ -2,7 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\CustomerPasswordReset;
+use App\Models\ActivityLog;
 use App\Models\CannedResponse;
+use App\Models\Customer;
 use App\Models\Label;
 use App\Models\SpamFilterEntry;
 use App\Models\Team;
@@ -13,6 +16,10 @@ use App\Services\ActivityLogger;
 use App\Services\SpamLearner;
 use App\Services\WorkflowEngine;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 
 class TicketController extends Controller
@@ -61,7 +68,7 @@ class TicketController extends Controller
     {
         $this->authorize('view', $ticket);
 
-        $ticket->load(['assignee', 'team', 'labels', 'form.fields', 'attachments', 'comments' => function ($q) {
+        $ticket->load(['assignee', 'team', 'labels', 'form.fields', 'attachments', 'duplicateOf:id,reference,subject', 'comments' => function ($q) {
             $q->with(['user', 'attachments'])->oldest();
         }]);
 
@@ -70,12 +77,64 @@ class TicketController extends Controller
                 ->orWhere('user_id', auth()->id());
         })->orderBy('name')->get(['id', 'name', 'shortcode', 'body']);
 
+        $hasCustomerAccount = Customer::withoutGlobalScopes()
+            ->where('email', $ticket->requester_email)
+            ->exists();
+
+        $requesterTickets = auth()->user()->visibleTicketsQuery()
+            ->where('requester_email', $ticket->requester_email)
+            ->where('id', '!=', $ticket->id)
+            ->latest()
+            ->limit(10)
+            ->get(['id', 'reference', 'subject', 'status', 'created_at']);
+
+        $duplicates = $ticket->duplicates()->get(['id', 'reference', 'subject', 'status']);
+
         return Inertia::render('Tickets/Show', [
             'ticket' => $ticket,
             'teams' => Team::all(),
             'agents' => User::all(['id', 'name']),
             'labels' => Label::all(),
             'cannedResponses' => $cannedResponses,
+            'hasCustomerAccount' => $hasCustomerAccount,
+            'requesterTickets' => $requesterTickets,
+            'duplicates' => $duplicates,
+        ]);
+    }
+
+    public function requester(string $email)
+    {
+        $tickets = auth()->user()->visibleTicketsQuery()
+            ->where('requester_email', $email)
+            ->with(['assignee', 'team'])
+            ->latest()
+            ->paginate(25);
+
+        $requesterName = $tickets->first()?->requester_name ?? $email;
+
+        return Inertia::render('Tickets/Requester', [
+            'email' => $email,
+            'requesterName' => $requesterName,
+            'tickets' => $tickets,
+        ]);
+    }
+
+    public function myReassignments()
+    {
+        $ticketIds = ActivityLog::where('user_id', auth()->id())
+            ->where('action', 'ticket_updated')
+            ->where('subject_type', 'App\\Models\\Ticket')
+            ->whereNotNull('properties->changes->team_id')
+            ->pluck('subject_id')
+            ->unique();
+
+        $tickets = Ticket::whereIn('id', $ticketIds)
+            ->with(['assignee', 'team'])
+            ->latest()
+            ->paginate(25);
+
+        return Inertia::render('Tickets/MyReassignments', [
+            'tickets' => $tickets,
         ]);
     }
 
@@ -142,6 +201,10 @@ class TicketController extends Controller
         $labels = $validated['labels'] ?? null;
         unset($validated['labels']);
 
+        if (array_key_exists('assigned_to', $validated) && $validated['assigned_to'] != $ticket->assigned_to) {
+            $this->authorize('assign', $ticket);
+        }
+
         // Track changes for field_changed events
         $oldValues = $ticket->only(['status', 'priority', 'team_id', 'assigned_to']);
 
@@ -173,6 +236,11 @@ class TicketController extends Controller
             $engine->run($fresh, 'ticket_priority_changed');
         }
 
+        if (! auth()->user()->canSeeTicket($fresh)) {
+            return redirect()->route('tickets.index')
+                ->with('warning', "Ticket {$ticket->reference} has been reassigned. You no longer have access to view it.");
+        }
+
         return back()->with('success', 'Ticket updated.');
     }
 
@@ -193,13 +261,42 @@ class TicketController extends Controller
         $validated = $request->validate([
             'ids' => 'required|array|min:1',
             'ids.*' => ['integer', TenantScoped::exists('tickets')],
-            'action' => 'required|in:close,resolve,delete,spam',
+            'action' => 'required|in:close,resolve,delete,spam,assign',
+            'assigned_to' => ['nullable', TenantScoped::exists('users')],
+            'team_id' => ['nullable', TenantScoped::exists('teams')],
         ]);
+
+        if ($validated['action'] === 'assign' && empty($validated['assigned_to']) && empty($validated['team_id'])) {
+            return back()->withErrors(['assign' => 'Please select an agent or team to assign to.']);
+        }
 
         $tickets = Ticket::whereIn('id', $validated['ids'])->get();
         $count = $tickets->count();
 
         switch ($validated['action']) {
+            case 'assign':
+                $update = [];
+                $parts = [];
+
+                if (! empty($validated['assigned_to'])) {
+                    $agent = User::findOrFail($validated['assigned_to']);
+                    $update['assigned_to'] = $agent->id;
+                    $parts[] = $agent->name;
+                }
+
+                if (! empty($validated['team_id'])) {
+                    $team = Team::findOrFail($validated['team_id']);
+                    $update['team_id'] = $team->id;
+                    $parts[] = $team->name;
+                }
+
+                Ticket::whereIn('id', $validated['ids'])->update($update);
+
+                $label = implode(' / ', $parts);
+                ActivityLogger::log('tickets_bulk_assigned', "Bulk assigned {$count} tickets to {$label}", null, ['ids' => $validated['ids']] + $update);
+
+                return back()->with('success', "{$count} tickets assigned to {$label}.");
+
             case 'close':
                 Ticket::whereIn('id', $validated['ids'])->update([
                     'status' => 'closed',
@@ -255,5 +352,83 @@ class TicketController extends Controller
         }
 
         return back();
+    }
+
+    public function sendPasswordReset(Ticket $ticket)
+    {
+        $customer = Customer::withoutGlobalScopes()
+            ->where('email', $ticket->requester_email)
+            ->first();
+
+        if (! $customer) {
+            return back()->with('warning', 'No customer account found for this requester.');
+        }
+
+        $token = Str::random(64);
+
+        DB::table('customer_password_resets')->where('email', $customer->email)->delete();
+        DB::table('customer_password_resets')->insert([
+            'email' => $customer->email,
+            'token' => Hash::make($token),
+            'created_at' => now(),
+        ]);
+
+        $resetUrl = url("/portal/reset-password/{$token}?email=" . urlencode($customer->email));
+        Mail::to($customer->email)->send(new CustomerPasswordReset($resetUrl));
+
+        return back()->with('success', "Password reset email sent to {$customer->email}.");
+    }
+
+    public function markDuplicate(Request $request, Ticket $ticket)
+    {
+        $this->authorize('update', $ticket);
+
+        $validated = $request->validate([
+            'duplicate_of' => 'required|exists:tickets,id',
+        ]);
+
+        if ($validated['duplicate_of'] == $ticket->id) {
+            return back()->withErrors(['duplicate_of' => 'A ticket cannot be a duplicate of itself.']);
+        }
+
+        $original = Ticket::find($validated['duplicate_of']);
+
+        if ($original->duplicate_of) {
+            return back()->withErrors(['duplicate_of' => 'The target ticket is itself a duplicate. Please select the original ticket.']);
+        }
+
+        $ticket->update([
+            'duplicate_of' => $validated['duplicate_of'],
+            'status' => 'closed',
+            'resolved_at' => $ticket->resolved_at ?? now(),
+        ]);
+
+        $ticket->comments()->create([
+            'body' => "This ticket was marked as a duplicate of <a href=\"" . route('tickets.show', $original->id) . "\">{$original->reference}</a>.",
+            'type' => 'system',
+            'is_internal' => false,
+        ]);
+
+        ActivityLogger::log('ticket_marked_duplicate', "Marked {$ticket->reference} as duplicate of {$original->reference}", $ticket, [
+            'duplicate_of' => $original->id,
+        ]);
+
+        return back()->with('success', "Ticket marked as duplicate of {$original->reference} and closed.");
+    }
+
+    public function searchTickets(Request $request)
+    {
+        $search = $request->validate(['q' => 'required|string|min:2'])['q'];
+
+        $tickets = $request->user()->visibleTicketsQuery()
+            ->where(function ($q) use ($search) {
+                $q->where('reference', 'like', "%{$search}%")
+                    ->orWhere('subject', 'like', "%{$search}%");
+            })
+            ->whereNull('duplicate_of')
+            ->limit(10)
+            ->get(['id', 'reference', 'subject', 'status']);
+
+        return response()->json($tickets);
     }
 }

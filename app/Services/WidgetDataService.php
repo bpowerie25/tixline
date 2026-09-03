@@ -13,7 +13,7 @@ class WidgetDataService
         $query = $user->visibleTicketsQuery();
         $this->applyFilters($query, $filters);
 
-        return match ($widgetType) {
+        $data = match ($widgetType) {
             'tickets_by_status' => $this->ticketsByStatus($query),
             'tickets_by_priority' => $this->ticketsByPriority($query),
             'tickets_by_team' => $this->ticketsByTeam($query),
@@ -26,8 +26,16 @@ class WidgetDataService
             'avg_resolution_time_business' => $this->avgResolutionTimeBusiness($query),
             'sla_compliance' => $this->slaCompliance($query),
             'agent_performance' => $this->agentPerformance($query, $filters),
+            'ticket_list' => $this->ticketList($query),
             default => ['labels' => [], 'values' => []],
         };
+
+        // Merge user color overrides into the colorMap
+        if (! empty($filters['color_overrides']) && isset($data['labels'])) {
+            $data['colorMap'] = array_merge($data['colorMap'] ?? [], $filters['color_overrides']);
+        }
+
+        return $data;
     }
 
     private function applyFilters(Builder $query, array $filters): void
@@ -70,6 +78,12 @@ class WidgetDataService
         return [
             'labels' => $results->keys()->all(),
             'values' => $results->values()->all(),
+            'colorMap' => [
+                'open' => '#22c55e',
+                'pending' => '#eab308',
+                'resolved' => '#3b82f6',
+                'closed' => '#9ca3af',
+            ],
         ];
     }
 
@@ -82,6 +96,12 @@ class WidgetDataService
         return [
             'labels' => $results->keys()->all(),
             'values' => $results->values()->all(),
+            'colorMap' => [
+                'low' => '#9ca3af',
+                'normal' => '#3b82f6',
+                'high' => '#f97316',
+                'urgent' => '#ef4444',
+            ],
         ];
     }
 
@@ -237,6 +257,31 @@ class WidgetDataService
         return [
             'labels' => ['Met', 'Breached'],
             'values' => [$met, $breached],
+        ];
+    }
+
+    private function ticketList(Builder $query): array
+    {
+        $tickets = (clone $query)
+            ->with(['assignee:id,name', 'team:id,name'])
+            ->latest()
+            ->limit(100)
+            ->get(['id', 'reference', 'subject', 'requester_name', 'status', 'priority', 'assigned_to', 'team_id', 'created_at']);
+
+        $rows = $tickets->map(fn ($t) => [
+            'Reference' => $t->reference,
+            'Subject' => $t->subject,
+            'Requester' => $t->requester_name,
+            'Team' => $t->team?->name ?? '-',
+            'Assigned To' => $t->assignee?->name ?? 'Unassigned',
+            'Status' => $t->status,
+            'Priority' => $t->priority,
+            'Submitted' => $t->created_at->format('d M Y H:i'),
+        ])->all();
+
+        return [
+            'columns' => ['Reference', 'Subject', 'Requester', 'Team', 'Assigned To', 'Status', 'Priority', 'Submitted'],
+            'rows' => $rows,
         ];
     }
 

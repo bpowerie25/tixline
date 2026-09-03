@@ -69,7 +69,8 @@ class AttachmentDownloadTest extends TestCase
     {
         $teamA = Team::create(['name' => 'Team A', 'slug' => 'team-a']);
         $teamB = Team::create(['name' => 'Team B', 'slug' => 'team-b']);
-        $agent = User::factory()->create(['role_id' => \App\Models\Role::where('name', \App\Models\Role::AGENT)->first()->id, 'team_id' => $teamA->id]);
+        $agent = User::factory()->create(['role_id' => \App\Models\Role::where('name', \App\Models\Role::AGENT)->first()->id]);
+        $agent->teams()->attach($teamA);
 
         [$ticket, $attachment] = $this->createTicketWithAttachment([
             'team_id' => $teamB->id,

@@ -1,8 +1,13 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import SlaBadge from '@/Components/SlaBadge.vue';
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { ref, watch, computed } from 'vue';
+
+function ticketUrl(ticketId) {
+    const currentUrl = usePage().url;
+    return route('tickets.show', ticketId) + '?back=' + encodeURIComponent(currentUrl);
+}
 
 const props = defineProps({
     tickets: Object,
@@ -47,26 +52,35 @@ function toggleSelectAll() {
 
 const hasSelection = computed(() => selected.value.length > 0);
 
-function bulkAction(action) {
+const bulkAssignTo = ref('');
+const bulkTeamId = ref('');
+
+function bulkAction(action, extra = {}) {
     const labels = {
         close: `Close ${selected.value.length} ticket(s)?`,
         resolve: `Resolve ${selected.value.length} ticket(s)?`,
         delete: `Delete ${selected.value.length} ticket(s)? This cannot be undone.`,
         spam: `Mark ${selected.value.length} ticket(s) as spam? This will delete them, blocklist the sender(s), and learn spam patterns.`,
+        assign: `Assign ${selected.value.length} ticket(s)?`,
     };
 
     if (confirm(labels[action])) {
         router.post(route('tickets.bulk'), {
             ids: selected.value,
             action: action,
+            ...extra,
         }, {
             onSuccess: () => {
                 selected.value = [];
                 selectAll.value = false;
+                bulkAssignTo.value = '';
+                bulkTeamId.value = '';
             },
         });
     }
 }
+
+const canBulkAssign = computed(() => bulkAssignTo.value || bulkTeamId.value);
 
 const priorityColors = {
     low: 'bg-gray-100 text-gray-700',
@@ -90,9 +104,14 @@ const statusColors = {
         <template #header>
             <div class="flex items-center justify-between">
                 <h2 class="text-xl font-semibold leading-tight text-gray-800">Tickets</h2>
-                <Link :href="route('tickets.create')" class="inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700">
-                    New Ticket
-                </Link>
+                <div class="flex items-center gap-3">
+                    <Link :href="route('tickets.my-reassignments')" class="text-sm text-gray-500 hover:text-gray-700">
+                        My Reassignments
+                    </Link>
+                    <Link :href="route('tickets.create')" class="inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700">
+                        New Ticket
+                    </Link>
+                </div>
             </div>
         </template>
 
@@ -101,6 +120,12 @@ const statusColors = {
                 <!-- Flash messages -->
                 <div v-if="$page.props.flash?.success" class="mb-4 rounded-md bg-green-50 border border-green-200 p-4">
                     <p class="text-sm text-green-800">{{ $page.props.flash.success }}</p>
+                </div>
+                <div v-if="$page.props.flash?.warning" class="mb-4 rounded-md bg-yellow-50 border border-yellow-200 p-4">
+                    <p class="text-sm text-yellow-800">
+                        {{ $page.props.flash.warning }}
+                        <Link :href="route('tickets.my-reassignments')" class="ml-1 font-medium underline hover:text-yellow-900">View My Reassignments</Link>
+                    </p>
                 </div>
 
                 <!-- Filters -->
@@ -142,6 +167,16 @@ const statusColors = {
                     <button @click="bulkAction('resolve')" class="rounded bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700">Resolve</button>
                     <button @click="bulkAction('spam')" class="rounded bg-orange-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-orange-700">Spam</button>
                     <button @click="bulkAction('delete')" class="rounded bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700">Delete</button>
+                    <span class="mx-1 text-gray-300">|</span>
+                    <select v-model="bulkTeamId" class="rounded border-gray-300 text-xs shadow-sm py-1.5">
+                        <option value="">Team...</option>
+                        <option v-for="team in teams" :key="team.id" :value="team.id">{{ team.name }}</option>
+                    </select>
+                    <select v-model="bulkAssignTo" class="rounded border-gray-300 text-xs shadow-sm py-1.5">
+                        <option value="">Agent...</option>
+                        <option v-for="agent in agents" :key="agent.id" :value="agent.id">{{ agent.name }}</option>
+                    </select>
+                    <button @click="bulkAction('assign', { assigned_to: bulkAssignTo || undefined, team_id: bulkTeamId || undefined })" :disabled="!canBulkAssign" :class="[canBulkAssign ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-indigo-300 cursor-not-allowed', 'rounded px-3 py-1.5 text-xs font-medium text-white']">Assign</button>
                     <button @click="selected = []; selectAll = false" class="ml-auto text-xs text-gray-500 hover:text-gray-700">Clear selection</button>
                 </div>
 
@@ -169,7 +204,7 @@ const statusColors = {
                                 @click.stop
                             />
                             <Link
-                                :href="route('tickets.show', ticket.id)"
+                                :href="ticketUrl(ticket.id)"
                                 class="flex flex-1 items-center justify-between min-w-0"
                             >
                                 <div class="min-w-0 flex-1">

@@ -11,6 +11,15 @@ class Attachment extends Model
         'filename', 'original_filename', 'mime_type', 'size', 'path',
     ];
 
+    protected $appends = ['is_image'];
+
+    public function getIsImageAttribute(): bool
+    {
+        return in_array($this->mime_type, [
+            'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+        ]);
+    }
+
     public function attachable(): MorphTo
     {
         return $this->morphTo();

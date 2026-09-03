@@ -28,9 +28,13 @@ class CommentController extends Controller
         unset($validated['attachments'], $validated['close_ticket']);
         $comment = $ticket->comments()->create($validated);
 
+        $failedAttachments = [];
         if ($request->hasFile('attachments')) {
             foreach ($request->file('attachments') as $file) {
-                $attachmentService->storeUploadedFile($file, $comment);
+                $attachment = $attachmentService->storeUploadedFile($file, $comment);
+                if (! $attachment) {
+                    $failedAttachments[] = $file->getClientOriginalName();
+                }
             }
         }
 
@@ -49,13 +53,24 @@ class CommentController extends Controller
                 $ticket->update(['status' => 'pending']);
             }
 
-            Mail::to($ticket->requester_email)->send(new TicketReply($ticket, $comment));
+            $tenant = app()->bound('tenant') ? app('tenant') : null;
+            Mail::to($ticket->requester_email)->send(new TicketReply($ticket, $comment, $tenant));
         }
 
         if ($closeTicket) {
             $ticket->update(['status' => 'closed', 'resolved_at' => $ticket->resolved_at ?? now()]);
         }
 
-        return back()->with('success', $closeTicket ? 'Reply sent and ticket closed.' : 'Comment added.');
+        $successMessage = $closeTicket ? 'Reply sent and ticket closed.' : 'Comment added.';
+
+        if (! empty($failedAttachments)) {
+            $names = implode(', ', $failedAttachments);
+
+            return back()
+                ->with('success', $successMessage)
+                ->with('warning', "Some attachments could not be saved (unsupported file type or too large): {$names}");
+        }
+
+        return back()->with('success', $successMessage);
     }
 }
