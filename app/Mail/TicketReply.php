@@ -49,10 +49,11 @@ class TicketReply extends Mailable implements ShouldQueue
     protected function buildNotificationHtml(string $ticketUrl): string
     {
         $reference = e($this->ticket->reference);
+        $primaryColor = $this->tenant?->primary_color ?? '#be123c';
 
         return <<<HTML
         <p style="font-size: 15px; color: #374151;">
-            A reply has been added to your ticket <strong>{$reference}</strong>.
+            A reply has been added to your ticket <a href="{$ticketUrl}" style="color: {$primaryColor}; text-decoration: underline; font-weight: 600;">{$reference}</a>.
         </p>
         <p style="font-size: 14px; color: #6b7280;">
             Log in to the portal to view the response.
@@ -65,6 +66,7 @@ class TicketReply extends Mailable implements ShouldQueue
         $agentName = e($this->comment->user?->name ?? 'Support');
         $body = $this->comment->sanitized_body;
         $reference = e($this->ticket->reference);
+        $primaryColor = $this->tenant?->primary_color ?? '#be123c';
 
         $attachmentHtml = $this->buildAttachmentHtml($ticketUrl);
 
@@ -74,7 +76,7 @@ class TicketReply extends Mailable implements ShouldQueue
         <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 24px 0;" />
         <p style="color: #6b7280; font-size: 13px;">
             {$agentName}<br />
-            Ticket: {$reference}
+            Ticket: <a href="{$ticketUrl}" style="color: {$primaryColor}; text-decoration: underline;">{$reference}</a>
         </p>
         HTML;
     }
