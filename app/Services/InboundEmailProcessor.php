@@ -122,8 +122,10 @@ class InboundEmailProcessor
             return;
         }
 
+        $ticketUrl = EmailLayout::agentTicketUrl($ticket);
+        $name = e($ticket->requester_name);
         $html = EmailLayout::wrap(
-            "<p>Ticket [{$ticket->reference}] {$ticket->subject} has a new reply from {$ticket->requester_name}.</p>"
+            "<p>Ticket <a href=\"{$ticketUrl}\">[{$ticket->reference}]</a> {$ticket->subject} has a new reply from {$name}.</p>"
         );
 
         Mail::html($html, function ($message) use ($recipients, $ticket) {

@@ -183,13 +183,15 @@ class CustomerPortalController extends Controller
             }
         }
         if (! empty($recipients)) {
-            \Illuminate\Support\Facades\Mail::raw(
-                "Ticket [{$ticket->reference}] {$ticket->subject} has a new reply from {$ticket->requester_name}.",
-                function ($message) use ($recipients, $ticket) {
-                    $message->to($recipients)
-                        ->subject("[{$ticket->reference}] New reply: {$ticket->subject}");
-                }
+            $ticketUrl = \App\Helpers\EmailLayout::agentTicketUrl($ticket);
+            $name = e($ticket->requester_name);
+            $html = \App\Helpers\EmailLayout::wrap(
+                "<p>Ticket <a href=\"{$ticketUrl}\">[{$ticket->reference}]</a> {$ticket->subject} has a new reply from {$name}.</p>"
             );
+            \Illuminate\Support\Facades\Mail::html($html, function ($message) use ($recipients, $ticket) {
+                $message->to($recipients)
+                    ->subject("[{$ticket->reference}] New reply: {$ticket->subject}");
+            });
         }
 
         if (! empty($failedAttachments)) {
