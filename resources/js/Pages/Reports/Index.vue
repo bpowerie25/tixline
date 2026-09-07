@@ -132,6 +132,7 @@ function formatHours(hours) {
                                     <th class="px-4 py-3 text-right text-xs font-medium uppercase text-gray-500">Assigned</th>
                                     <th class="px-4 py-3 text-right text-xs font-medium uppercase text-gray-500">Open</th>
                                     <th class="px-4 py-3 text-right text-xs font-medium uppercase text-gray-500">Resolved</th>
+                                    <th class="px-4 py-3 text-right text-xs font-medium uppercase text-gray-500">Closed</th>
                                     <th class="px-4 py-3 text-right text-xs font-medium uppercase text-gray-500">Avg Response</th>
                                 </tr>
                             </thead>
@@ -141,6 +142,7 @@ function formatHours(hours) {
                                     <td class="px-4 py-3 text-sm text-gray-600 text-right">{{ agent.total_assigned }}</td>
                                     <td class="px-4 py-3 text-sm text-gray-600 text-right">{{ agent.open_count }}</td>
                                     <td class="px-4 py-3 text-sm text-gray-600 text-right">{{ agent.resolved_count }}</td>
+                                    <td class="px-4 py-3 text-sm text-gray-600 text-right">{{ agent.closed_count }}</td>
                                     <td class="px-4 py-3 text-sm text-gray-600 text-right">{{ formatHours(agent.avg_response_hours) }}</td>
                                 </tr>
                             </tbody>

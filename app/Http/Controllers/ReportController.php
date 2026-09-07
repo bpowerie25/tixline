@@ -43,6 +43,9 @@ class ReportController extends Controller
                 'assignedTickets as open_count' => function ($q) {
                     $q->where('status', 'open');
                 },
+                'assignedTickets as closed_count' => function ($q) use ($since) {
+                    $q->where('status', 'closed')->where('updated_at', '>=', $since);
+                },
             ])
             ->get(['id', 'name', 'email'])
             ->map(function ($agent) use ($since) {
