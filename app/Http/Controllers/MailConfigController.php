@@ -12,7 +12,7 @@ class MailConfigController extends Controller
 {
     public function index()
     {
-        $config = MailConfiguration::first();
+        $config = MailConfiguration::where('tenant_id', auth()->user()->tenant_id)->first();
 
         return Inertia::render('Settings/Mail', [
             'config' => $config ? [
@@ -62,7 +62,7 @@ class MailConfigController extends Controller
             'imap_delete_after_process' => 'boolean',
         ]);
 
-        $config = MailConfiguration::first();
+        $config = MailConfiguration::where('tenant_id', auth()->user()->tenant_id)->first();
 
         if ($config) {
             if (empty($validated['password'])) {
