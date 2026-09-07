@@ -34,7 +34,7 @@ class ReportController extends Controller
             ->pluck('count', 'priority');
 
         // Agent performance
-        $agentStats = User::whereIn('role', ['agent', 'admin'])
+        $agentStats = User::whereHas('role')
             ->withCount([
                 'assignedTickets as total_assigned',
                 'assignedTickets as resolved_count' => function ($q) use ($since) {
