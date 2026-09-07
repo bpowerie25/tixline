@@ -3,7 +3,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, router } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 
-const sortKey = ref('resolved_count');
+const sortKey = ref('closed_count');
 const sortAsc = ref(false);
 
 function toggleSort(key) {
@@ -158,6 +158,7 @@ function formatHours(hours) {
                                     <th @click="toggleSort('open_count')" class="px-4 py-3 text-right text-xs font-medium uppercase text-gray-500 cursor-pointer hover:text-gray-700 select-none">Open{{ sortIcon('open_count') }}</th>
                                     <th @click="toggleSort('resolved_count')" class="px-4 py-3 text-right text-xs font-medium uppercase text-gray-500 cursor-pointer hover:text-gray-700 select-none">Resolved{{ sortIcon('resolved_count') }}</th>
                                     <th @click="toggleSort('closed_count')" class="px-4 py-3 text-right text-xs font-medium uppercase text-gray-500 cursor-pointer hover:text-gray-700 select-none">Closed{{ sortIcon('closed_count') }}</th>
+                                    <th @click="toggleSort('pending_count')" class="px-4 py-3 text-right text-xs font-medium uppercase text-gray-500 cursor-pointer hover:text-gray-700 select-none">Pending{{ sortIcon('pending_count') }}</th>
                                     <th @click="toggleSort('avg_response_hours')" class="px-4 py-3 text-right text-xs font-medium uppercase text-gray-500 cursor-pointer hover:text-gray-700 select-none">Avg Response{{ sortIcon('avg_response_hours') }}</th>
                                 </tr>
                             </thead>
@@ -168,6 +169,7 @@ function formatHours(hours) {
                                     <td class="px-4 py-3 text-sm text-gray-600 text-right">{{ agent.open_count }}</td>
                                     <td class="px-4 py-3 text-sm text-gray-600 text-right">{{ agent.resolved_count }}</td>
                                     <td class="px-4 py-3 text-sm text-gray-600 text-right">{{ agent.closed_count }}</td>
+                                    <td class="px-4 py-3 text-sm text-gray-600 text-right">{{ agent.pending_count }}</td>
                                     <td class="px-4 py-3 text-sm text-gray-600 text-right">{{ formatHours(agent.avg_response_hours) }}</td>
                                 </tr>
                             </tbody>

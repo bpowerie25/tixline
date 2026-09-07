@@ -36,15 +36,20 @@ class ReportController extends Controller
         // Agent performance
         $agentStats = User::whereHas('role')
             ->withCount([
-                'assignedTickets as total_assigned',
-                'assignedTickets as resolved_count' => function ($q) use ($since) {
-                    $q->where('status', 'resolved')->where('resolved_at', '>=', $since);
+                'assignedTickets as total_assigned' => function ($q) use ($since) {
+                    $q->where('created_at', '>=', $since);
                 },
-                'assignedTickets as open_count' => function ($q) {
-                    $q->where('status', 'open');
+                'assignedTickets as resolved_count' => function ($q) use ($since) {
+                    $q->where('status', 'resolved')->where('created_at', '>=', $since);
+                },
+                'assignedTickets as open_count' => function ($q) use ($since) {
+                    $q->where('status', 'open')->where('created_at', '>=', $since);
                 },
                 'assignedTickets as closed_count' => function ($q) use ($since) {
-                    $q->where('status', 'closed')->where('updated_at', '>=', $since);
+                    $q->where('status', 'closed')->where('created_at', '>=', $since);
+                },
+                'assignedTickets as pending_count' => function ($q) use ($since) {
+                    $q->where('status', 'pending')->where('created_at', '>=', $since);
                 },
             ])
             ->get(['id', 'name', 'email'])
@@ -55,7 +60,7 @@ class ReportController extends Controller
                     ->get(['created_at', 'first_responded_at']);
 
                 if ($tickets->isNotEmpty()) {
-                    $totalHours = $tickets->sum(fn ($t) => $t->created_at->diffInMinutes($t->first_responded_at) / 60);
+                    $totalHours = $tickets->sum(fn ($t) => $this->calculateBusinessHours($t->created_at, $t->first_responded_at));
                     $agent->avg_response_hours = round($totalHours / $tickets->count(), 1);
                 } else {
                     $agent->avg_response_hours = null;
