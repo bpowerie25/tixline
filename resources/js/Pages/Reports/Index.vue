@@ -104,10 +104,12 @@ function formatHours(hours) {
                 <!-- Volume Chart -->
                 <div class="rounded-lg bg-white p-6 shadow">
                     <h3 class="text-sm font-medium text-gray-500 mb-4">Ticket Volume (last {{ days }} days)</h3>
-                    <div class="flex items-end gap-1 h-40">
-                        <div v-for="(count, date) in volumeByDay" :key="date" class="flex-1 flex flex-col items-center">
-                            <span class="text-xs text-gray-500 mb-1">{{ count }}</span>
-                            <div class="w-full bg-indigo-500 rounded-t" :style="{ height: (count / maxVolume * 100) + '%', minHeight: count > 0 ? '4px' : '0' }" />
+                    <div class="flex items-end gap-px h-64">
+                        <div v-for="(count, date) in volumeByDay" :key="date" class="flex-1 flex flex-col items-center justify-end h-full group relative">
+                            <div class="absolute -top-5 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs rounded px-1.5 py-0.5 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
+                                {{ date }}: {{ count }}
+                            </div>
+                            <div class="w-full bg-indigo-500 rounded-t transition-all" :style="{ height: (count / maxVolume * 100) + '%', minHeight: count > 0 ? '4px' : '0' }" />
                         </div>
                     </div>
                     <div class="flex justify-between mt-2 text-xs text-gray-400">
