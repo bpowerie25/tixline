@@ -1,7 +1,19 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, router } from '@inertiajs/vue3';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
+
+const sortKey = ref('resolved_count');
+const sortAsc = ref(false);
+
+function toggleSort(key) {
+    if (sortKey.value === key) {
+        sortAsc.value = !sortAsc.value;
+    } else {
+        sortKey.value = key;
+        sortAsc.value = false;
+    }
+}
 
 const props = defineProps({
     days: Number,
@@ -24,6 +36,19 @@ const statusColors = { open: '#22c55e', pending: '#eab308', resolved: '#3b82f6',
 const priorityColors = { low: '#9ca3af', normal: '#3b82f6', high: '#f97316', urgent: '#ef4444' };
 
 const totalTickets = computed(() => Object.values(props.statusBreakdown).reduce((a, b) => a + b, 0) || 1);
+
+const sortedAgentStats = computed(() => {
+    return [...props.agentStats].sort((a, b) => {
+        const av = a[sortKey.value] ?? -Infinity;
+        const bv = b[sortKey.value] ?? -Infinity;
+        return sortAsc.value ? (av > bv ? 1 : -1) : (av < bv ? 1 : -1);
+    });
+});
+
+function sortIcon(key) {
+    if (sortKey.value !== key) return '';
+    return sortAsc.value ? ' ↑' : ' ↓';
+}
 
 function formatHours(hours) {
     if (!hours) return '-';
@@ -128,16 +153,16 @@ function formatHours(hours) {
                         <table class="min-w-full divide-y divide-gray-200">
                             <thead>
                                 <tr>
-                                    <th class="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">Agent</th>
-                                    <th class="px-4 py-3 text-right text-xs font-medium uppercase text-gray-500">Assigned</th>
-                                    <th class="px-4 py-3 text-right text-xs font-medium uppercase text-gray-500">Open</th>
-                                    <th class="px-4 py-3 text-right text-xs font-medium uppercase text-gray-500">Resolved</th>
-                                    <th class="px-4 py-3 text-right text-xs font-medium uppercase text-gray-500">Closed</th>
-                                    <th class="px-4 py-3 text-right text-xs font-medium uppercase text-gray-500">Avg Response</th>
+                                    <th @click="toggleSort('name')" class="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500 cursor-pointer hover:text-gray-700 select-none">Agent{{ sortIcon('name') }}</th>
+                                    <th @click="toggleSort('total_assigned')" class="px-4 py-3 text-right text-xs font-medium uppercase text-gray-500 cursor-pointer hover:text-gray-700 select-none">Assigned{{ sortIcon('total_assigned') }}</th>
+                                    <th @click="toggleSort('open_count')" class="px-4 py-3 text-right text-xs font-medium uppercase text-gray-500 cursor-pointer hover:text-gray-700 select-none">Open{{ sortIcon('open_count') }}</th>
+                                    <th @click="toggleSort('resolved_count')" class="px-4 py-3 text-right text-xs font-medium uppercase text-gray-500 cursor-pointer hover:text-gray-700 select-none">Resolved{{ sortIcon('resolved_count') }}</th>
+                                    <th @click="toggleSort('closed_count')" class="px-4 py-3 text-right text-xs font-medium uppercase text-gray-500 cursor-pointer hover:text-gray-700 select-none">Closed{{ sortIcon('closed_count') }}</th>
+                                    <th @click="toggleSort('avg_response_hours')" class="px-4 py-3 text-right text-xs font-medium uppercase text-gray-500 cursor-pointer hover:text-gray-700 select-none">Avg Response{{ sortIcon('avg_response_hours') }}</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-100">
-                                <tr v-for="agent in agentStats" :key="agent.id">
+                                <tr v-for="agent in sortedAgentStats" :key="agent.id">
                                     <td class="px-4 py-3 text-sm font-medium text-gray-900">{{ agent.name }}</td>
                                     <td class="px-4 py-3 text-sm text-gray-600 text-right">{{ agent.total_assigned }}</td>
                                     <td class="px-4 py-3 text-sm text-gray-600 text-right">{{ agent.open_count }}</td>
