@@ -89,6 +89,11 @@ class MailConfigController extends Controller
             $config = MailConfiguration::where('tenant_id', auth()->user()->tenant_id)->first();
 
             if ($config && $config->is_active) {
+                // Purge all cached mailers first so stale transports are discarded
+                foreach (array_keys(app('mail.manager')->getMailers()) as $name) {
+                    Mail::purge($name);
+                }
+
                 config([
                     'mail.default' => $config->mailer,
                     "mail.mailers.{$config->mailer}.transport" => $config->mailer,
@@ -100,8 +105,6 @@ class MailConfigController extends Controller
                     'mail.from.address' => $config->from_address ?: config('mail.from.address'),
                     'mail.from.name' => $config->from_name ?: config('mail.from.name'),
                 ]);
-
-                Mail::purge($config->mailer);
             }
 
             Mail::raw('This is a test email from Tixline to verify your mail configuration is working correctly.', function ($message) use ($request) {
