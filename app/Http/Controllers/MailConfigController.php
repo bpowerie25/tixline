@@ -89,10 +89,7 @@ class MailConfigController extends Controller
             $config = MailConfiguration::where('tenant_id', auth()->user()->tenant_id)->first();
 
             if ($config && $config->is_active) {
-                // Purge all cached mailers first so stale transports are discarded
-                foreach (array_keys(app('mail.manager')->getMailers()) as $name) {
-                    Mail::purge($name);
-                }
+                Mail::purge('smtp');
 
                 config([
                     'mail.default' => $config->mailer,
