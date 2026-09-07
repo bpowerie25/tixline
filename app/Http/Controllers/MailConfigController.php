@@ -47,7 +47,7 @@ class MailConfigController extends Controller
             'port' => 'nullable|integer|min:1|max:65535',
             'encryption' => 'nullable|in:tls,ssl',
             'username' => 'nullable|string|max:255',
-            'password' => 'nullable|string|max:500',
+            'password' => 'nullable|string',
             'from_address' => 'required|email|max:255',
             'from_name' => 'required|string|max:255',
             'is_active' => 'boolean',
