@@ -86,6 +86,24 @@ class MailConfigController extends Controller
         ]);
 
         try {
+            $config = MailConfiguration::where('tenant_id', auth()->user()->tenant_id)->first();
+
+            if ($config && $config->is_active) {
+                config([
+                    'mail.default' => $config->mailer,
+                    "mail.mailers.{$config->mailer}.transport" => $config->mailer,
+                    "mail.mailers.{$config->mailer}.host" => $config->host,
+                    "mail.mailers.{$config->mailer}.port" => $config->port,
+                    "mail.mailers.{$config->mailer}.encryption" => $config->encryption,
+                    "mail.mailers.{$config->mailer}.username" => $config->username,
+                    "mail.mailers.{$config->mailer}.password" => $config->password,
+                    'mail.from.address' => $config->from_address ?: config('mail.from.address'),
+                    'mail.from.name' => $config->from_name ?: config('mail.from.name'),
+                ]);
+
+                Mail::purge($config->mailer);
+            }
+
             Mail::raw('This is a test email from Tixline to verify your mail configuration is working correctly.', function ($message) use ($request) {
                 $message->to($request->test_email)
                     ->subject('Tixline Mail Configuration Test');
