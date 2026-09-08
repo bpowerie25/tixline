@@ -3,6 +3,9 @@
 namespace App\Providers;
 
 use App\Models\MailConfiguration;
+use Illuminate\Queue\Events\JobProcessing;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\ServiceProvider;
 
 class MailConfigServiceProvider extends ServiceProvider
@@ -14,6 +17,14 @@ class MailConfigServiceProvider extends ServiceProvider
         } catch (\Throwable) {
             // Table may not exist yet (fresh install or test environment)
         }
+
+        Queue::before(function (JobProcessing $event) {
+            try {
+                $this->applyMailConfig();
+            } catch (\Throwable) {
+                //
+            }
+        });
     }
 
     protected function applyMailConfig(): void
@@ -35,5 +46,7 @@ class MailConfigServiceProvider extends ServiceProvider
             'mail.from.address' => $config->from_address ?: config('mail.from.address'),
             'mail.from.name' => $config->from_name ?: config('mail.from.name'),
         ]);
+
+        Mail::purge($config->mailer);
     }
 }
