@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Models\Tenant;
+use App\Providers\MailConfigServiceProvider;
 use Closure;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -38,6 +39,12 @@ class ResolveTenant
             ]);
         } else {
             Inertia::share('tenant', null);
+        }
+
+        try {
+            app()->getProvider(MailConfigServiceProvider::class)->applyMailConfig();
+        } catch (\Throwable) {
+            //
         }
 
         return $next($request);

@@ -28,6 +28,7 @@ class PollImapMailbox extends Command
         // Bind tenant context so scoped models (Customer, Ticket, etc.) are created correctly
         if ($config->tenant_id && $config->tenant) {
             app()->instance('tenant', $config->tenant);
+            app()->getProvider(\App\Providers\MailConfigServiceProvider::class)->applyMailConfig();
         }
 
         if (! $config->imap_host || ! $config->imap_username || ! $config->imap_password) {

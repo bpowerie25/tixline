@@ -12,12 +12,7 @@ class MailConfigServiceProvider extends ServiceProvider
 {
     public function boot(): void
     {
-        try {
-            $this->applyMailConfig();
-        } catch (\Throwable) {
-            // Table may not exist yet (fresh install or test environment)
-        }
-
+        // Apply mail config before each queued job (tenant is set by the job context)
         Queue::before(function (JobProcessing $event) {
             try {
                 $this->applyMailConfig();
@@ -27,7 +22,7 @@ class MailConfigServiceProvider extends ServiceProvider
         });
     }
 
-    protected function applyMailConfig(): void
+    public function applyMailConfig(): void
     {
         $config = MailConfiguration::active();
 
