@@ -233,6 +233,44 @@ Tenants are resolved by:
 | `/portal` | Customer portal |
 | `/api/v1/tickets` | REST API |
 
+## Corpus Export (Topic Analysis)
+
+Two Artisan commands export a pseudonymised, PII-redacted ticket corpus for external topic clustering or NLP analysis.
+
+### Export
+
+```bash
+php artisan tickets:export-corpus \
+  --salt=my-secret-salt \
+  --since=2024-01-01 \
+  --until=2024-12-31 \
+  --include-replies \
+  --out=storage/app/exports/corpus.jsonl
+```
+
+Produces one JSONL row per customer message (or one per ticket without `--include-replies`). Agent replies, internal notes, attachments, and auth data are never included. PII is redacted with tokens (`[EMAIL]`, `[PHONE]`, `[IBAN]`, `[URL]`, `[CARD]`, `[NAME]`). A `README.md` data dictionary is generated alongside the export.
+
+### Audit
+
+```bash
+php artisan tickets:audit-corpus storage/app/exports/corpus.jsonl
+```
+
+Scans the export for residual PII (emails, digit sequences, IBANs, known names). Exits non-zero if any hits are found.
+
+### Handover procedure
+
+1. Export with an explicit `--salt` and record it securely (e.g. password manager).
+2. Run the audit command and resolve any residual PII before sharing.
+3. Encrypt the JSONL file (e.g. `gpg --symmetric corpus.jsonl`).
+4. Share via a time-limited link (e.g. pre-signed S3 URL or equivalent, ≤ 72 hours).
+5. Send the decryption passphrase out of band (e.g. separate Slack DM, phone call).
+6. Record who authorised the export, the recipient, the date, and the salt identifier in your audit log.
+
+### Configuration
+
+Add names, domains, or extra regex patterns to `config/corpus.php` for additional redaction.
+
 ## License
 
 AGPL-3.0-or-later — see [LICENSE](LICENSE) for details.
