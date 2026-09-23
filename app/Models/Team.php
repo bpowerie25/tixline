@@ -12,7 +12,19 @@ class Team extends Model
 {
     use BelongsToTenant;
 
-    protected $fillable = ['name', 'slug', 'description', 'color', 'department_id', 'lead_id', 'tenant_id'];
+    protected $fillable = ['name', 'slug', 'description', 'color', 'is_restricted', 'department_id', 'lead_id', 'tenant_id'];
+
+    protected $casts = [
+        'is_restricted' => 'boolean',
+    ];
+
+    public static function restrictedTeamIdsExcluding(array $userTeamIds): array
+    {
+        return static::where('is_restricted', true)
+            ->whereNotIn('id', $userTeamIds)
+            ->pluck('id')
+            ->toArray();
+    }
 
     public function department(): BelongsTo
     {

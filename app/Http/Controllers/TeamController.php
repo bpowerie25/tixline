@@ -24,6 +24,7 @@ class TeamController extends Controller
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'color' => 'nullable|string|max:7',
+            'is_restricted' => 'boolean',
         ]);
 
         $validated['slug'] = Str::slug($validated['name']);
@@ -39,6 +40,7 @@ class TeamController extends Controller
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'color' => 'nullable|string|max:7',
+            'is_restricted' => 'boolean',
         ]);
 
         $validated['slug'] = Str::slug($validated['name']);

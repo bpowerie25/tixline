@@ -269,6 +269,63 @@ class PermissionTest extends TestCase
         $this->assertDatabaseMissing('tickets', ['id' => $ticket->id]);
     }
 
+    // === Restricted teams ===
+
+    public function test_admin_cannot_see_restricted_team_ticket_when_not_member(): void
+    {
+        $restricted = Team::create(['name' => 'Confidential', 'slug' => 'confidential', 'is_restricted' => true]);
+        $ticket = Ticket::create(['subject' => 'Secret', 'requester_name' => 'A', 'requester_email' => 'a@test.com', 'team_id' => $restricted->id]);
+
+        $this->assertFalse($this->admin->canSeeTicket($ticket));
+        $this->assertFalse($this->admin->visibleTicketsQuery()->get()->contains($ticket));
+    }
+
+    public function test_member_can_see_restricted_team_ticket(): void
+    {
+        $restricted = Team::create(['name' => 'Confidential', 'slug' => 'confidential', 'is_restricted' => true]);
+        $this->agentA->teams()->attach($restricted);
+        $ticket = Ticket::create(['subject' => 'Secret', 'requester_name' => 'A', 'requester_email' => 'a@test.com', 'team_id' => $restricted->id]);
+
+        $this->assertTrue($this->agentA->canSeeTicket($ticket));
+        $this->assertTrue($this->agentA->visibleTicketsQuery()->get()->contains($ticket));
+    }
+
+    public function test_assigned_agent_sees_restricted_ticket_without_membership(): void
+    {
+        $restricted = Team::create(['name' => 'Confidential', 'slug' => 'confidential', 'is_restricted' => true]);
+        $ticket = Ticket::create(['subject' => 'Secret', 'requester_name' => 'A', 'requester_email' => 'a@test.com', 'team_id' => $restricted->id, 'assigned_to' => $this->agentA->id]);
+
+        $this->assertTrue($this->agentA->canSeeTicket($ticket));
+        $this->assertTrue($this->agentA->visibleTicketsQuery()->get()->contains($ticket));
+    }
+
+    public function test_team_lead_cannot_see_restricted_team_ticket_when_not_member(): void
+    {
+        $restricted = Team::create(['name' => 'Confidential', 'slug' => 'confidential', 'is_restricted' => true]);
+        $ticket = Ticket::create(['subject' => 'Secret', 'requester_name' => 'A', 'requester_email' => 'a@test.com', 'team_id' => $restricted->id]);
+
+        $this->assertFalse($this->teamLead->canSeeTicket($ticket));
+        $this->assertFalse($this->teamLead->visibleTicketsQuery()->get()->contains($ticket));
+    }
+
+    public function test_group_manager_cannot_see_restricted_department_ticket(): void
+    {
+        $restricted = Team::create(['name' => 'Confidential', 'slug' => 'confidential', 'is_restricted' => true, 'department_id' => $this->department->id]);
+        $ticket = Ticket::create(['subject' => 'Secret', 'requester_name' => 'A', 'requester_email' => 'a@test.com', 'team_id' => $restricted->id]);
+
+        $this->assertFalse($this->groupManager->canSeeTicket($ticket));
+        $this->assertFalse($this->groupManager->visibleTicketsQuery()->get()->contains($ticket));
+    }
+
+    public function test_non_restricted_team_visibility_unchanged(): void
+    {
+        $ticket = Ticket::create(['subject' => 'Normal', 'requester_name' => 'A', 'requester_email' => 'a@test.com', 'team_id' => $this->teamA->id]);
+
+        $this->assertTrue($this->admin->canSeeTicket($ticket));
+        $this->assertTrue($this->teamLead->canSeeTicket($ticket));
+        $this->assertTrue($this->agentA->canSeeTicket($ticket));
+    }
+
     // === Department CRUD ===
 
     public function test_create_department(): void

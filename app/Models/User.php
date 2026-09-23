@@ -66,14 +66,32 @@ class User extends Authenticatable
         return $this->role?->name === Role::ADMIN;
     }
 
+    private ?array $teamIdsCache = null;
+
     public function teamIds(): array
     {
-        return $this->teams()->pluck('teams.id')->toArray();
+        return $this->teamIdsCache ??= $this->teams()->pluck('teams.id')->toArray();
     }
 
     // Ticket visibility -- what tickets can this user see?
     public function canSeeTicket(Ticket $ticket): bool
     {
+        // Assigned agent always sees their ticket
+        if ($ticket->assigned_to == $this->id && $ticket->assigned_to !== null) {
+            return true;
+        }
+
+        // Restricted team gate: only explicit members can see these tickets
+        if ($ticket->team_id) {
+            $isRestricted = $ticket->relationLoaded('team')
+                ? $ticket->team?->is_restricted
+                : Team::where('id', $ticket->team_id)->value('is_restricted');
+
+            if ($isRestricted) {
+                return in_array($ticket->team_id, $this->teamIds());
+            }
+        }
+
         if ($this->isAdmin()) {
             return true;
         }
@@ -84,10 +102,6 @@ class User extends Authenticatable
 
         // Custom (non-system) roles with tickets.view can see all tickets
         if (! $this->role?->is_system && $this->hasPermission('tickets.view')) {
-            return true;
-        }
-
-        if ($ticket->assigned_to == $this->id && $ticket->assigned_to !== null) {
             return true;
         }
 
@@ -124,23 +138,23 @@ class User extends Authenticatable
     public function visibleTicketsQuery()
     {
         if ($this->isAdmin()) {
-            return Ticket::query();
+            return $this->excludeRestrictedTeams(Ticket::query());
         }
 
         if ($this->role?->name === Role::TEAM_LEAD) {
-            return Ticket::query();
+            return $this->excludeRestrictedTeams(Ticket::query());
         }
 
         // Custom (non-system) roles with tickets.view can see all tickets
         if (! $this->role?->is_system && $this->hasPermission('tickets.view')) {
-            return Ticket::query();
+            return $this->excludeRestrictedTeams(Ticket::query());
         }
 
         $teamIds = $this->teamIds();
 
         // Internal agents with no teams assigned can see all tickets
         if (empty($teamIds) && ! $this->is_external) {
-            return Ticket::query();
+            return $this->excludeRestrictedTeams(Ticket::query());
         }
 
         $query = Ticket::where(function ($q) use ($teamIds) {
@@ -157,11 +171,31 @@ class User extends Authenticatable
             if ($this->role?->name === Role::GROUP_MANAGER) {
                 $departmentIds = Team::whereIn('id', $teamIds)->whereNotNull('department_id')->pluck('department_id');
                 if ($departmentIds->isNotEmpty()) {
-                    $departmentTeamIds = Team::whereIn('department_id', $departmentIds)->pluck('id');
+                    $departmentTeamIds = Team::whereIn('department_id', $departmentIds)
+                        ->where(function ($q) use ($teamIds) {
+                            $q->where('is_restricted', false)
+                              ->orWhereIn('id', $teamIds);
+                        })
+                        ->pluck('id');
                     $q->orWhereIn('team_id', $departmentTeamIds);
                 }
             }
         });
+
+        return $query;
+    }
+
+    private function excludeRestrictedTeams($query)
+    {
+        $restrictedExcluded = Team::restrictedTeamIdsExcluding($this->teamIds());
+
+        if (! empty($restrictedExcluded)) {
+            $query->where(function ($q) use ($restrictedExcluded) {
+                $q->whereNotIn('team_id', $restrictedExcluded)
+                  ->orWhereNull('team_id')
+                  ->orWhere('assigned_to', $this->id);
+            });
+        }
 
         return $query;
     }

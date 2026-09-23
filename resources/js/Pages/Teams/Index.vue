@@ -17,6 +17,7 @@ const form = useForm({
     name: '',
     description: '',
     color: '#6366f1',
+    is_restricted: false,
 });
 
 function openCreate() {
@@ -30,6 +31,7 @@ function openEdit(team) {
     form.name = team.name;
     form.description = team.description || '';
     form.color = team.color;
+    form.is_restricted = team.is_restricted || false;
     showForm.value = true;
 }
 
@@ -117,6 +119,12 @@ function removeMember(userId) {
                             <label class="block text-sm font-medium text-gray-700">Description</label>
                             <textarea v-model="form.description" rows="2" class="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
                         </div>
+                        <div class="flex items-center gap-2">
+                            <input v-model="form.is_restricted" type="checkbox" id="is_restricted"
+                                   class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+                            <label for="is_restricted" class="text-sm font-medium text-gray-700">Restricted</label>
+                            <span class="text-xs text-gray-500">— only explicit members can view tickets in this team</span>
+                        </div>
                         <div class="flex gap-3">
                             <button type="submit" :disabled="form.processing" class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50">
                                 {{ editingTeam ? 'Update' : 'Create' }}
@@ -136,7 +144,10 @@ function removeMember(userId) {
                                 <div class="flex items-center gap-3">
                                     <span class="h-4 w-4 rounded-full shrink-0" :style="{ backgroundColor: team.color }" />
                                     <div>
-                                        <div class="font-medium text-gray-900">{{ team.name }}</div>
+                                        <div class="font-medium text-gray-900">
+                                            {{ team.name }}
+                                            <span v-if="team.is_restricted" class="ml-2 inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">Restricted</span>
+                                        </div>
                                         <div class="text-sm text-gray-500">{{ team.members_count }} members &middot; {{ team.tickets_count }} tickets</div>
                                     </div>
                                 </div>
