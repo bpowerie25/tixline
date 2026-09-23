@@ -14,49 +14,52 @@ class ReportController extends Controller
     {
         $days = (int) $request->input('days', 30);
         $since = now()->subDays($days);
+        $baseQuery = fn () => $request->user()->visibleTicketsQuery();
 
         // Volume by day
-        $volumeByDay = Ticket::where('created_at', '>=', $since)
+        $volumeByDay = $baseQuery()->where('created_at', '>=', $since)
             ->selectRaw('DATE(created_at) as date, COUNT(*) as count')
             ->groupBy('date')
             ->orderBy('date')
             ->pluck('count', 'date');
 
         // Status breakdown
-        $statusBreakdown = Ticket::selectRaw('status, COUNT(*) as count')
+        $statusBreakdown = $baseQuery()->selectRaw('status, COUNT(*) as count')
             ->groupBy('status')
             ->pluck('count', 'status');
 
         // Priority breakdown
-        $priorityBreakdown = Ticket::where('created_at', '>=', $since)
+        $priorityBreakdown = $baseQuery()->where('created_at', '>=', $since)
             ->selectRaw('priority, COUNT(*) as count')
             ->groupBy('priority')
             ->pluck('count', 'priority');
 
         // Agent performance
+        $visibleTicketIds = $baseQuery()->pluck('id');
         $agentStats = User::whereHas('role')
             ->withCount([
-                'assignedTickets as total_assigned' => function ($q) use ($since) {
-                    $q->where('created_at', '>=', $since);
+                'assignedTickets as total_assigned' => function ($q) use ($since, $visibleTicketIds) {
+                    $q->where('created_at', '>=', $since)->whereIn('id', $visibleTicketIds);
                 },
-                'assignedTickets as resolved_count' => function ($q) use ($since) {
-                    $q->where('status', 'resolved')->where('created_at', '>=', $since);
+                'assignedTickets as resolved_count' => function ($q) use ($since, $visibleTicketIds) {
+                    $q->where('status', 'resolved')->where('created_at', '>=', $since)->whereIn('id', $visibleTicketIds);
                 },
-                'assignedTickets as open_count' => function ($q) use ($since) {
-                    $q->where('status', 'open')->where('created_at', '>=', $since);
+                'assignedTickets as open_count' => function ($q) use ($since, $visibleTicketIds) {
+                    $q->where('status', 'open')->where('created_at', '>=', $since)->whereIn('id', $visibleTicketIds);
                 },
-                'assignedTickets as closed_count' => function ($q) use ($since) {
-                    $q->where('status', 'closed')->where('created_at', '>=', $since);
+                'assignedTickets as closed_count' => function ($q) use ($since, $visibleTicketIds) {
+                    $q->where('status', 'closed')->where('created_at', '>=', $since)->whereIn('id', $visibleTicketIds);
                 },
-                'assignedTickets as pending_count' => function ($q) use ($since) {
-                    $q->where('status', 'pending')->where('created_at', '>=', $since);
+                'assignedTickets as pending_count' => function ($q) use ($since, $visibleTicketIds) {
+                    $q->where('status', 'pending')->where('created_at', '>=', $since)->whereIn('id', $visibleTicketIds);
                 },
             ])
             ->get(['id', 'name', 'email'])
-            ->map(function ($agent) use ($since) {
+            ->map(function ($agent) use ($since, $visibleTicketIds) {
                 $tickets = Ticket::where('assigned_to', $agent->id)
                     ->where('created_at', '>=', $since)
                     ->whereNotNull('first_responded_at')
+                    ->whereIn('id', $visibleTicketIds)
                     ->get(['created_at', 'first_responded_at']);
 
                 if ($tickets->isNotEmpty()) {
@@ -70,13 +73,13 @@ class ReportController extends Controller
             });
 
         // Source breakdown
-        $sourceBreakdown = Ticket::where('created_at', '>=', $since)
+        $sourceBreakdown = $baseQuery()->where('created_at', '>=', $since)
             ->selectRaw('source, COUNT(*) as count')
             ->groupBy('source')
             ->pluck('count', 'source');
 
         // Average resolution time
-        $resolvedTickets = Ticket::where('resolved_at', '>=', $since)
+        $resolvedTickets = $baseQuery()->where('resolved_at', '>=', $since)
             ->whereNotNull('resolved_at')
             ->get(['created_at', 'resolved_at']);
 

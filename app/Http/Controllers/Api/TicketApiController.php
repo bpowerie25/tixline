@@ -11,7 +11,8 @@ class TicketApiController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Ticket::with(['assignee:id,name', 'team:id,name', 'labels:id,name,color']);
+        $query = $request->user()->visibleTicketsQuery()
+            ->with(['assignee:id,name', 'team:id,name', 'labels:id,name,color']);
 
         if ($request->filled('status')) {
             $query->where('status', $request->status);
@@ -29,8 +30,12 @@ class TicketApiController extends Controller
         return $query->latest()->paginate($request->input('per_page', 25));
     }
 
-    public function show(Ticket $ticket)
+    public function show(Request $request, Ticket $ticket)
     {
+        if (! $request->user()->canSeeTicket($ticket)) {
+            abort(403);
+        }
+
         $ticket->load([
             'assignee:id,name',
             'team:id,name',
