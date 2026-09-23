@@ -3,6 +3,7 @@
 use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\AgentController;
 use App\Http\Controllers\InboundEmailReviewController;
+use App\Http\Controllers\InboundMailboxController;
 use App\Http\Controllers\SpamFilterController;
 use App\Http\Controllers\MailConfigController;
 use App\Http\Controllers\AttachmentController;
@@ -178,7 +179,10 @@ Route::middleware('auth')->group(function () {
         Route::get('/settings/mail', [MailConfigController::class, 'index'])->name('mail-config.index');
         Route::post('/settings/mail', [MailConfigController::class, 'store'])->name('mail-config.store');
         Route::post('/settings/mail/test', [MailConfigController::class, 'test'])->name('mail-config.test');
-        Route::post('/settings/mail/test-imap', [MailConfigController::class, 'testImap'])->name('mail-config.test-imap');
+        Route::post('/settings/mailboxes', [InboundMailboxController::class, 'store'])->name('inbound-mailboxes.store');
+        Route::put('/settings/mailboxes/{mailbox}', [InboundMailboxController::class, 'update'])->name('inbound-mailboxes.update');
+        Route::delete('/settings/mailboxes/{mailbox}', [InboundMailboxController::class, 'destroy'])->name('inbound-mailboxes.destroy');
+        Route::post('/settings/mailboxes/{mailbox}/test', [InboundMailboxController::class, 'test'])->name('inbound-mailboxes.test');
     });
 
     // Inbound Email Review
