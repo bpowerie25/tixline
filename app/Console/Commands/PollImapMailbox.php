@@ -64,6 +64,10 @@ class PollImapMailbox extends Command
             return;
         }
 
+        $this->line("  Host: {$mailbox->imap_host}:{$mailbox->imap_port} ({$mailbox->imap_encryption})");
+        $this->line("  User: {$mailbox->imap_username}");
+        $this->line("  Pass length: ".strlen($mailbox->imap_password));
+
         $client = Client::make([
             'host' => $mailbox->imap_host,
             'port' => $mailbox->imap_port ?: 993,
