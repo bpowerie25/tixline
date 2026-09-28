@@ -2,6 +2,8 @@
 
 return [
 
+    'agent_registration' => (bool) env('AGENT_REGISTRATION', false),
+
     'multi_tenant' => (bool) env('MULTI_TENANT', false),
 
     'base_domain' => env('TENANT_BASE_DOMAIN'),

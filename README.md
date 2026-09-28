@@ -204,6 +204,16 @@ SPAM_SCORE_THRESHOLD=5.0
 SPAM_MAX_PER_HOUR=10
 ```
 
+### Agent Registration
+
+Agent self-registration is **disabled by default**. Admins create agents from the Agents screen. To enable the `/register` route (e.g. during initial setup):
+
+```env
+AGENT_REGISTRATION=true
+```
+
+After changing this value, rebuild caches: `php artisan config:cache && php artisan route:cache`.
+
 ### Multi-Tenant
 
 ```env
