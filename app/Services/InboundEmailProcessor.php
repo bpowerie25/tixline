@@ -57,13 +57,14 @@ class InboundEmailProcessor
             ];
         }
 
-        // New ticket
+        // New ticket — assign mailbox team upfront so workflows see it
         $ticket = Ticket::create([
             'subject' => $subject,
             'body' => $message->body,
             'requester_name' => $fromName,
             'requester_email' => $message->fromEmail,
             'source' => 'email',
+            'team_id' => $teamId,
             'tenant_id' => app()->bound('tenant') ? app('tenant')->id : Tenant::first()?->id,
         ]);
 
@@ -71,16 +72,12 @@ class InboundEmailProcessor
 
         $this->workflowEngine->run($ticket->fresh(), 'ticket_created');
 
-        // Default to mailbox team, then General Support if no workflow assigned a team
+        // Fall back to General Support if no team was assigned by mailbox or workflow
         $ticket->refresh();
         if (! $ticket->team_id) {
-            if ($teamId) {
-                $ticket->updateQuietly(['team_id' => $teamId]);
-            } else {
-                $defaultTeam = Team::where('name', 'General Support')->first();
-                if ($defaultTeam) {
-                    $ticket->updateQuietly(['team_id' => $defaultTeam->id]);
-                }
+            $defaultTeam = Team::where('name', 'General Support')->first();
+            if ($defaultTeam) {
+                $ticket->updateQuietly(['team_id' => $defaultTeam->id]);
             }
         }
 
