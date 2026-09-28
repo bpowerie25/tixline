@@ -142,12 +142,12 @@ class User extends Authenticatable
         }
 
         if ($this->role?->name === Role::TEAM_LEAD) {
-            return $this->excludeRestrictedTeams(Ticket::query());
+            return Ticket::query();
         }
 
         // Custom (non-system) roles with tickets.view can see all tickets
         if (! $this->role?->is_system && $this->hasPermission('tickets.view')) {
-            return $this->excludeRestrictedTeams(Ticket::query());
+            return Ticket::query();
         }
 
         $teamIds = $this->teamIds();
