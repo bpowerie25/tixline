@@ -138,7 +138,7 @@ class User extends Authenticatable
     public function visibleTicketsQuery()
     {
         if ($this->isAdmin()) {
-            return $this->excludeRestrictedTeams(Ticket::query());
+            return Ticket::query();
         }
 
         if ($this->role?->name === Role::TEAM_LEAD) {
