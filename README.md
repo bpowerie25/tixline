@@ -81,7 +81,7 @@ An open-source helpdesk and customer support platform built with Laravel, Inerti
 
 ## Requirements
 
-- PHP 8.3+
+- PHP 8.4+
 - Composer
 - Node.js 18+
 - npm
