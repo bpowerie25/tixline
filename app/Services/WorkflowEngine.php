@@ -27,7 +27,10 @@ class WorkflowEngine
             }
 
             if ($this->evaluateConditions($ticket, $workflow->conditions)) {
-                $this->executeActions($ticket, $workflow->actions);
+                // Catch-all workflows (no conditions) should not override
+                // an existing team — they act as defaults only
+                $hasConditions = ! empty($workflow->conditions['rules'] ?? []);
+                $this->executeActions($ticket, $workflow->actions, $hasConditions);
             }
         }
     }
@@ -142,12 +145,14 @@ class WorkflowEngine
         };
     }
 
-    protected function executeActions(Ticket $ticket, array $actions): void
+    protected function executeActions(Ticket $ticket, array $actions, bool $canOverrideTeam = true): void
     {
         foreach ($actions as $action) {
             match ($action['type'] ?? '') {
                 'assign_to_agent' => $ticket->update(['assigned_to' => $action['value']]),
-                'assign_to_team' => $ticket->update(['team_id' => $action['value']]),
+                'assign_to_team' => ($canOverrideTeam || ! $ticket->team_id)
+                    ? $ticket->update(['team_id' => $action['value']])
+                    : null,
                 'set_priority' => $ticket->update(['priority' => $action['value']]),
                 'set_status' => $ticket->update(['status' => $action['value']]),
                 'add_label' => $ticket->labels()->syncWithoutDetaching([$action['value']]),
