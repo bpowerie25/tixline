@@ -23,7 +23,7 @@ return new class extends Migration
             $table->enum('source', ['email', 'web', 'api'])->default('web');
             $table->foreignId('assigned_to')->nullable()->constrained('users')->nullOnDelete();
             $table->foreignId('team_id')->nullable()->constrained()->nullOnDelete();
-            $table->foreignId('form_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('form_id')->nullable();
             $table->json('custom_fields')->nullable();
             $table->timestamp('first_responded_at')->nullable();
             $table->timestamp('resolved_at')->nullable();

@@ -43,14 +43,14 @@ return new class extends Migration
             DB::table('permissions')->truncate();
 
             // Ensure the table has the right columns
-            if (! Schema::hasColumn('permissions', 'group')) {
-                Schema::table('permissions', function (Blueprint $table) {
-                    $table->string('group')->after('display_name')->default('');
-                });
-            }
             if (! Schema::hasColumn('permissions', 'display_name')) {
                 Schema::table('permissions', function (Blueprint $table) {
                     $table->string('display_name')->after('name')->default('');
+                });
+            }
+            if (! Schema::hasColumn('permissions', 'group')) {
+                Schema::table('permissions', function (Blueprint $table) {
+                    $table->string('group')->after('display_name')->default('');
                 });
             }
         } else {
