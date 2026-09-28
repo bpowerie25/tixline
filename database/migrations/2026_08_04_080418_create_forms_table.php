@@ -6,9 +6,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('forms', function (Blueprint $table) {
@@ -19,13 +16,19 @@ return new class extends Migration
             $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
+
+        // tickets.form_id is created before forms exists, so the FK is added here
+        Schema::table('tickets', function (Blueprint $table) {
+            $table->foreign('form_id')->references('id')->on('forms')->nullOnDelete();
+        });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
+        Schema::table('tickets', function (Blueprint $table) {
+            $table->dropForeign(['form_id']);
+        });
+
         Schema::dropIfExists('forms');
     }
 };
