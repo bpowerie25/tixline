@@ -92,6 +92,11 @@ class User extends Authenticatable
             }
         }
 
+        // Linked via duplicate relationship to an assigned ticket
+        if ($this->isAssignedToLinkedTicket($ticket)) {
+            return true;
+        }
+
         if ($this->isAdmin()) {
             return true;
         }
@@ -157,8 +162,14 @@ class User extends Authenticatable
             return $this->excludeRestrictedTeams(Ticket::query());
         }
 
-        $query = Ticket::where(function ($q) use ($teamIds) {
+        $linkedIds = $this->linkedTicketIds();
+
+        $query = Ticket::where(function ($q) use ($teamIds, $linkedIds) {
             $q->where('assigned_to', $this->id);
+
+            if (! empty($linkedIds)) {
+                $q->orWhereIn('id', $linkedIds);
+            }
 
             if (! $this->is_external) {
                 $q->orWhereNull('team_id');
@@ -183,6 +194,45 @@ class User extends Authenticatable
         });
 
         return $query;
+    }
+
+    /**
+     * Check if this user is assigned to a ticket linked via duplicate_of.
+     */
+    private function isAssignedToLinkedTicket(Ticket $ticket): bool
+    {
+        // This ticket is a duplicate — check if user is assigned to the original
+        if ($ticket->duplicate_of) {
+            $original = Ticket::where('id', $ticket->duplicate_of)
+                ->where('assigned_to', $this->id)
+                ->exists();
+            if ($original) {
+                return true;
+            }
+        }
+
+        // Check if user is assigned to any duplicate of this ticket
+        return Ticket::where('duplicate_of', $ticket->id)
+            ->where('assigned_to', $this->id)
+            ->exists();
+    }
+
+    /**
+     * Get ticket IDs linked via duplicate_of to this user's assigned tickets.
+     */
+    private function linkedTicketIds(): array
+    {
+        $assignedIds = Ticket::where('assigned_to', $this->id)->pluck('id');
+
+        // Originals that my assigned tickets are duplicates of
+        $originals = Ticket::where('assigned_to', $this->id)
+            ->whereNotNull('duplicate_of')
+            ->pluck('duplicate_of');
+
+        // Duplicates of my assigned tickets
+        $duplicates = Ticket::whereIn('duplicate_of', $assignedIds)->pluck('id');
+
+        return $originals->merge($duplicates)->unique()->values()->toArray();
     }
 
     private function excludeRestrictedTeams($query)
