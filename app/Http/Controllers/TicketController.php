@@ -89,12 +89,67 @@ class TicketController extends Controller
 
         $duplicates = $ticket->duplicates()->get(['id', 'reference', 'subject', 'status']);
 
-        $activityLogs = ActivityLog::with('user:id,name')
+        // Build unified timeline from activity_logs + comments
+        $logEntries = ActivityLog::with('user:id,name')
             ->where('subject_type', 'App\\Models\\Ticket')
             ->where('subject_id', $ticket->id)
             ->latest('created_at')
             ->limit(50)
-            ->get(['id', 'user_id', 'action', 'description', 'properties', 'created_at']);
+            ->get()
+            ->map(fn ($log) => [
+                'id' => 'log_' . $log->id,
+                'action' => $log->action,
+                'description' => $log->description,
+                'created_at' => $log->created_at,
+            ]);
+
+        // Derive activity entries from comments (covers history before logging was added)
+        $commentEntries = $ticket->comments->map(function ($comment) use ($ticket) {
+            if ($comment->type === 'system') {
+                $action = 'ticket_system';
+                $description = 'System update';
+            } elseif ($comment->is_internal) {
+                $name = $comment->user?->name ?? 'System';
+                $action = 'ticket_note_added';
+                $description = "{$name} added an internal note";
+            } else {
+                // No user_id means requester replied (e.g. via email)
+                $name = $comment->user?->name ?? $ticket->requester_name;
+                $action = $comment->user_id ? 'ticket_replied' : 'requester_replied';
+                $description = "{$name} replied";
+            }
+            return [
+                'id' => 'comment_' . $comment->id,
+                'action' => $action,
+                'description' => $description,
+                'created_at' => $comment->created_at,
+            ];
+        });
+
+        // Always include a "Ticket created" entry from the ticket itself
+        $createdEntry = collect([[
+            'id' => 'created',
+            'action' => 'ticket_created',
+            'description' => "Ticket created by {$ticket->requester_name}",
+            'created_at' => $ticket->created_at,
+        ]]);
+
+        // Merge, deduplicate (prefer comment-derived entries over duplicate log entries), sort newest first
+        $logTimestamps = $logEntries
+            ->filter(fn ($e) => in_array($e['action'], ['ticket_replied', 'ticket_replied_and_closed', 'ticket_note_added']))
+            ->pluck('created_at')
+            ->map(fn ($dt) => $dt->format('Y-m-d H:i'));
+
+        $filteredComments = $commentEntries->filter(function ($e) use ($logTimestamps) {
+            return ! $logTimestamps->contains($e['created_at']->format('Y-m-d H:i'));
+        });
+
+        // Remove any duplicate ticket_created log entries since we always add one
+        $filteredLogs = $logEntries->filter(fn ($e) => $e['action'] !== 'ticket_created');
+
+        $activityLogs = $filteredLogs->concat($filteredComments)->concat($createdEntry)
+            ->sortByDesc('created_at')
+            ->values();
 
         return Inertia::render('Tickets/Show', [
             'ticket' => $ticket,
