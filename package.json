@@ -20,6 +20,9 @@
         "vite": "^8.0.0",
         "vue": "^3.4.0"
     },
+    "overrides": {
+        "axios": "^1.20.0"
+    },
     "dependencies": {
         "@tiptap/extension-link": "^3.31.2",
         "@tiptap/extension-underline": "^3.31.2",
