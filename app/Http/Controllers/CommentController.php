@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Mail\TicketReply;
 use App\Models\Ticket;
+use App\Services\ActivityLogger;
 use App\Services\AttachmentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
@@ -59,6 +60,16 @@ class CommentController extends Controller
 
         if ($closeTicket) {
             $ticket->update(['status' => 'closed', 'resolved_at' => $ticket->resolved_at ?? now()]);
+        }
+
+        // Log activity
+        $agentName = $request->user()->name;
+        if ($validated['type'] === 'note') {
+            ActivityLogger::log('ticket_note_added', "{$agentName} added an internal note", $ticket);
+        } elseif ($closeTicket) {
+            ActivityLogger::log('ticket_replied_and_closed', "{$agentName} replied and closed the ticket", $ticket);
+        } else {
+            ActivityLogger::log('ticket_replied', "{$agentName} replied", $ticket);
         }
 
         $successMessage = $closeTicket ? 'Reply sent and ticket closed.' : 'Comment added.';

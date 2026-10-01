@@ -19,6 +19,7 @@ const props = defineProps({
     hasCustomerAccount: Boolean,
     requesterTickets: Array,
     duplicates: Array,
+    activityLogs: Array,
 });
 
 const showCannedPicker = ref(false);
@@ -577,6 +578,27 @@ const statusColors = {
                                     <dd class="text-gray-900">{{ new Date(ticket.resolved_at).toLocaleDateString() }}</dd>
                                 </div>
                             </dl>
+                        </div>
+
+                        <!-- Audit Log -->
+                        <div v-if="activityLogs?.length" class="overflow-hidden bg-white shadow-sm sm:rounded-lg p-6">
+                            <h3 class="text-sm font-medium text-gray-500 mb-3">Activity Log</h3>
+                            <ul class="space-y-3">
+                                <li v-for="log in activityLogs" :key="log.id" class="flex gap-3 text-sm">
+                                    <div class="shrink-0 mt-0.5">
+                                        <span class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-gray-100">
+                                            <svg v-if="log.action === 'ticket_replied' || log.action === 'ticket_replied_and_closed'" class="h-3.5 w-3.5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" /></svg>
+                                            <svg v-else-if="log.action === 'ticket_note_added'" class="h-3.5 w-3.5 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                                            <svg v-else-if="log.action === 'ticket_created'" class="h-3.5 w-3.5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+                                            <svg v-else class="h-3.5 w-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                        </span>
+                                    </div>
+                                    <div class="min-w-0">
+                                        <p class="text-gray-700">{{ log.description }}</p>
+                                        <p class="text-xs text-gray-400 mt-0.5">{{ new Date(log.created_at).toLocaleString() }}</p>
+                                    </div>
+                                </li>
+                            </ul>
                         </div>
                     </div>
                 </div>

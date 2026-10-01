@@ -89,6 +89,13 @@ class TicketController extends Controller
 
         $duplicates = $ticket->duplicates()->get(['id', 'reference', 'subject', 'status']);
 
+        $activityLogs = ActivityLog::with('user:id,name')
+            ->where('subject_type', 'App\\Models\\Ticket')
+            ->where('subject_id', $ticket->id)
+            ->latest('created_at')
+            ->limit(50)
+            ->get(['id', 'user_id', 'action', 'description', 'properties', 'created_at']);
+
         return Inertia::render('Tickets/Show', [
             'ticket' => $ticket,
             'teams' => Team::all(),
@@ -98,6 +105,7 @@ class TicketController extends Controller
             'hasCustomerAccount' => $hasCustomerAccount,
             'requesterTickets' => $requesterTickets,
             'duplicates' => $duplicates,
+            'activityLogs' => $activityLogs,
         ]);
     }
 
@@ -218,7 +226,24 @@ class TicketController extends Controller
 
         $changes = array_diff_assoc($validated, $oldValues);
         if (! empty($changes)) {
-            ActivityLogger::log('ticket_updated', "Updated ticket {$ticket->reference}", $ticket, ['changes' => $changes]);
+            $agentName = auth()->user()->name;
+            $parts = [];
+            if (isset($changes['status'])) {
+                $parts[] = "changed status to {$changes['status']}";
+            }
+            if (isset($changes['priority'])) {
+                $parts[] = "changed priority to {$changes['priority']}";
+            }
+            if (array_key_exists('team_id', $changes)) {
+                $teamName = $changes['team_id'] ? Team::find($changes['team_id'])?->name ?? 'Unknown' : 'Unassigned';
+                $parts[] = "reassigned team to {$teamName}";
+            }
+            if (array_key_exists('assigned_to', $changes)) {
+                $assigneeName = $changes['assigned_to'] ? User::find($changes['assigned_to'])?->name ?? 'Unknown' : 'Unassigned';
+                $parts[] = "assigned to {$assigneeName}";
+            }
+            $description = $agentName . ' ' . (empty($parts) ? "updated ticket" : implode(', ', $parts));
+            ActivityLogger::log('ticket_updated', $description, $ticket, ['changes' => $changes]);
         }
 
         // Fire specific field change events
