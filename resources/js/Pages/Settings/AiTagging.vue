@@ -25,10 +25,38 @@ const suggestedModels = computed(() => {
     return props.providers[configForm.provider]?.models ?? [];
 });
 
-// Set first suggested model when provider changes (only if current model is empty)
+const isCustomModel = ref(
+    props.config?.model && !props.providers[props.config?.provider]?.models?.includes(props.config.model)
+);
+
+const customModel = ref(isCustomModel.value ? props.config.model : '');
+
+const selectedDropdown = computed({
+    get: () => isCustomModel.value ? '__custom__' : configForm.model,
+    set: (val) => {
+        if (val === '__custom__') {
+            isCustomModel.value = true;
+            configForm.model = customModel.value;
+        } else {
+            isCustomModel.value = false;
+            customModel.value = '';
+            configForm.model = val;
+        }
+    },
+});
+
+watch(customModel, (val) => {
+    if (isCustomModel.value) {
+        configForm.model = val;
+    }
+});
+
+// Set first model when provider changes
 watch(() => configForm.provider, () => {
     const models = suggestedModels.value;
-    if (models.length && !configForm.model) {
+    isCustomModel.value = false;
+    customModel.value = '';
+    if (models.length) {
         configForm.model = models[0];
     }
 });
@@ -160,17 +188,17 @@ function deleteTag(tag) {
 
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">Model</label>
+                                <select v-model="selectedDropdown" class="mt-1 w-full rounded-md border-gray-300 text-sm shadow-sm">
+                                    <option v-for="m in suggestedModels" :key="m" :value="m">{{ m }}</option>
+                                    <option value="__custom__">Custom...</option>
+                                </select>
                                 <input
-                                    v-model="configForm.model"
+                                    v-if="isCustomModel"
+                                    v-model="customModel"
                                     type="text"
-                                    :list="`models-${configForm.provider}`"
-                                    placeholder="Enter or select a model name"
-                                    class="mt-1 w-full rounded-md border-gray-300 text-sm shadow-sm"
+                                    placeholder="Enter model name"
+                                    class="mt-2 w-full rounded-md border-gray-300 text-sm shadow-sm"
                                 />
-                                <datalist :id="`models-${configForm.provider}`">
-                                    <option v-for="m in suggestedModels" :key="m" :value="m" />
-                                </datalist>
-                                <p class="mt-1 text-xs text-gray-500">Select a suggested model or type any model name supported by your API key.</p>
                             </div>
                         </div>
 
