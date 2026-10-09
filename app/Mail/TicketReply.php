@@ -84,7 +84,7 @@ class TicketReply extends Mailable implements ShouldQueue
     protected function resolveAgentName(): string
     {
         if ($this->tenant?->anonymize_agents) {
-            return e($this->tenant->name ?? 'Support');
+            return e($this->tenant->agent_anonymous_label ?: $this->tenant->name ?? 'Support');
         }
 
         $user = $this->comment->user;

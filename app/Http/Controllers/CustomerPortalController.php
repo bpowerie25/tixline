@@ -137,7 +137,7 @@ class CustomerPortalController extends Controller
         $anonymize = $tenant?->anonymize_agents ?? false;
 
         if ($anonymize) {
-            $tenantName = $tenant?->name ?? 'Support';
+            $tenantName = $tenant?->agent_anonymous_label ?: $tenant?->name ?? 'Support';
             $ticket->comments->each(function ($comment) use ($tenantName) {
                 if ($comment->user) {
                     $comment->user->name = $tenantName;

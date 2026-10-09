@@ -14,6 +14,7 @@ return new class extends Migration
 
         Schema::table('tenants', function (Blueprint $table) {
             $table->boolean('anonymize_agents')->default(false)->after('reply_email_mode');
+            $table->string('agent_anonymous_label')->nullable()->after('anonymize_agents');
         });
     }
 
@@ -24,7 +25,7 @@ return new class extends Migration
         });
 
         Schema::table('tenants', function (Blueprint $table) {
-            $table->dropColumn('anonymize_agents');
+            $table->dropColumn(['anonymize_agents', 'agent_anonymous_label']);
         });
     }
 };

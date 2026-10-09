@@ -30,6 +30,7 @@ const form = useForm({
     support_email: props.tenant?.support_email || '',
     reply_email_mode: props.tenant?.reply_email_mode || 'notification',
     anonymize_agents: props.tenant?.anonymize_agents ?? false,
+    agent_anonymous_label: props.tenant?.agent_anonymous_label || '',
     announcement_enabled: props.tenant?.announcement_enabled ?? false,
     announcement_text: props.tenant?.announcement_text || '',
     is_active: props.tenant?.is_active ?? true,
@@ -230,8 +231,12 @@ const previewStyle = computed(() => ({
                                 <input v-model="form.anonymize_agents" type="checkbox" class="rounded text-indigo-600" />
                                 <span class="text-sm font-medium text-gray-700">Anonymize all agents</span>
                             </label>
+                            <div v-if="form.anonymize_agents" class="mt-2">
+                                <label class="block text-sm font-medium text-gray-700">Agent Label</label>
+                                <input v-model="form.agent_anonymous_label" type="text" :placeholder="form.name || 'Support Team'" class="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
+                                <p class="mt-1 text-xs text-gray-500">The name shown in place of agent names. Defaults to the tenant name if left blank.</p>
+                            </div>
                             <p class="text-xs text-gray-500">
-                                When enabled, all agent names are replaced with the tenant name (e.g. "{{ form.name || 'Acme Support' }}") on the customer portal and in emails.
                                 When disabled, agents can set a personal display name in their profile to use instead of their real name.
                             </p>
                         </div>

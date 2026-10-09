@@ -85,6 +85,7 @@ class TenantController extends Controller
             'support_email' => 'nullable|email|max:255',
             'reply_email_mode' => 'nullable|string|in:notification,full',
             'anonymize_agents' => 'boolean',
+            'agent_anonymous_label' => 'nullable|string|max:255',
             'announcement_enabled' => 'boolean',
             'announcement_text' => 'nullable|string|max:1000',
             'is_active' => 'boolean',
