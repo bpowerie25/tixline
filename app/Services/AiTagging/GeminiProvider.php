@@ -15,18 +15,28 @@ class GeminiProvider extends BaseProvider
     ): array {
         $prompt = $this->buildPrompt($subject, $body, $availableTags, $availableTeams, $currentTeam);
 
+        $payload = [
+            'contents' => [
+                ['parts' => [['text' => $prompt]]],
+            ],
+            'generationConfig' => [
+                'responseMimeType' => 'application/json',
+                'temperature' => 0.2,
+            ],
+        ];
+
+        // Try v1beta first (required for newer models), fall back to v1
         $response = Http::timeout(30)->post(
             "https://generativelanguage.googleapis.com/v1beta/models/{$this->model}:generateContent?key={$this->apiKey}",
-            [
-                'contents' => [
-                    ['parts' => [['text' => $prompt]]],
-                ],
-                'generationConfig' => [
-                    'responseMimeType' => 'application/json',
-                    'temperature' => 0.2,
-                ],
-            ]
+            $payload
         );
+
+        if ($response->status() === 404) {
+            $response = Http::timeout(30)->post(
+                "https://generativelanguage.googleapis.com/v1/models/{$this->model}:generateContent?key={$this->apiKey}",
+                $payload
+            );
+        }
 
         $response->throw();
 
