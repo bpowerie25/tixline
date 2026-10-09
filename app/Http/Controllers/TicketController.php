@@ -44,6 +44,10 @@ class TicketController extends Controller
             $query->where('assigned_to', $request->assigned_to);
         }
 
+        if ($request->filled('ai_flagged')) {
+            $query->where('ai_flagged', true);
+        }
+
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
@@ -57,7 +61,7 @@ class TicketController extends Controller
 
         return Inertia::render('Tickets/Index', [
             'tickets' => $tickets,
-            'filters' => array_merge($request->only(['priority', 'team_id', 'assigned_to', 'search']), ['status' => $status]),
+            'filters' => array_merge($request->only(['priority', 'team_id', 'assigned_to', 'search', 'ai_flagged']), ['status' => $status]),
             'teams' => Team::all(),
             'agents' => User::all(['id', 'name']),
         ]);

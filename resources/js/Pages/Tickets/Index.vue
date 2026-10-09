@@ -21,6 +21,7 @@ const status = ref(props.filters.status || 'open');
 const priority = ref(props.filters.priority || '');
 const teamId = ref(props.filters.team_id || '');
 const assignedTo = ref(props.filters.assigned_to || '');
+const aiFlagged = ref(props.filters.ai_flagged || false);
 
 let debounceTimer;
 function applyFilters() {
@@ -32,11 +33,12 @@ function applyFilters() {
             priority: priority.value || undefined,
             team_id: teamId.value || undefined,
             assigned_to: assignedTo.value || undefined,
+            ai_flagged: aiFlagged.value || undefined,
         }, { preserveState: true, replace: true });
     }, 300);
 }
 
-watch([search, status, priority, teamId, assignedTo], applyFilters);
+watch([search, status, priority, teamId, assignedTo, aiFlagged], applyFilters);
 
 // Bulk selection
 const selected = ref([]);
@@ -158,6 +160,17 @@ const statusColors = {
                         <option value="">All Agents</option>
                         <option v-for="agent in agents" :key="agent.id" :value="agent.id">{{ agent.name }}</option>
                     </select>
+                    <button
+                        type="button"
+                        @click="aiFlagged = !aiFlagged"
+                        :class="[
+                            aiFlagged ? 'bg-amber-100 border-amber-300 text-amber-800' : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50',
+                            'inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm font-medium shadow-sm transition-colors'
+                        ]"
+                    >
+                        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" /></svg>
+                        AI Flagged
+                    </button>
                 </div>
 
                 <!-- Bulk Action Bar -->
