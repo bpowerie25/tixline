@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ActivityLogController;
+use App\Http\Controllers\AiTaggingController;
 use App\Http\Controllers\AgentController;
 use App\Http\Controllers\InboundEmailReviewController;
 use App\Http\Controllers\InboundMailboxController;
@@ -199,6 +200,20 @@ Route::middleware('auth')->group(function () {
         Route::post('/settings/spam-filters', [SpamFilterController::class, 'store'])->name('spam-filters.store');
         Route::delete('/settings/spam-filters/{spamFilter}', [SpamFilterController::class, 'destroy'])->name('spam-filters.destroy');
     });
+
+    // AI Tagging
+    Route::middleware('permission:ai-tagging.manage')->group(function () {
+        Route::get('/settings/ai-tagging', [AiTaggingController::class, 'index'])->name('ai-tagging.index');
+        Route::post('/settings/ai-tagging', [AiTaggingController::class, 'storeConfig'])->name('ai-tagging.store');
+        Route::post('/settings/ai-tagging/tags', [AiTaggingController::class, 'storeTag'])->name('ai-tagging.tags.store');
+        Route::put('/settings/ai-tagging/tags/{tag}', [AiTaggingController::class, 'updateTag'])->name('ai-tagging.tags.update');
+        Route::delete('/settings/ai-tagging/tags/{tag}', [AiTaggingController::class, 'destroyTag'])->name('ai-tagging.tags.destroy');
+    });
+
+    // AI tag actions on tickets (any authenticated agent)
+    Route::post('/tickets/{ticket}/dismiss-flag', [AiTaggingController::class, 'dismissFlag'])->name('tickets.dismiss-flag');
+    Route::post('/tickets/{ticket}/tags/{tag}/confirm', [AiTaggingController::class, 'confirmTag'])->name('tickets.tags.confirm');
+    Route::delete('/tickets/{ticket}/tags/{tag}', [AiTaggingController::class, 'removeTag'])->name('tickets.tags.remove');
 
     // Departments
     Route::middleware('permission:departments.manage')->group(function () {

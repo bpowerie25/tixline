@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Jobs\TagTicketWithAi;
 use App\Models\Concerns\BelongsToTenant;
 use App\Services\HtmlSanitizer;
 use Illuminate\Database\Eloquent\Model;
@@ -19,6 +20,7 @@ class Ticket extends Model
         'status', 'priority', 'source', 'assigned_to', 'team_id', 'form_id', 'tenant_id',
         'custom_fields', 'first_responded_at', 'resolved_at', 'duplicate_of',
         'sla_response_due_at', 'sla_resolution_due_at',
+        'ai_suggested_tags', 'ai_flagged', 'ai_flag_reason', 'ai_processed_at',
     ];
 
     protected $hidden = ['body'];
@@ -36,6 +38,9 @@ class Ticket extends Model
             'duplicate_of' => 'integer',
             'sla_response_due_at' => 'datetime',
             'sla_resolution_due_at' => 'datetime',
+            'ai_suggested_tags' => 'array',
+            'ai_flagged' => 'boolean',
+            'ai_processed_at' => 'datetime',
         ];
     }
 
@@ -56,6 +61,12 @@ class Ticket extends Model
 
             if (! empty($updates)) {
                 $ticket->updateQuietly($updates);
+            }
+
+            // Dispatch AI tagging if enabled
+            $aiConfig = AiTaggingConfig::active();
+            if ($aiConfig?->tag_on_create) {
+                TagTicketWithAi::dispatch($ticket);
             }
         });
     }
@@ -122,6 +133,12 @@ class Ticket extends Model
     public function labels(): BelongsToMany
     {
         return $this->belongsToMany(Label::class);
+    }
+
+    public function tags(): BelongsToMany
+    {
+        return $this->belongsToMany(Tag::class)
+            ->withPivot(['confidence', 'is_ai_suggested', 'is_confirmed']);
     }
 
     public function attachments(): MorphMany

@@ -219,6 +219,15 @@ const statusColors = {
                                         >
                                             {{ label.name }}
                                         </span>
+                                        <span
+                                            v-for="tag in ticket.tags"
+                                            :key="'tag-' + tag.id"
+                                            :style="{ backgroundColor: tag.color + '15', color: tag.color, borderColor: tag.color + '40' }"
+                                            class="inline-flex items-center gap-0.5 rounded-full border px-2 py-0.5 text-xs font-medium"
+                                        >
+                                            <svg class="h-2.5 w-2.5 opacity-60" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M17.707 9.293a1 1 0 010 1.414l-7 7a1 1 0 01-1.414 0l-7-7A.997.997 0 012 10V5a3 3 0 013-3h5c.256 0 .512.098.707.293l7 7zM5 6a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" /></svg>
+                                            {{ tag.name }}
+                                        </span>
                                     </div>
                                     <div class="mt-1 text-sm text-gray-500">
                                         {{ ticket.requester_name }} &lt;{{ ticket.requester_email }}&gt;
@@ -233,6 +242,10 @@ const statusColors = {
                                         {{ ticket.priority }}
                                     </span>
                                     <SlaBadge :ticket="ticket" />
+                                    <span v-if="ticket.ai_flagged" class="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700" title="AI flagged: possible miscategorisation">
+                                        <svg class="h-3 w-3 mr-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" /></svg>
+                                        flagged
+                                    </span>
                                     <span v-if="ticket.assignee" class="text-xs text-gray-500">
                                         {{ ticket.assignee.name }}
                                     </span>

@@ -25,7 +25,7 @@ class TicketController extends Controller
 {
     public function index(Request $request)
     {
-        $query = $request->user()->visibleTicketsQuery()->with(['assignee', 'team', 'labels']);
+        $query = $request->user()->visibleTicketsQuery()->with(['assignee', 'team', 'labels', 'tags']);
 
         $status = $request->filled('status') ? $request->status : 'open';
         if ($status !== 'all') {
@@ -67,7 +67,7 @@ class TicketController extends Controller
     {
         $this->authorize('view', $ticket);
 
-        $ticket->load(['assignee', 'team', 'labels', 'form.fields', 'attachments', 'duplicateOf:id,reference,subject', 'comments' => function ($q) {
+        $ticket->load(['assignee', 'team', 'labels', 'tags', 'form.fields', 'attachments', 'duplicateOf:id,reference,subject', 'comments' => function ($q) {
             $q->with(['user', 'attachments'])->oldest();
         }]);
 

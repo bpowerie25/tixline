@@ -153,6 +153,25 @@ function closePreview() {
     previewImage.value = null;
 }
 
+// AI Tag actions
+function confirmTag(tagId) {
+    router.post(route('tickets.tags.confirm', [props.ticket.id, tagId]), {}, {
+        preserveScroll: true,
+    });
+}
+
+function removeTag(tagId) {
+    router.delete(route('tickets.tags.remove', [props.ticket.id, tagId]), {
+        preserveScroll: true,
+    });
+}
+
+function dismissFlag() {
+    router.post(route('tickets.dismiss-flag', props.ticket.id), {}, {
+        preserveScroll: true,
+    });
+}
+
 const priorityColors = {
     low: 'bg-gray-100 text-gray-700',
     normal: 'bg-blue-100 text-blue-700',
@@ -201,6 +220,22 @@ const statusColors = {
                                     {{ ticket.duplicate_of.reference }} — {{ ticket.duplicate_of.subject }}
                                 </Link>
                             </p>
+                        </div>
+
+                        <!-- AI Miscategorisation Flag -->
+                        <div v-if="ticket.ai_flagged" class="rounded-md bg-amber-50 border border-amber-300 p-4">
+                            <div class="flex items-start justify-between gap-3">
+                                <div class="flex items-start gap-2">
+                                    <svg class="h-5 w-5 text-amber-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" /></svg>
+                                    <div>
+                                        <p class="text-sm font-medium text-amber-800">AI flagged: Possible miscategorisation</p>
+                                        <p class="text-sm text-amber-700 mt-1">{{ ticket.ai_flag_reason }}</p>
+                                    </div>
+                                </div>
+                                <button @click="dismissFlag" class="shrink-0 text-xs text-amber-600 hover:text-amber-800 font-medium">
+                                    Dismiss
+                                </button>
+                            </div>
                         </div>
 
                         <!-- Original Message -->
@@ -413,6 +448,26 @@ const statusColors = {
                                     Update
                                 </button>
                             </form>
+
+                            <!-- AI Tags -->
+                            <div v-if="ticket.tags?.length" class="mt-4 border-t border-gray-200 pt-4">
+                                <h4 class="text-sm font-medium text-gray-500 mb-2">AI Tags</h4>
+                                <div class="flex flex-wrap gap-1.5">
+                                    <div v-for="tag in ticket.tags" :key="tag.id" class="group inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium" :class="tag.pivot.is_confirmed ? 'ring-1 ring-green-300' : 'ring-1 ring-gray-200'" :style="{ backgroundColor: tag.color + '20', color: tag.color }">
+                                        <span class="h-1.5 w-1.5 rounded-full" :style="{ backgroundColor: tag.color }" />
+                                        {{ tag.name }}
+                                        <span v-if="tag.pivot.confidence" class="text-gray-400 ml-0.5">{{ Math.round(tag.pivot.confidence * 100) }}%</span>
+                                        <span class="hidden group-hover:inline-flex items-center gap-0.5 ml-1">
+                                            <button v-if="!tag.pivot.is_confirmed" @click="confirmTag(tag.id)" class="text-green-500 hover:text-green-700" title="Confirm">
+                                                <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                                            </button>
+                                            <button @click="removeTag(tag.id)" class="text-red-400 hover:text-red-600" title="Remove">
+                                                <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                                            </button>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
                             <button
                                 v-if="ticket.status !== 'closed'"
                                 @click="resolveAndClose"
