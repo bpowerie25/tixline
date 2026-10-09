@@ -14,6 +14,7 @@ const props = defineProps({
     teams: Array,
     agents: Array,
     labels: Array,
+    tags: Array,
     widgetTypes: Array,
 });
 
@@ -245,6 +246,7 @@ function saveTitle() {
             :teams="teams"
             :agents="agents"
             :labels="labels"
+            :tags="tags"
             @close="configuringWidget = null"
             @save="saveWidgetConfig"
         />

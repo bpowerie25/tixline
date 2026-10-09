@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\CustomReport;
 use App\Models\CustomReportWidget;
 use App\Models\Label;
+use App\Models\Tag;
 use App\Models\Team;
 use App\Models\User;
 use App\Services\WidgetDataService;
@@ -71,6 +72,7 @@ class CustomReportController extends Controller
             'teams' => Team::all(['id', 'name']),
             'agents' => User::all(['id', 'name']),
             'labels' => Label::all(['id', 'name', 'color']),
+            'tags' => Tag::all(['id', 'name', 'color']),
         ]);
     }
 

@@ -11,6 +11,7 @@ const props = defineProps({
     teams: { type: Array, default: () => [] },
     agents: { type: Array, default: () => [] },
     labels: { type: Array, default: () => [] },
+    tags: { type: Array, default: () => [] },
 });
 
 const emit = defineEmits(['close', 'save']);
@@ -140,6 +141,7 @@ function save() {
                         :teams="teams"
                         :agents="agents"
                         :labels="labels"
+                        :tags="tags"
                         @update:filters="form.filters = $event"
                     />
                 </div>

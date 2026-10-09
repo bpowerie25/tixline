@@ -14,6 +14,7 @@ const widgetTypes = [
     { type: 'tickets_by_agent', name: 'Tickets by Agent', description: 'Ticket count per assigned agent', icon: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z' },
     { type: 'tickets_by_source', name: 'Tickets by Source', description: 'Where tickets are coming from (web, email, API)', icon: 'M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z' },
     { type: 'tickets_by_label', name: 'Tickets by Label', description: 'Ticket distribution across labels', icon: 'M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z' },
+    { type: 'tickets_by_tag', name: 'Tickets by AI Tag', description: 'Ticket distribution across AI-assigned tags', icon: 'M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z M6 6h.008v.008H6V6z' },
     { type: 'ticket_volume', name: 'Ticket Volume Over Time', description: 'Track ticket creation trends over time', icon: 'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6' },
     { type: 'avg_response_time', name: 'Avg Response Time', description: 'Average time to first response', icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' },
     { type: 'avg_resolution_time', name: 'Avg Resolution Time', description: 'Average time to resolve tickets', icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z' },

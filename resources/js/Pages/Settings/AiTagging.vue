@@ -83,6 +83,14 @@ function cancelEdit() {
     editingTag.value = null;
 }
 
+function updateColor(tag, color) {
+    router.put(route('ai-tagging.tags.update', tag.id), {
+        name: tag.name,
+        color: color,
+        description: tag.description || '',
+    }, { preserveScroll: true });
+}
+
 function deleteTag(tag) {
     if (confirm(`Delete tag "${tag.name}"? This will remove it from all tickets.`)) {
         router.delete(route('ai-tagging.tags.destroy', tag.id), {
@@ -270,7 +278,10 @@ function deleteTag(tag) {
                                 <button @click="cancelEdit" class="text-sm text-gray-500 hover:text-gray-700">Cancel</button>
                             </template>
                             <template v-else>
-                                <span class="h-3 w-3 rounded-full shrink-0" :style="{ backgroundColor: tag.color }" />
+                                <label class="shrink-0 cursor-pointer relative">
+                                    <span class="block h-4 w-4 rounded-full border border-gray-200" :style="{ backgroundColor: tag.color }" />
+                                    <input type="color" :value="tag.color" @change="(e) => updateColor(tag, e.target.value)" class="absolute inset-0 opacity-0 w-full h-full cursor-pointer" />
+                                </label>
                                 <span class="font-medium text-sm text-gray-900">{{ tag.name }}</span>
                                 <span v-if="tag.description" class="text-xs text-gray-500 truncate flex-1">{{ tag.description }}</span>
                                 <span v-else class="flex-1" />

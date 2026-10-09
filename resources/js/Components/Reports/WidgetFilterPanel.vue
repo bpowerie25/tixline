@@ -9,6 +9,7 @@ const props = defineProps({
     teams: { type: Array, default: () => [] },
     agents: { type: Array, default: () => [] },
     labels: { type: Array, default: () => [] },
+    tags: { type: Array, default: () => [] },
 });
 
 const emit = defineEmits(['update:filters']);
@@ -22,6 +23,7 @@ const local = reactive({
     status: props.filters.status || '',
     priority: props.filters.priority || '',
     label_ids: props.filters.label_ids || [],
+    tag_ids: props.filters.tag_ids || [],
 });
 
 watch(() => props.filters, (val) => {
@@ -34,6 +36,7 @@ watch(() => props.filters, (val) => {
         status: val.status || '',
         priority: val.priority || '',
         label_ids: val.label_ids || [],
+        tag_ids: val.tag_ids || [],
     });
 }, { deep: true });
 
@@ -54,6 +57,16 @@ function toggleLabel(id) {
         local.label_ids.splice(idx, 1);
     } else {
         local.label_ids.push(id);
+    }
+    emitUpdate();
+}
+
+function toggleTag(id) {
+    const idx = local.tag_ids.indexOf(id);
+    if (idx >= 0) {
+        local.tag_ids.splice(idx, 1);
+    } else {
+        local.tag_ids.push(id);
     }
     emitUpdate();
 }
@@ -142,6 +155,22 @@ const priorities = ['low', 'normal', 'high', 'urgent'];
                     class="rounded-full px-2.5 py-0.5 text-xs font-medium border"
                 >
                     {{ label.name }}
+                </button>
+            </div>
+        </div>
+
+        <!-- AI Tags -->
+        <div v-if="tags.length">
+            <label class="block text-sm font-medium text-gray-700 mb-1">AI Tags</label>
+            <div class="flex flex-wrap gap-1.5">
+                <button
+                    v-for="tag in tags" :key="tag.id"
+                    @click="toggleTag(tag.id)"
+                    :class="local.tag_ids.includes(tag.id) ? 'border-indigo-300' : 'border-gray-300 hover:bg-gray-50'"
+                    :style="local.tag_ids.includes(tag.id) ? { backgroundColor: tag.color + '20', color: tag.color, borderColor: tag.color } : {}"
+                    class="rounded-full px-2.5 py-0.5 text-xs font-medium border"
+                >
+                    {{ tag.name }}
                 </button>
             </div>
         </div>

@@ -20,6 +20,7 @@ class WidgetDataService
             'tickets_by_agent' => $this->ticketsByAgent($query),
             'tickets_by_source' => $this->ticketsBySource($query),
             'tickets_by_label' => $this->ticketsByLabel($query),
+            'tickets_by_tag' => $this->ticketsByTag($query),
             'ticket_volume' => $this->ticketVolume($query),
             'avg_response_time' => $this->avgResponseTime($query),
             'avg_resolution_time' => $this->avgResolutionTime($query),
@@ -65,6 +66,12 @@ class WidgetDataService
         if (! empty($filters['label_ids']) && is_array($filters['label_ids'])) {
             $query->whereHas('labels', function ($q) use ($filters) {
                 $q->whereIn('labels.id', $filters['label_ids']);
+            });
+        }
+
+        if (! empty($filters['tag_ids']) && is_array($filters['tag_ids'])) {
+            $query->whereHas('tags', function ($q) use ($filters) {
+                $q->whereIn('tags.id', $filters['tag_ids']);
             });
         }
     }
@@ -154,6 +161,26 @@ class WidgetDataService
         return [
             'labels' => $results->keys()->all(),
             'values' => $results->values()->all(),
+        ];
+    }
+
+    private function ticketsByTag(Builder $query): array
+    {
+        $results = $query->join('tag_ticket', 'tickets.id', '=', 'tag_ticket.ticket_id')
+            ->join('tags', 'tag_ticket.tag_id', '=', 'tags.id')
+            ->selectRaw('tags.name as tag_name, tags.color as tag_color, COUNT(*) as count')
+            ->groupBy('tag_ticket.tag_id', 'tags.name', 'tags.color')
+            ->get();
+
+        $colorMap = [];
+        foreach ($results as $row) {
+            $colorMap[$row->tag_name] = $row->tag_color;
+        }
+
+        return [
+            'labels' => $results->pluck('tag_name')->all(),
+            'values' => $results->pluck('count')->all(),
+            'colorMap' => $colorMap,
         ];
     }
 
