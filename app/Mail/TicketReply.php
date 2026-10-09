@@ -63,7 +63,7 @@ class TicketReply extends Mailable implements ShouldQueue
 
     protected function buildFullHtml(string $ticketUrl): string
     {
-        $agentName = e($this->comment->user?->name ?? 'Support');
+        $agentName = $this->resolveAgentName();
         $body = $this->comment->sanitized_body;
         $reference = e($this->ticket->reference);
         $primaryColor = $this->tenant?->primary_color ?? '#be123c';
@@ -79,6 +79,17 @@ class TicketReply extends Mailable implements ShouldQueue
             Ticket: <a href="{$ticketUrl}" style="color: {$primaryColor}; text-decoration: underline;">{$reference}</a>
         </p>
         HTML;
+    }
+
+    protected function resolveAgentName(): string
+    {
+        if ($this->tenant?->anonymize_agents) {
+            return e($this->tenant->name ?? 'Support');
+        }
+
+        $user = $this->comment->user;
+
+        return e($user?->display_name ?? $user?->name ?? 'Support');
     }
 
     protected function buildAttachmentHtml(string $ticketUrl): string

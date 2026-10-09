@@ -18,6 +18,7 @@ const user = usePage().props.auth.user;
 
 const form = useForm({
     name: user.name,
+    display_name: user.display_name || '',
     email: user.email,
 });
 </script>
@@ -52,6 +53,21 @@ const form = useForm({
                 />
 
                 <InputError class="mt-2" :message="form.errors.name" />
+            </div>
+
+            <div>
+                <InputLabel for="display_name" value="Display Name" />
+
+                <TextInput
+                    id="display_name"
+                    type="text"
+                    class="mt-1 block w-full"
+                    v-model="form.display_name"
+                    placeholder="Shown to customers instead of your real name"
+                    autocomplete="off"
+                />
+
+                <InputError class="mt-2" :message="form.errors.display_name" />
             </div>
 
             <div>

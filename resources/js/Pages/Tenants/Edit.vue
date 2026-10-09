@@ -29,6 +29,7 @@ const form = useForm({
     portal_welcome_text: props.tenant?.portal_welcome_text || '',
     support_email: props.tenant?.support_email || '',
     reply_email_mode: props.tenant?.reply_email_mode || 'notification',
+    anonymize_agents: props.tenant?.anonymize_agents ?? false,
     announcement_enabled: props.tenant?.announcement_enabled ?? false,
     announcement_text: props.tenant?.announcement_text || '',
     is_active: props.tenant?.is_active ?? true,
@@ -219,6 +220,20 @@ const previewStyle = computed(() => ({
                                     <option value="full">Full reply — include reply text and attachment links</option>
                                 </select>
                             </div>
+                        </div>
+
+                        <!-- Agent Anonymization -->
+                        <div class="bg-white shadow-sm sm:rounded-lg p-6 space-y-4">
+                            <h3 class="text-lg font-medium text-gray-900">Agent Identity</h3>
+                            <p class="text-sm text-gray-500">Control how agent names appear to customers on the portal and in emails.</p>
+                            <label class="flex items-center gap-2">
+                                <input v-model="form.anonymize_agents" type="checkbox" class="rounded text-indigo-600" />
+                                <span class="text-sm font-medium text-gray-700">Anonymize all agents</span>
+                            </label>
+                            <p class="text-xs text-gray-500">
+                                When enabled, all agent names are replaced with the tenant name (e.g. "{{ form.name || 'Acme Support' }}") on the customer portal and in emails.
+                                When disabled, agents can set a personal display name in their profile to use instead of their real name.
+                            </p>
                         </div>
 
                         <!-- Announcement Banner -->

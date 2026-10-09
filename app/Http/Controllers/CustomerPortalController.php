@@ -130,8 +130,28 @@ class CustomerPortalController extends Controller
             ->findOrFail($ticket);
 
         $ticket->load(['team:id,name', 'attachments', 'comments' => function ($q) {
-            $q->where('is_internal', false)->with(['user:id,name', 'attachments'])->oldest();
+            $q->where('is_internal', false)->with(['user:id,name,display_name', 'attachments'])->oldest();
         }]);
+
+        $tenant = app()->bound('tenant') ? app('tenant') : null;
+        $anonymize = $tenant?->anonymize_agents ?? false;
+
+        if ($anonymize) {
+            $tenantName = $tenant?->name ?? 'Support';
+            $ticket->comments->each(function ($comment) use ($tenantName) {
+                if ($comment->user) {
+                    $comment->user->name = $tenantName;
+                    $comment->user->makeHidden('display_name');
+                }
+            });
+        } else {
+            $ticket->comments->each(function ($comment) {
+                if ($comment->user && $comment->user->display_name) {
+                    $comment->user->name = $comment->user->display_name;
+                }
+                $comment->user?->makeHidden('display_name');
+            });
+        }
 
         return Inertia::render('Portal/TicketDetail', [
             'ticket' => $ticket,

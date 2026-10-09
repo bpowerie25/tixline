@@ -28,7 +28,7 @@ class CannedResponse extends Model
     {
         return str_replace(
             ['{{requester_name}}', '{{requester_email}}', '{{ticket_reference}}', '{{ticket_subject}}', '{{agent_name}}'],
-            [$ticket->requester_name, $ticket->requester_email, $ticket->reference, $ticket->subject, $ticket->assignee?->name ?? ''],
+            [$ticket->requester_name, $ticket->requester_email, $ticket->reference, $ticket->subject, $ticket->assignee?->display_name ?? $ticket->assignee?->name ?? ''],
             $this->body
         );
     }
