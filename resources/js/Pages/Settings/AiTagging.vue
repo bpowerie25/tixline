@@ -21,21 +21,21 @@ const configForm = useForm({
     tag_on_create: props.config?.tag_on_create ?? true,
 });
 
-const availableModels = computed(() => {
+const suggestedModels = computed(() => {
     return props.providers[configForm.provider]?.models ?? [];
 });
 
-// Set first model when provider changes
+// Set first suggested model when provider changes (only if current model is empty)
 watch(() => configForm.provider, () => {
-    const models = availableModels.value;
-    if (models.length && !models.includes(configForm.model)) {
+    const models = suggestedModels.value;
+    if (models.length && !configForm.model) {
         configForm.model = models[0];
     }
 });
 
 // Set initial model if empty
-if (!configForm.model && availableModels.value.length) {
-    configForm.model = availableModels.value[0];
+if (!configForm.model && suggestedModels.value.length) {
+    configForm.model = suggestedModels.value[0];
 }
 
 function saveConfig() {
@@ -160,9 +160,17 @@ function deleteTag(tag) {
 
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">Model</label>
-                                <select v-model="configForm.model" class="mt-1 w-full rounded-md border-gray-300 text-sm shadow-sm">
-                                    <option v-for="m in availableModels" :key="m" :value="m">{{ m }}</option>
-                                </select>
+                                <input
+                                    v-model="configForm.model"
+                                    type="text"
+                                    :list="`models-${configForm.provider}`"
+                                    placeholder="Enter or select a model name"
+                                    class="mt-1 w-full rounded-md border-gray-300 text-sm shadow-sm"
+                                />
+                                <datalist :id="`models-${configForm.provider}`">
+                                    <option v-for="m in suggestedModels" :key="m" :value="m" />
+                                </datalist>
+                                <p class="mt-1 text-xs text-gray-500">Select a suggested model or type any model name supported by your API key.</p>
                             </div>
                         </div>
 

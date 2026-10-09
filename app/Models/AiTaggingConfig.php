@@ -37,11 +37,11 @@ class AiTaggingConfig extends Model
         return [
             'gemini' => [
                 'name' => 'Google Gemini',
-                'models' => ['gemini-2.0-flash', 'gemini-2.0-flash-lite', 'gemini-2.5-flash', 'gemini-2.5-pro'],
+                'models' => ['gemini-3.8-flash', 'gemini-3.5-flash', 'gemini-2.5-flash', 'gemini-2.5-pro'],
             ],
             'claude' => [
                 'name' => 'Anthropic Claude',
-                'models' => ['claude-sonnet-4-20250514', 'claude-haiku-4-20250414'],
+                'models' => ['claude-sonnet-4-20250514', 'claude-haiku-4-20250414', 'claude-sonnet-4-6', 'claude-haiku-4-5-20251001'],
             ],
             'openai' => [
                 'name' => 'OpenAI',
@@ -49,7 +49,7 @@ class AiTaggingConfig extends Model
             ],
             'mistral' => [
                 'name' => 'Mistral AI',
-                'models' => ['mistral-large-latest', 'mistral-small-latest', 'mistral-medium-latest'],
+                'models' => ['mistral-large-latest', 'mistral-small-latest'],
             ],
         ];
     }
