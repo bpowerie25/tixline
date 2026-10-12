@@ -9,8 +9,11 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('teams', function (Blueprint $table) {
-            $table->boolean('auto_assign_solo')->default(false)->after('is_restricted');
-            $table->boolean('allow_admin_view')->default(false)->after('auto_assign_solo');
+            $table->boolean('allow_admin_view')->default(false)->after('is_restricted');
+        });
+
+        Schema::table('tenants', function (Blueprint $table) {
+            $table->boolean('auto_assign_solo')->default(false)->after('agent_anonymous_label');
         });
 
         Schema::table('users', function (Blueprint $table) {
@@ -21,7 +24,11 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('teams', function (Blueprint $table) {
-            $table->dropColumn(['auto_assign_solo', 'allow_admin_view']);
+            $table->dropColumn('allow_admin_view');
+        });
+
+        Schema::table('tenants', function (Blueprint $table) {
+            $table->dropColumn('auto_assign_solo');
         });
 
         Schema::table('users', function (Blueprint $table) {

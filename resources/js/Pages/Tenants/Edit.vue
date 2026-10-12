@@ -31,6 +31,7 @@ const form = useForm({
     reply_email_mode: props.tenant?.reply_email_mode || 'notification',
     anonymize_agents: props.tenant?.anonymize_agents ?? false,
     agent_anonymous_label: props.tenant?.agent_anonymous_label || '',
+    auto_assign_solo: props.tenant?.auto_assign_solo ?? false,
     announcement_enabled: props.tenant?.announcement_enabled ?? false,
     announcement_text: props.tenant?.announcement_text || '',
     is_active: props.tenant?.is_active ?? true,
@@ -238,6 +239,18 @@ const previewStyle = computed(() => ({
                             </div>
                             <p class="text-xs text-gray-500">
                                 When disabled, agents can set a personal display name in their profile to use instead of their real name.
+                            </p>
+                        </div>
+
+                        <!-- Ticket Assignment -->
+                        <div class="bg-white shadow-sm sm:rounded-lg p-6 space-y-4">
+                            <h3 class="text-lg font-medium text-gray-900">Ticket Assignment</h3>
+                            <label class="flex items-center gap-2">
+                                <input v-model="form.auto_assign_solo" type="checkbox" class="rounded text-indigo-600" />
+                                <span class="text-sm font-medium text-gray-700">Auto-assign sole team member</span>
+                            </label>
+                            <p class="text-xs text-gray-500">
+                                When a ticket is assigned to a team that has only one member, automatically assign it to that agent.
                             </p>
                         </div>
 

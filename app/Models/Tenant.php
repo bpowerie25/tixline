@@ -13,6 +13,7 @@ class Tenant extends Model
         'header_bg_color', 'header_text_color', 'sidebar_bg_color',
         'custom_css', 'font_family', 'portal_title', 'portal_welcome_text',
         'support_email', 'reply_email_mode', 'anonymize_agents', 'agent_anonymous_label',
+        'auto_assign_solo',
         'announcement_enabled', 'announcement_text',
         'is_active',
     ];
@@ -22,6 +23,7 @@ class Tenant extends Model
         return [
             'is_active' => 'boolean',
             'anonymize_agents' => 'boolean',
+            'auto_assign_solo' => 'boolean',
             'announcement_enabled' => 'boolean',
         ];
     }

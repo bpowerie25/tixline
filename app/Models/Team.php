@@ -12,11 +12,10 @@ class Team extends Model
 {
     use BelongsToTenant;
 
-    protected $fillable = ['name', 'slug', 'description', 'color', 'is_restricted', 'auto_assign_solo', 'allow_admin_view', 'department_id', 'lead_id', 'tenant_id'];
+    protected $fillable = ['name', 'slug', 'description', 'color', 'is_restricted', 'allow_admin_view', 'department_id', 'lead_id', 'tenant_id'];
 
     protected $casts = [
         'is_restricted' => 'boolean',
-        'auto_assign_solo' => 'boolean',
         'allow_admin_view' => 'boolean',
     ];
 

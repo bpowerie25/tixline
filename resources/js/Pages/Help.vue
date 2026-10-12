@@ -85,7 +85,7 @@ const activeTab = ref('general');
 
                         <h4 class="font-medium text-gray-800 mt-4 mb-2">Viewing Tickets</h4>
                         <p class="text-gray-600 mb-3">
-                            The ticket list shows all tickets you have access to. Use the filters at the top to narrow by status, priority, team, or assignee. Click any ticket to open the full conversation.
+                            The ticket list shows all tickets you have access to. Use the filters at the top to narrow by status, priority, team, or assignee. The agent filter includes an <strong>Unassigned</strong> option to quickly find tickets that haven't been picked up yet. Click any ticket to open the full conversation.
                         </p>
 
                         <h4 class="font-medium text-gray-800 mt-4 mb-2">Ticket Statuses</h4>
@@ -258,6 +258,19 @@ const activeTab = ref('general');
                             <li>Your visibility depends on your role &mdash; agents see their own team tickets, while managers and admins have wider access.</li>
                             <li>When reassigning a ticket, choose the team that best matches the issue.</li>
                         </ul>
+
+                        <h4 class="font-medium text-gray-800 mt-4 mb-2">Restricted Teams</h4>
+                        <p class="text-gray-600 mb-3">
+                            A team can be marked as <strong>restricted</strong>, meaning only explicit members of that team can view its tickets. By default, even admins cannot see tickets in a restricted team unless they are a member.
+                        </p>
+                        <ul class="list-disc list-inside text-gray-600 space-y-1">
+                            <li><strong>Allow admin view</strong> &mdash; an optional setting on restricted teams that lets admins see the team's tickets without being a member.</li>
+                        </ul>
+
+                        <h4 class="font-medium text-gray-800 mt-4 mb-2">Auto-Assign Sole Member</h4>
+                        <p class="text-gray-600">
+                            When <strong>Auto-assign sole member</strong> is enabled on a team, any ticket assigned to that team will be automatically assigned to the agent if the team has only one member. This saves a manual step for teams with a single dedicated agent.
+                        </p>
                     </div>
 
                     <!-- Workflows (simplified) -->
@@ -334,9 +347,13 @@ const activeTab = ref('general');
                                 </tbody>
                             </table>
                         </div>
+                        <h4 class="font-medium text-gray-800 mt-4 mb-2">Per-Agent Custom Reports Access</h4>
+                        <p class="text-gray-600 mb-3">
+                            Individual agents can be granted access to custom reports without changing their role. When editing an agent, tick <strong>Custom reports access</strong> to allow them to view and manage custom reports regardless of their assigned role's permissions.
+                        </p>
                         <div class="mt-4 rounded-md bg-blue-50 p-4">
                             <p class="text-sm text-blue-700">
-                                <strong>Tip:</strong> If a team (e.g. QA) needs access to reports but the default Agent role doesn't include it, create a custom role with the permissions they need. Go to <strong>Roles &gt; Create Role</strong>, tick the relevant permissions, then assign the new role to those users.
+                                <strong>Tip:</strong> If a team (e.g. QA) needs access to reports but the default Agent role doesn't include it, you can either create a custom role with the permissions they need, or simply enable <strong>Custom reports access</strong> on the individual agents who need it.
                             </p>
                         </div>
                     </div>
@@ -379,7 +396,7 @@ const activeTab = ref('general');
 
                         <h4 class="font-medium text-gray-800 mt-4 mb-2">Custom Reports</h4>
                         <p class="text-gray-600 mb-3">
-                            Custom reports let you build your own dashboards with configurable widgets. Access requires the <strong>Manage Custom Reports</strong> permission.
+                            Custom reports let you build your own dashboards with configurable widgets. Access requires the <strong>Manage Custom Reports</strong> permission, or the <strong>Custom reports access</strong> toggle enabled on the agent's profile.
                         </p>
                         <ul class="list-disc list-inside text-gray-600 space-y-1">
                             <li>Create a report and add widgets for metrics like tickets by status, priority, team, agent performance, SLA compliance, average resolution time (including business hours), and more.</li>

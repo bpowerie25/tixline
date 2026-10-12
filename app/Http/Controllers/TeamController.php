@@ -25,7 +25,6 @@ class TeamController extends Controller
             'description' => 'nullable|string',
             'color' => 'nullable|string|max:7',
             'is_restricted' => 'boolean',
-            'auto_assign_solo' => 'boolean',
             'allow_admin_view' => 'boolean',
         ]);
 
@@ -43,7 +42,6 @@ class TeamController extends Controller
             'description' => 'nullable|string',
             'color' => 'nullable|string|max:7',
             'is_restricted' => 'boolean',
-            'auto_assign_solo' => 'boolean',
             'allow_admin_view' => 'boolean',
         ]);
 
