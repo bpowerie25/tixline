@@ -19,6 +19,7 @@ const form = useForm({
     role_id: '',
     team_ids: [],
     is_external: false,
+    can_manage_reports: false,
 });
 
 function openCreate() {
@@ -36,6 +37,7 @@ function openEdit(agent) {
     form.role_id = agent.role_id || '';
     form.team_ids = (agent.teams || []).map(t => t.id);
     form.is_external = agent.is_external || false;
+    form.can_manage_reports = agent.can_manage_reports || false;
     showForm.value = true;
 }
 
@@ -135,12 +137,21 @@ function timeAgo(dateStr) {
                                 </div>
                             </div>
                         </div>
-                        <div>
-                            <label class="flex items-center gap-2">
-                                <input type="checkbox" v-model="form.is_external" class="rounded text-indigo-600" />
-                                <span class="text-sm font-medium text-gray-700">External agent</span>
-                            </label>
-                            <p class="mt-1 text-xs text-gray-500">External agents can only see tickets assigned to their teams or directly to them.</p>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="flex items-center gap-2">
+                                    <input type="checkbox" v-model="form.is_external" class="rounded text-indigo-600" />
+                                    <span class="text-sm font-medium text-gray-700">External agent</span>
+                                </label>
+                                <p class="mt-1 text-xs text-gray-500">External agents can only see tickets assigned to their teams or directly to them.</p>
+                            </div>
+                            <div>
+                                <label class="flex items-center gap-2">
+                                    <input type="checkbox" v-model="form.can_manage_reports" class="rounded text-indigo-600" />
+                                    <span class="text-sm font-medium text-gray-700">Custom reports access</span>
+                                </label>
+                                <p class="mt-1 text-xs text-gray-500">Allow this agent to view and manage custom reports regardless of their role.</p>
+                            </div>
                         </div>
                         <div class="flex items-center gap-3">
                             <button type="submit" :disabled="form.processing" class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50">

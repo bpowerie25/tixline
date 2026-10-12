@@ -15,7 +15,7 @@ use Illuminate\Notifications\Notifiable;
 use App\Models\Concerns\BelongsToTenant;
 use Laravel\Sanctum\HasApiTokens;
 
-#[Fillable(['name', 'email', 'password', 'role_id', 'team_id', 'tenant_id', 'is_external', 'display_name'])]
+#[Fillable(['name', 'email', 'password', 'role_id', 'team_id', 'tenant_id', 'is_external', 'display_name', 'can_manage_reports'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -30,6 +30,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'is_external' => 'boolean',
+            'can_manage_reports' => 'boolean',
         ];
     }
 
@@ -58,7 +59,16 @@ class User extends Authenticatable
             $this->permissionCache = $this->role?->permissions->pluck('name')->toArray() ?? [];
         }
 
-        return in_array($permission, $this->permissionCache);
+        if (in_array($permission, $this->permissionCache)) {
+            return true;
+        }
+
+        // Per-user custom reports access
+        if ($permission === 'reports.custom.manage' && $this->can_manage_reports) {
+            return true;
+        }
+
+        return false;
     }
 
     public function isAdmin(): bool
@@ -83,12 +93,20 @@ class User extends Authenticatable
 
         // Restricted team gate: only explicit members can see these tickets
         if ($ticket->team_id) {
-            $isRestricted = $ticket->relationLoaded('team')
-                ? $ticket->team?->is_restricted
-                : Team::where('id', $ticket->team_id)->value('is_restricted');
+            $team = $ticket->relationLoaded('team')
+                ? $ticket->team
+                : Team::find($ticket->team_id);
 
-            if ($isRestricted) {
-                return in_array($ticket->team_id, $this->teamIds());
+            if ($team?->is_restricted) {
+                if (in_array($ticket->team_id, $this->teamIds())) {
+                    return true;
+                }
+                // Admins can see if allow_admin_view is enabled
+                if ($this->isAdmin() && $team->allow_admin_view) {
+                    return true;
+                }
+
+                return false;
             }
         }
 
@@ -143,6 +161,18 @@ class User extends Authenticatable
     public function visibleTicketsQuery()
     {
         if ($this->isAdmin()) {
+            $restrictedNoAdminView = Team::where('is_restricted', true)
+                ->where('allow_admin_view', false)
+                ->whereNotIn('id', $this->teamIds())
+                ->pluck('id')
+                ->toArray();
+
+            if (! empty($restrictedNoAdminView)) {
+                return Ticket::whereNotIn('team_id', $restrictedNoAdminView)
+                    ->orWhereNull('team_id')
+                    ->orWhere('assigned_to', $this->id);
+            }
+
             return Ticket::query();
         }
 

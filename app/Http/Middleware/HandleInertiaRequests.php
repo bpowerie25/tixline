@@ -34,7 +34,10 @@ class HandleInertiaRequests extends Middleware
             ...parent::share($request),
             'auth' => [
                 'user' => $request->user(),
-                'can' => $request->user()?->role?->permissions->pluck('name')->toArray() ?? [],
+                'can' => fn () => array_values(array_unique(array_merge(
+                    $request->user()?->role?->permissions->pluck('name')->toArray() ?? [],
+                    $request->user()?->can_manage_reports ? ['reports.custom.manage'] : [],
+                ))),
             ],
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),

@@ -46,6 +46,19 @@ class Ticket extends Model
 
     public static function booted(): void
     {
+        // Auto-assign to sole team member when team_id is set
+        static::saving(function (Ticket $ticket) {
+            if ($ticket->isDirty('team_id') && $ticket->team_id && ! $ticket->assigned_to) {
+                $team = Team::find($ticket->team_id);
+                if ($team?->auto_assign_solo) {
+                    $members = $team->members()->pluck('users.id');
+                    if ($members->count() === 1) {
+                        $ticket->assigned_to = $members->first();
+                    }
+                }
+            }
+        });
+
         static::created(function (Ticket $ticket) {
             $updates = [];
 

@@ -45,6 +45,7 @@ class AgentController extends Controller
             'team_ids' => 'nullable|array',
             'team_ids.*' => 'exists:teams,id',
             'is_external' => 'boolean',
+            'can_manage_reports' => 'boolean',
         ]);
 
         $teamIds = $validated['team_ids'] ?? [];
@@ -68,6 +69,7 @@ class AgentController extends Controller
             'team_ids' => 'nullable|array',
             'team_ids.*' => 'exists:teams,id',
             'is_external' => 'boolean',
+            'can_manage_reports' => 'boolean',
         ]);
 
         if (empty($validated['password'])) {

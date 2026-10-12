@@ -18,6 +18,8 @@ const form = useForm({
     description: '',
     color: '#6366f1',
     is_restricted: false,
+    auto_assign_solo: false,
+    allow_admin_view: false,
 });
 
 function openCreate() {
@@ -32,6 +34,8 @@ function openEdit(team) {
     form.description = team.description || '';
     form.color = team.color;
     form.is_restricted = team.is_restricted || false;
+    form.auto_assign_solo = team.auto_assign_solo || false;
+    form.allow_admin_view = team.allow_admin_view || false;
     showForm.value = true;
 }
 
@@ -119,11 +123,25 @@ function removeMember(userId) {
                             <label class="block text-sm font-medium text-gray-700">Description</label>
                             <textarea v-model="form.description" rows="2" class="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
                         </div>
-                        <div class="flex items-center gap-2">
-                            <input v-model="form.is_restricted" type="checkbox" id="is_restricted"
-                                   class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
-                            <label for="is_restricted" class="text-sm font-medium text-gray-700">Restricted</label>
-                            <span class="text-xs text-gray-500">— only explicit members can view tickets in this team</span>
+                        <div class="space-y-3">
+                            <div class="flex items-center gap-2">
+                                <input v-model="form.is_restricted" type="checkbox" id="is_restricted"
+                                       class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+                                <label for="is_restricted" class="text-sm font-medium text-gray-700">Restricted</label>
+                                <span class="text-xs text-gray-500">— only explicit members can view tickets in this team</span>
+                            </div>
+                            <div v-if="form.is_restricted" class="ml-6 flex items-center gap-2">
+                                <input v-model="form.allow_admin_view" type="checkbox" id="allow_admin_view"
+                                       class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+                                <label for="allow_admin_view" class="text-sm font-medium text-gray-700">Allow admin view</label>
+                                <span class="text-xs text-gray-500">— admins can also see tickets in this restricted team</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <input v-model="form.auto_assign_solo" type="checkbox" id="auto_assign_solo"
+                                       class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+                                <label for="auto_assign_solo" class="text-sm font-medium text-gray-700">Auto-assign sole member</label>
+                                <span class="text-xs text-gray-500">— automatically assign tickets if this team has only one member</span>
+                            </div>
                         </div>
                         <div class="flex gap-3">
                             <button type="submit" :disabled="form.processing" class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50">

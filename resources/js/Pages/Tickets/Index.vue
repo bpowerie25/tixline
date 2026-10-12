@@ -158,6 +158,7 @@ const statusColors = {
                     </select>
                     <select v-model="assignedTo" class="rounded-md border-gray-300 text-sm shadow-sm">
                         <option value="">All Agents</option>
+                        <option value="unassigned">Unassigned</option>
                         <option v-for="agent in agents" :key="agent.id" :value="agent.id">{{ agent.name }}</option>
                     </select>
                     <button

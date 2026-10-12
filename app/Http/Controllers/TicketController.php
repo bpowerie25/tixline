@@ -41,7 +41,11 @@ class TicketController extends Controller
         }
 
         if ($request->filled('assigned_to')) {
-            $query->where('assigned_to', $request->assigned_to);
+            if ($request->assigned_to === 'unassigned') {
+                $query->whereNull('assigned_to');
+            } else {
+                $query->where('assigned_to', $request->assigned_to);
+            }
         }
 
         if ($request->filled('ai_flagged')) {
