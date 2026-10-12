@@ -12,7 +12,7 @@ class Team extends Model
 {
     use BelongsToTenant;
 
-    protected $fillable = ['name', 'slug', 'description', 'color', 'is_restricted', 'allow_admin_view', 'department_id', 'lead_id', 'tenant_id'];
+    protected $fillable = ['name', 'slug', 'description', 'color', 'is_restricted', 'allow_admin_view', 'department_id', 'lead_id', 'default_assignee_id', 'tenant_id'];
 
     protected $casts = [
         'is_restricted' => 'boolean',
@@ -35,6 +35,11 @@ class Team extends Model
     public function lead(): BelongsTo
     {
         return $this->belongsTo(User::class, 'lead_id');
+    }
+
+    public function defaultAssignee(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'default_assignee_id');
     }
 
     public function members(): BelongsToMany

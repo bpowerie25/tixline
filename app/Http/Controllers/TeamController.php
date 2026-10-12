@@ -27,6 +27,7 @@ class TeamController extends Controller
             'color' => 'nullable|string|max:7',
             'is_restricted' => 'boolean',
             'allow_admin_view' => 'boolean',
+            'default_assignee_id' => 'nullable|exists:users,id',
         ]);
 
         $validated['slug'] = Str::slug($validated['name']);
@@ -46,6 +47,7 @@ class TeamController extends Controller
             'color' => 'nullable|string|max:7',
             'is_restricted' => 'boolean',
             'allow_admin_view' => 'boolean',
+            'default_assignee_id' => 'nullable|exists:users,id',
         ]);
 
         $validated['slug'] = Str::slug($validated['name']);

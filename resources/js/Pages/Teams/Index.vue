@@ -19,6 +19,7 @@ const form = useForm({
     color: '#6366f1',
     is_restricted: false,
     allow_admin_view: false,
+    default_assignee_id: '',
 });
 
 function openCreate() {
@@ -34,6 +35,7 @@ function openEdit(team) {
     form.color = team.color;
     form.is_restricted = team.is_restricted || false;
     form.allow_admin_view = team.allow_admin_view || false;
+    form.default_assignee_id = team.default_assignee_id || '';
     showForm.value = true;
 }
 
@@ -117,9 +119,19 @@ function removeMember(userId) {
                                 </div>
                             </div>
                         </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Description</label>
-                            <textarea v-model="form.description" rows="2" class="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
+                        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Description</label>
+                                <textarea v-model="form.description" rows="2" class="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
+                            </div>
+                            <div v-if="editingTeam">
+                                <label class="block text-sm font-medium text-gray-700">Default Assignee</label>
+                                <select v-model="form.default_assignee_id" class="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                    <option value="">None</option>
+                                    <option v-for="member in editingTeam.members" :key="member.id" :value="member.id">{{ member.name }}</option>
+                                </select>
+                                <p class="mt-1 text-xs text-gray-500">Automatically assign new tickets in this team to this agent.</p>
+                            </div>
                         </div>
                         <div class="space-y-3">
                             <div class="flex items-center gap-2">
