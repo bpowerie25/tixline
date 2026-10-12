@@ -8,6 +8,7 @@ use App\Models\Team;
 use App\Models\User;
 use App\Models\Workflow;
 use App\Rules\ValidWorkflowRegex;
+use App\Services\ActivityLogger;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -39,7 +40,9 @@ class WorkflowController extends Controller
             'priority' => 'integer',
         ]);
 
-        Workflow::create($validated);
+        $workflow = Workflow::create($validated);
+
+        ActivityLogger::log('workflow_created', "Created workflow {$workflow->name}", $workflow);
 
         return back()->with('success', 'Workflow created.');
     }
@@ -61,11 +64,15 @@ class WorkflowController extends Controller
 
         $workflow->update($validated);
 
+        ActivityLogger::log('workflow_updated', "Updated workflow {$workflow->name}", $workflow);
+
         return back()->with('success', 'Workflow updated.');
     }
 
     public function destroy(Workflow $workflow)
     {
+        ActivityLogger::log('workflow_deleted', "Deleted workflow {$workflow->name}", $workflow);
+
         $workflow->delete();
 
         return back()->with('success', 'Workflow deleted.');
@@ -76,6 +83,8 @@ class WorkflowController extends Controller
         $copy = $workflow->replicate();
         $copy->name = $workflow->name . ' (copy)';
         $copy->save();
+
+        ActivityLogger::log('workflow_duplicated', "Duplicated workflow {$workflow->name} as {$copy->name}", $copy);
 
         return back()->with('success', 'Workflow duplicated.');
     }

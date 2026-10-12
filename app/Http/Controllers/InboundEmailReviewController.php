@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\DTOs\InboundMessage;
 use App\Models\InboundEmail;
+use App\Services\ActivityLogger;
 use App\Services\InboundEmailProcessor;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -87,11 +88,15 @@ class InboundEmailReviewController extends Controller
             'processed_at' => now(),
         ]);
 
+        ActivityLogger::log('inbound_email_reprocessed', "Reprocessed inbound email: {$result['status']}", $inboundEmail);
+
         return back()->with('success', "Reprocessed: {$result['status']}" . (isset($result['reference']) ? " ({$result['reference']})" : ''));
     }
 
     public function destroy(InboundEmail $inboundEmail)
     {
+        ActivityLogger::log('inbound_email_deleted', "Deleted inbound email record", $inboundEmail);
+
         $inboundEmail->delete();
 
         return back()->with('success', 'Email record deleted.');

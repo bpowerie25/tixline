@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Team;
 use App\Models\User;
+use App\Services\ActivityLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -30,7 +31,9 @@ class TeamController extends Controller
 
         $validated['slug'] = Str::slug($validated['name']);
 
-        Team::create($validated);
+        $team = Team::create($validated);
+
+        ActivityLogger::log('team_created', "Created team {$team->name}", $team);
 
         return back()->with('success', 'Team created.');
     }
@@ -49,11 +52,15 @@ class TeamController extends Controller
 
         $team->update($validated);
 
+        ActivityLogger::log('team_updated', "Updated team {$team->name}", $team);
+
         return back()->with('success', 'Team updated.');
     }
 
     public function destroy(Team $team)
     {
+        ActivityLogger::log('team_deleted', "Deleted team {$team->name}", $team);
+
         $team->delete();
 
         return back()->with('success', 'Team deleted.');
@@ -67,12 +74,17 @@ class TeamController extends Controller
 
         $team->members()->syncWithoutDetaching([$validated['user_id']]);
 
+        $agent = User::find($validated['user_id']);
+        ActivityLogger::log('team_member_added', "Added {$agent->name} to team {$team->name}", $team);
+
         return back()->with('success', 'Agent added to team.');
     }
 
     public function removeMember(Team $team, User $user)
     {
         $team->members()->detach($user->id);
+
+        ActivityLogger::log('team_member_removed', "Removed {$user->name} from team {$team->name}", $team);
 
         return back()->with('success', 'Agent removed from team.');
     }

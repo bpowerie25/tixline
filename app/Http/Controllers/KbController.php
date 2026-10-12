@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\KbArticle;
 use App\Models\KbCategory;
+use App\Services\ActivityLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -60,6 +61,8 @@ class KbController extends Controller
 
         $article = KbArticle::create($validated);
 
+        ActivityLogger::log('kb_article_created', "Created article: {$article->title}", $article);
+
         return redirect()->route('kb.admin.index')
             ->with('success', 'Article created.');
     }
@@ -86,12 +89,16 @@ class KbController extends Controller
 
         $kbArticle->update($validated);
 
+        ActivityLogger::log('kb_article_updated', "Updated article: {$kbArticle->title}", $kbArticle);
+
         return redirect()->route('kb.admin.index')
             ->with('success', 'Article updated.');
     }
 
     public function destroy(KbArticle $kbArticle)
     {
+        ActivityLogger::log('kb_article_deleted', "Deleted article: {$kbArticle->title}", $kbArticle);
+
         $kbArticle->delete();
 
         return back()->with('success', 'Article deleted.');
@@ -115,7 +122,9 @@ class KbController extends Controller
         }
         $validated['slug'] = $slug;
 
-        KbCategory::create($validated);
+        $category = KbCategory::create($validated);
+
+        ActivityLogger::log('kb_category_created', "Created KB category: {$category->name}", $category);
 
         return back()->with('success', 'Category created.');
     }
@@ -132,11 +141,15 @@ class KbController extends Controller
 
         $category->update($validated);
 
+        ActivityLogger::log('kb_category_updated', "Updated KB category: {$category->name}", $category);
+
         return back()->with('success', 'Category updated.');
     }
 
     public function destroyCategory(KbCategory $category)
     {
+        ActivityLogger::log('kb_category_deleted', "Deleted KB category: {$category->name}", $category);
+
         $category->delete();
 
         return back()->with('success', 'Category deleted.');

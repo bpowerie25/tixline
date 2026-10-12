@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Form;
 use App\Models\Team;
+use App\Services\ActivityLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -64,6 +65,8 @@ class FormController extends Controller
             $form->fields()->create($field);
         }
 
+        ActivityLogger::log('form_created', "Created form {$form->name}", $form);
+
         return back()->with('success', 'Form created.');
     }
 
@@ -105,11 +108,15 @@ class FormController extends Controller
             }
         }
 
+        ActivityLogger::log('form_updated', "Updated form {$form->name}", $form);
+
         return back()->with('success', 'Form updated.');
     }
 
     public function destroy(Form $form)
     {
+        ActivityLogger::log('form_deleted', "Deleted form {$form->name}", $form);
+
         $form->delete();
 
         return back()->with('success', 'Form deleted.');

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Department;
 use App\Models\User;
+use App\Services\ActivityLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -30,7 +31,9 @@ class DepartmentController extends Controller
 
         $validated['slug'] = Str::slug($validated['name']);
 
-        Department::create($validated);
+        $department = Department::create($validated);
+
+        ActivityLogger::log('department_created', "Created department {$department->name}", $department);
 
         return back()->with('success', 'Department created.');
     }
@@ -47,11 +50,15 @@ class DepartmentController extends Controller
 
         $department->update($validated);
 
+        ActivityLogger::log('department_updated', "Updated department {$department->name}", $department);
+
         return back()->with('success', 'Department updated.');
     }
 
     public function destroy(Department $department)
     {
+        ActivityLogger::log('department_deleted', "Deleted department {$department->name}", $department);
+
         $department->delete();
 
         return back()->with('success', 'Department deleted.');

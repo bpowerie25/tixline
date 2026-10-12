@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Permission;
 use App\Models\Role;
+use App\Services\ActivityLogger;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -44,6 +45,8 @@ class RoleController extends Controller
 
         $role->permissions()->sync($validated['permissions'] ?? []);
 
+        ActivityLogger::log('role_created', "Created role {$role->display_name}", $role);
+
         return back()->with('success', 'Role created.');
     }
 
@@ -75,6 +78,8 @@ class RoleController extends Controller
         $role->update($updateData);
         $role->permissions()->sync($validated['permissions'] ?? []);
 
+        ActivityLogger::log('role_updated', "Updated role {$role->display_name}", $role);
+
         return back()->with('success', 'Role updated.');
     }
 
@@ -90,6 +95,8 @@ class RoleController extends Controller
         if ($agentRole) {
             $role->users()->update(['role_id' => $agentRole->id]);
         }
+
+        ActivityLogger::log('role_deleted', "Deleted role {$role->display_name}", $role);
 
         $role->delete();
 

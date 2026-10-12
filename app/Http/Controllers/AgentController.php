@@ -105,6 +105,8 @@ class AgentController extends Controller
             }
         );
 
+        ActivityLogger::log('agent_invite_sent', "Sent invite to {$agent->name} ({$agent->email})", $agent);
+
         return back()->with('success', "Invite sent to {$agent->email}.");
     }
 

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\AiTaggingConfig;
 use App\Models\Tag;
+use App\Services\ActivityLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -58,6 +59,9 @@ class AiTaggingController extends Controller
             AiTaggingConfig::create($validated);
         }
 
+        $config = AiTaggingConfig::first();
+        ActivityLogger::log('ai_config_updated', "Updated AI tagging configuration", $config);
+
         return back()->with('success', 'AI tagging configuration saved.');
     }
 
@@ -75,7 +79,9 @@ class AiTaggingController extends Controller
             return back()->withErrors(['name' => 'A tag with this name already exists.']);
         }
 
-        Tag::create($validated);
+        $tag = Tag::create($validated);
+
+        ActivityLogger::log('tag_created', "Created tag {$tag->name}", $tag);
 
         return back()->with('success', 'Tag created.');
     }
@@ -97,11 +103,15 @@ class AiTaggingController extends Controller
         $validated['slug'] = $newSlug;
         $tag->update($validated);
 
+        ActivityLogger::log('tag_updated', "Updated tag {$tag->name}", $tag);
+
         return back()->with('success', 'Tag updated.');
     }
 
     public function destroyTag(Tag $tag)
     {
+        ActivityLogger::log('tag_deleted', "Deleted tag {$tag->name}", $tag);
+
         $tag->delete();
 
         return back()->with('success', 'Tag deleted.');

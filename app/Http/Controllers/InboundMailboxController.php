@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\InboundMailbox;
+use App\Services\ActivityLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 
@@ -24,7 +25,9 @@ class InboundMailboxController extends Controller
             'is_active' => 'boolean',
         ]);
 
-        InboundMailbox::create($validated);
+        $mailbox = InboundMailbox::create($validated);
+
+        ActivityLogger::log('mailbox_created', "Created inbound mailbox {$mailbox->name}", $mailbox);
 
         return back()->with('success', 'Mailbox created.');
     }
@@ -51,11 +54,15 @@ class InboundMailboxController extends Controller
 
         $mailbox->update($validated);
 
+        ActivityLogger::log('mailbox_updated', "Updated inbound mailbox {$mailbox->name}", $mailbox);
+
         return back()->with('success', 'Mailbox updated.');
     }
 
     public function destroy(InboundMailbox $mailbox)
     {
+        ActivityLogger::log('mailbox_deleted', "Deleted inbound mailbox {$mailbox->name}", $mailbox);
+
         $mailbox->delete();
 
         return back()->with('success', 'Mailbox deleted.');

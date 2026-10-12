@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\CannedResponse;
+use App\Services\ActivityLogger;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -34,7 +35,9 @@ class CannedResponseController extends Controller
 
         $validated['user_id'] = $request->user()->id;
 
-        CannedResponse::create($validated);
+        $response = CannedResponse::create($validated);
+
+        ActivityLogger::log('canned_response_created', "Created canned response {$response->name}", $response);
 
         return back()->with('success', 'Canned response created.');
     }
@@ -50,11 +53,15 @@ class CannedResponseController extends Controller
 
         $cannedResponse->update($validated);
 
+        ActivityLogger::log('canned_response_updated', "Updated canned response {$cannedResponse->name}", $cannedResponse);
+
         return back()->with('success', 'Canned response updated.');
     }
 
     public function destroy(CannedResponse $cannedResponse)
     {
+        ActivityLogger::log('canned_response_deleted', "Deleted canned response {$cannedResponse->name}", $cannedResponse);
+
         $cannedResponse->delete();
 
         return back()->with('success', 'Canned response deleted.');

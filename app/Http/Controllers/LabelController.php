@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Label;
+use App\Services\ActivityLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -25,7 +26,9 @@ class LabelController extends Controller
 
         $validated['slug'] = Str::slug($validated['name']);
 
-        Label::create($validated);
+        $label = Label::create($validated);
+
+        ActivityLogger::log('label_created', "Created label {$label->name}", $label);
 
         return back()->with('success', 'Label created.');
     }
@@ -41,11 +44,15 @@ class LabelController extends Controller
 
         $label->update($validated);
 
+        ActivityLogger::log('label_updated', "Updated label {$label->name}", $label);
+
         return back()->with('success', 'Label updated.');
     }
 
     public function destroy(Label $label)
     {
+        ActivityLogger::log('label_deleted', "Deleted label {$label->name}", $label);
+
         $label->delete();
 
         return back()->with('success', 'Label deleted.');

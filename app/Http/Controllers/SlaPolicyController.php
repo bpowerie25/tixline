@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\SlaPolicy;
+use App\Services\ActivityLogger;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -26,7 +27,9 @@ class SlaPolicyController extends Controller
             'is_active' => 'boolean',
         ]);
 
-        SlaPolicy::create($validated);
+        $policy = SlaPolicy::create($validated);
+
+        ActivityLogger::log('sla_policy_created', "Created SLA policy {$policy->name}", $policy);
 
         return back()->with('success', 'SLA policy created.');
     }
@@ -43,11 +46,15 @@ class SlaPolicyController extends Controller
 
         $slaPolicy->update($validated);
 
+        ActivityLogger::log('sla_policy_updated', "Updated SLA policy {$slaPolicy->name}", $slaPolicy);
+
         return back()->with('success', 'SLA policy updated.');
     }
 
     public function destroy(SlaPolicy $slaPolicy)
     {
+        ActivityLogger::log('sla_policy_deleted', "Deleted SLA policy {$slaPolicy->name}", $slaPolicy);
+
         $slaPolicy->delete();
 
         return back()->with('success', 'SLA policy deleted.');

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\InboundMailbox;
 use App\Models\MailConfiguration;
 use App\Models\Team;
+use App\Services\ActivityLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Inertia\Inertia;
@@ -78,6 +79,8 @@ class MailConfigController extends Controller
         } else {
             $config = MailConfiguration::create($validated);
         }
+
+        ActivityLogger::log('mail_config_updated', "Updated mail configuration", $config);
 
         return back()->with('success', 'Mail configuration saved.');
     }

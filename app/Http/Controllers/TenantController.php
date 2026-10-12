@@ -118,6 +118,8 @@ class TenantController extends Controller
 
     public function destroy(Tenant $tenant)
     {
+        ActivityLogger::log('tenant_deleted', "Deleted tenant {$tenant->name}", $tenant);
+
         $tenant->delete();
 
         return back()->with('success', 'Tenant deleted.');
