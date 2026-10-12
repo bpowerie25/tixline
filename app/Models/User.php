@@ -168,9 +168,11 @@ class User extends Authenticatable
                 ->toArray();
 
             if (! empty($restrictedNoAdminView)) {
-                return Ticket::whereNotIn('team_id', $restrictedNoAdminView)
-                    ->orWhereNull('team_id')
-                    ->orWhere('assigned_to', $this->id);
+                return Ticket::where(function ($q) use ($restrictedNoAdminView) {
+                    $q->whereNull('team_id')
+                      ->orWhereNotIn('team_id', $restrictedNoAdminView)
+                      ->orWhere('assigned_to', $this->id);
+                });
             }
 
             return Ticket::query();
