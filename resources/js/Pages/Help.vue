@@ -2,8 +2,18 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head } from '@inertiajs/vue3';
 import { ref } from 'vue';
+import { useCan } from '@/Composables/useCan';
+
+const { can, canAny } = useCan();
 
 const activeTab = ref('general');
+
+const hasReportsAccess = canAny(['reports.view', 'reports.custom.manage']);
+const hasKbAccess = canAny(['kb.admin.view', 'kb.admin.manage']);
+const hasAdminAccess = canAny([
+    'teams.manage', 'agents.manage', 'workflows.manage', 'forms.manage',
+    'sla-policies.manage', 'mail.manage', 'tenants.manage', 'roles.manage',
+]);
 </script>
 
 <template>
@@ -32,6 +42,7 @@ const activeTab = ref('general');
                             General
                         </button>
                         <button
+                            v-if="hasAdminAccess"
                             @click="activeTab = 'technical'"
                             :class="[
                                 'whitespace-nowrap border-b-2 py-3 px-1 text-sm font-medium',
@@ -259,18 +270,20 @@ const activeTab = ref('general');
                             <li>When reassigning a ticket, choose the team that best matches the issue.</li>
                         </ul>
 
-                        <h4 class="font-medium text-gray-800 mt-4 mb-2">Restricted Teams</h4>
-                        <p class="text-gray-600 mb-3">
-                            A team can be marked as <strong>restricted</strong>, meaning only explicit members of that team can view its tickets. By default, even admins cannot see tickets in a restricted team unless they are a member.
-                        </p>
-                        <ul class="list-disc list-inside text-gray-600 space-y-1">
-                            <li><strong>Allow admin view</strong> &mdash; an optional setting on restricted teams that lets admins see the team's tickets without being a member.</li>
-                        </ul>
+                        <template v-if="hasAdminAccess">
+                            <h4 class="font-medium text-gray-800 mt-4 mb-2">Restricted Teams</h4>
+                            <p class="text-gray-600 mb-3">
+                                A team can be marked as <strong>restricted</strong>, meaning only explicit members of that team can view its tickets. By default, even admins cannot see tickets in a restricted team unless they are a member.
+                            </p>
+                            <ul class="list-disc list-inside text-gray-600 space-y-1">
+                                <li><strong>Allow admin view</strong> &mdash; an optional setting on restricted teams that lets admins see the team's tickets without being a member.</li>
+                            </ul>
 
-                        <h4 class="font-medium text-gray-800 mt-4 mb-2">Auto-Assign Sole Member</h4>
-                        <p class="text-gray-600">
-                            When <strong>Auto-assign sole member</strong> is enabled on a team, any ticket assigned to that team will be automatically assigned to the agent if the team has only one member. This saves a manual step for teams with a single dedicated agent.
-                        </p>
+                            <h4 class="font-medium text-gray-800 mt-4 mb-2">Auto-Assign Sole Member</h4>
+                            <p class="text-gray-600">
+                                When <strong>Auto-assign sole member</strong> is enabled on a team, any ticket assigned to that team will be automatically assigned to the agent if the team has only one member. This saves a manual step for teams with a single dedicated agent.
+                            </p>
+                        </template>
                     </div>
 
                     <!-- Workflows (simplified) -->
@@ -279,13 +292,16 @@ const activeTab = ref('general');
                         <p class="text-gray-600 mb-3">
                             Workflows are automated rules that run when tickets are created or updated. They can automatically assign tickets to teams, set priorities, add labels, and more.
                         </p>
-                        <p class="text-gray-600">
+                        <p v-if="!hasAdminAccess" class="text-gray-600">
                             You don't need to configure workflows yourself &mdash; these are set up by admins. Just be aware that some ticket routing and labelling may happen automatically.
+                        </p>
+                        <p v-else class="text-gray-600">
+                            Configure workflows under <strong>Settings &gt; Workflows</strong>. See the Technical tab for full details on triggers, conditions, and actions.
                         </p>
                     </div>
 
                     <!-- Knowledge Base -->
-                    <div class="bg-white shadow-sm sm:rounded-lg p-6">
+                    <div v-if="hasKbAccess" class="bg-white shadow-sm sm:rounded-lg p-6">
                         <h3 class="text-lg font-semibold text-gray-900 mb-4">Knowledge Base</h3>
                         <p class="text-gray-600 mb-3">
                             The knowledge base is a collection of help articles that customers can search and browse. When replying to tickets, consider linking to relevant articles to help customers find answers faster.
@@ -347,19 +363,21 @@ const activeTab = ref('general');
                                 </tbody>
                             </table>
                         </div>
-                        <h4 class="font-medium text-gray-800 mt-4 mb-2">Per-Agent Custom Reports Access</h4>
-                        <p class="text-gray-600 mb-3">
-                            Individual agents can be granted access to custom reports without changing their role. When editing an agent, tick <strong>Custom reports access</strong> to allow them to view and manage custom reports regardless of their assigned role's permissions.
-                        </p>
-                        <div class="mt-4 rounded-md bg-blue-50 p-4">
-                            <p class="text-sm text-blue-700">
-                                <strong>Tip:</strong> If a team (e.g. QA) needs access to reports but the default Agent role doesn't include it, you can either create a custom role with the permissions they need, or simply enable <strong>Custom reports access</strong> on the individual agents who need it.
+                        <template v-if="hasAdminAccess">
+                            <h4 class="font-medium text-gray-800 mt-4 mb-2">Per-Agent Custom Reports Access</h4>
+                            <p class="text-gray-600 mb-3">
+                                Individual agents can be granted access to custom reports without changing their role. When editing an agent, tick <strong>Custom reports access</strong> to allow them to view and manage custom reports regardless of their assigned role's permissions.
                             </p>
-                        </div>
+                            <div class="mt-4 rounded-md bg-blue-50 p-4">
+                                <p class="text-sm text-blue-700">
+                                    <strong>Tip:</strong> If a team (e.g. QA) needs access to reports but the default Agent role doesn't include it, you can either create a custom role with the permissions they need, or simply enable <strong>Custom reports access</strong> on the individual agents who need it.
+                                </p>
+                            </div>
+                        </template>
                     </div>
 
                     <!-- External Agents -->
-                    <div class="bg-white shadow-sm sm:rounded-lg p-6">
+                    <div v-if="hasAdminAccess" class="bg-white shadow-sm sm:rounded-lg p-6">
                         <h3 class="text-lg font-semibold text-gray-900 mb-4">External Agents</h3>
                         <p class="text-gray-600 mb-3">
                             An agent can be marked as <strong>external</strong> in the agent settings. External agents have restricted ticket visibility compared to internal agents:
@@ -374,7 +392,7 @@ const activeTab = ref('general');
                     </div>
 
                     <!-- Announcement Banner -->
-                    <div class="bg-white shadow-sm sm:rounded-lg p-6">
+                    <div v-if="hasAdminAccess" class="bg-white shadow-sm sm:rounded-lg p-6">
                         <h3 class="text-lg font-semibold text-gray-900 mb-4">Announcement Banner</h3>
                         <p class="text-gray-600 mb-3">
                             Admins can display a notice banner to customers on the portal and ticket submission pages. This is useful for communicating service disruptions, holiday closures, or expected delays.
@@ -388,7 +406,7 @@ const activeTab = ref('general');
                     </div>
 
                     <!-- Reports -->
-                    <div class="bg-white shadow-sm sm:rounded-lg p-6">
+                    <div v-if="hasReportsAccess" class="bg-white shadow-sm sm:rounded-lg p-6">
                         <h3 class="text-lg font-semibold text-gray-900 mb-4">Reports</h3>
                         <p class="text-gray-600 mb-3">
                             The <strong>Reports</strong> page provides an overview of ticket volume, response times, agent performance, and SLA compliance. Access requires the <strong>View Reports</strong> permission (Team Leads and above by default).
@@ -435,7 +453,7 @@ const activeTab = ref('general');
                 </template>
 
                 <!-- ==================== TECHNICAL TAB ==================== -->
-                <template v-if="activeTab === 'technical'">
+                <template v-if="activeTab === 'technical' && hasAdminAccess">
 
                     <!-- Mail Configuration -->
                     <div class="bg-white shadow-sm sm:rounded-lg p-6">
